@@ -51,3 +51,14 @@ test-report.xml
 
 # /lib/
 
+client/.next/
+
+Thumbs.db
+
+.vscode/
+
+node_modules/
+client/dist/
+server/dist/
+client/.env
+.next/

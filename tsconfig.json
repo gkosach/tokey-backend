@@ -21,8 +21,10 @@
     "lib": ["ES2020", "DOM"],
     "paths": {
       "@test/*": ["test/*"],
-      "@test": ["test"]
+      "@test": ["test"],
+      "@/*": ["./*"],
+      "@/src/*": ["./src/*"]
     }
   },
-  "include": ["src/**/*", "src/data/**/*.json", "prisma/**/*", "server/db/**/*"]
+  "include": ["src/**/*", "src/data/**/*.json", "prisma/**/*", "src/db/**/*"]
 }
