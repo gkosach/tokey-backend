@@ -1,15 +1,19 @@
+import { createClassLogger } from "@/src/config/logger";
 import { PropertyDTO } from "@/src/controllers/contract";
-import { PropertyRepository, UsersRepository } from "@/src/db/repository";
+import { UserRole } from "@/src/db/contract/enum/user-roles.enum";
+import { PropertyRepository, UserRepository } from "@/src/db/repository";
 import { Request, Response } from "express";
 
 /**
  * Контроллер для работы с инвесторами.
  */
 export class ManagerController {
-  private readonly usersRepository: UsersRepository;
+  private readonly usersRepository: UserRepository;
   private readonly propertyRepository: PropertyRepository;
+  private readonly logger;
 
-  constructor(usersRepository: UsersRepository, propertyRepository: PropertyRepository) {
+  constructor(usersRepository: UserRepository, propertyRepository: PropertyRepository) {
+    this.logger = createClassLogger(this.constructor.name);
     this.usersRepository = usersRepository;
     this.propertyRepository = propertyRepository;
   }
@@ -51,7 +55,7 @@ export class ManagerController {
         name,
         email,
         phoneNumber,
-        role: "manager",
+        role: UserRole.MANAGER,
       });
 
       res.status(201).json(manager);
@@ -77,7 +81,7 @@ export class ManagerController {
         return;
       }
 
-      await this.usersRepository.updateUser(Number(id), {
+      await this.usersRepository.updateUser(id, {
         name,
         email,
         phoneNumber,

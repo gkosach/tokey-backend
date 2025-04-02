@@ -1,18 +1,23 @@
-import logger from "@/src/config/logger";
-import { PropertyFilters } from "@/src/db/contract/interface/property-filters.interface";
+import { PropertyFilters } from "@/src/db/contract";
 import { In, Repository } from "typeorm";
 import { DatabasePostgresProvider } from "../database.postgres.provider";
-import { Property, Users } from "../entities";
+import { Property, User } from "../entities";
 
+/**
+ * Репозиторий для работы с объектами недвижимости.
+ */
 export class PropertyRepository {
-  private readonly dbProvider: DatabasePostgresProvider;
+  private repository: Repository<Property>;
+  private userRepository: Repository<User>;
+  private readonly logger;
 
-  constructor(dbProvider: DatabasePostgresProvider) {
-    this.dbProvider = dbProvider;
+  constructor() {
+    this.initRepositories();
   }
 
-  private propertyRepository(): Repository<Property> {
-    return this.dbProvider.getRepository(Property);
+  async initRepositories() {
+    this.repository = await DatabasePostgresProvider.getRepository(Property);
+    this.userRepository = await DatabasePostgresProvider.getRepository(User);
   }
 
   /**
@@ -22,8 +27,8 @@ export class PropertyRepository {
    * @returns Промис, который разрешается с созданным объектом.
    */
   async createProperty(propertyData: Partial<Property>): Promise<Property> {
-    logger.info(`Creating property: ${JSON.stringify(propertyData)}`);
-    return await this.propertyRepository().save(propertyData);
+    this.logger.info(`Создание объекта недвижимости: ${JSON.stringify(propertyData)}`);
+    return this.repository.save(propertyData);
   }
 
   /**
@@ -32,278 +37,194 @@ export class PropertyRepository {
    * @param id Идентификатор объекта недвижимости.
    * @returns Промис, который разрешается с найденным объектом или null, если не найден.
    */
-  async findPropertyById(id: number): Promise<Property | null> {
-    logger.info(`PropertyRepository: Finding property by ID ${id}`);
-    return await this.propertyRepository().findOne({
+  async findPropertyById(id: string): Promise<Property | null> {
+    return this.repository.findOne({
       where: { id },
-      relations: ["manager"],
-    });
-  }
-
-  async findPropertiesByCognitoId(cognitoId: string): Promise<Property[]> {
-    return this.propertyRepository().find({
-      where: { manager: { cognitoId } },
-      relations: ["manager"],
+      relations: { manager: true },
     });
   }
 
   /**
-   * Находит объекты недвижимости по ID менеджера.
-   * @param managerId ID менеджера
+   * Находит объекты недвижимости по Cognito ID менеджера
+   * @param cognitoId Идентификатор менеджера в Cognito
    * @returns Промис с массивом объектов недвижимости
    */
-  async findPropertiesByManagerId(managerId: number): Promise<Property[]> {
-    logger.info(`Finding properties by manager ID: ${managerId}`);
-    return this.propertyRepository().find({
-      where: { manager: { id: managerId } },
-      relations: ["manager"],
-    });
+  async findPropertiesByCognitoId(cognitoId: string): Promise<Property[]> {
+    this.logger.info(`Поиск объектов по Cognito ID менеджера: ${cognitoId}`);
+    try {
+      return await this.repository.find({
+        where: { manager: { cognitoId } },
+        relations: ["manager"],
+        order: { postedDate: "DESC" },
+      });
+    } catch (error) {
+      this.logger.error(`Ошибка поиска объектов: ${error}`);
+      throw new Error("Ошибка получения объектов недвижимости");
+    }
   }
 
   /**
    * Находит объекты недвижимости по массиву ID.
-   * @param ids Массив ID объектов недвижимости
-   * @returns Промис с массивом объектов недвижимости
+   *
+   * @param ids Массив ID объектов недвижимости.
+   * @returns Промис с массивом объектов недвижимости.
    */
-  async findPropertiesByIds(ids: number[]): Promise<Property[]> {
-    if (ids.length === 0) return [];
-
-    logger.info(`Finding properties by IDs: ${ids.join(", ")}`);
-    return this.propertyRepository().find({
+  async findPropertiesByIds(ids: string[]): Promise<Property[]> {
+    return this.repository.find({
       where: { id: In(ids) },
-      relations: ["manager"],
+      relations: { manager: true },
     });
+  }
+
+  /**
+   * Удаляет объект недвижимости из базы данных.
+   *
+   * @param id Идентификатор объекта недвижимости, который нужно удалить.
+   * @returns Промис, который разрешается true, если объект удалён, или false, если не найден.
+   */
+  async deleteProperty(id: string): Promise<boolean> {
+    const result = await this.repository.delete(id);
+    return (result.affected ?? 0) > 0;
+  }
+
+  /**
+   * Обновляет существующий объект недвижимости в базе данных.
+   *
+   * @param id Идентификатор объекта недвижимости, который нужно обновить.
+   * @param propertyData Объект с обновлёнными данными для объекта недвижимости.
+   * @returns Промис, который разрешается после обновления.
+   */
+  async updateProperty(id: string, propertyData: Partial<Property>): Promise<void> {
+    await this.repository.update(id, propertyData);
   }
 
   /**
    * Находит объекты недвижимости по заданным фильтрам.
    *
    * @param filters Объект с фильтрами для поиска объектов недвижимости.
-   * @returns Промис, который разрешается с массивом найденных объектов.
+   * @returns Промис, который разрешается массивом найденных объектов.
    */
   async findPropertiesByFilters(filters: PropertyFilters): Promise<Property[]> {
-    /** Создание построителя запросов */
-    const queryBuilder = this.dbProvider.getRepository(Property).createQueryBuilder("property");
+    const query = this.repository.createQueryBuilder("property").leftJoinAndSelect("property.manager", "manager");
 
-    /** Массив для хранения условий WHERE */
-    const whereConditions: string[] = [];
+    // Фильтрация
+    if (filters.minPrice) query.andWhere("property.pricePerMonth >= :minPrice", { minPrice: filters.minPrice });
+    if (filters.maxPrice) query.andWhere("property.pricePerMonth <= :maxPrice", { maxPrice: filters.maxPrice });
+    if (filters.beds) query.andWhere("property.beds = :beds", { beds: filters.beds });
+    if (filters.baths) query.andWhere("property.baths = :baths", { baths: filters.baths });
+    if (filters.minSquareFeet)
+      query.andWhere("property.squareFeet >= :minSquareFeet", { minSquareFeet: filters.minSquareFeet });
+    if (filters.maxSquareFeet)
+      query.andWhere("property.squareFeet <= :maxSquareFeet", { maxSquareFeet: filters.maxSquareFeet });
+    if (filters.city) query.andWhere("LOWER(property.city) LIKE LOWER(:city)", { city: `%${filters.city}%` });
+    if (filters.state) query.andWhere("LOWER(property.state) LIKE LOWER(:state)", { state: `%${filters.state}%` });
+    if (filters.country)
+      query.andWhere("LOWER(property.country) LIKE LOWER(:country)", { country: `%${filters.country}%` });
+    if (filters.propertyType)
+      query.andWhere("LOWER(property.propertyType) = LOWER(:propertyType)", { propertyType: filters.propertyType });
+    if (filters.isPetsAllowed !== undefined)
+      query.andWhere("property.isPetsAllowed = :isPetsAllowed", { isPetsAllowed: filters.isPetsAllowed });
+    if (filters.isParkingIncluded !== undefined)
+      query.andWhere("property.isParkingIncluded = :isParkingIncluded", {
+        isParkingIncluded: filters.isParkingIncluded,
+      });
 
-    /** Объект для хранения параметров запроса */
-    const parameters: Record<string, any> = {};
-
-    /** Добавление фильтра по минимальной цене */
-    if (filters.minPrice) {
-      whereConditions.push("property.pricePerMonth >= :minPrice");
-      parameters.minPrice = filters.minPrice;
-    }
-
-    /** Добавление фильтра по максимальной цене */
-    if (filters.maxPrice) {
-      whereConditions.push("property.pricePerMonth <= :maxPrice");
-      parameters.maxPrice = filters.maxPrice;
-    }
-
-    /** Добавление фильтра по количеству спален */
-    if (filters.beds) {
-      whereConditions.push("property.beds = :beds");
-      parameters.beds = filters.beds;
-    }
-
-    /** Добавление фильтра по количеству ванных комнат */
-    if (filters.baths) {
-      whereConditions.push("property.baths = :baths");
-      parameters.baths = filters.baths;
-    }
-
-    /** Добавление фильтра по минимальной площади */
-    if (filters.minSquareFeet) {
-      whereConditions.push("property.squareFeet >= :minSquareFeet");
-      parameters.minSquareFeet = filters.minSquareFeet;
-    }
-
-    /** Добавление фильтра по максимальной площади */
-    if (filters.maxSquareFeet) {
-      whereConditions.push("property.squareFeet <= :maxSquareFeet");
-      parameters.maxSquareFeet = filters.maxSquareFeet;
-    }
-
-    /** Добавление фильтра по городу */
-    if (filters.city) {
-      whereConditions.push("LOWER(property.city) LIKE LOWER(:city)");
-      parameters.city = `%${filters.city}%`;
-    }
-
-    /** Добавление фильтра по штату/области */
-    if (filters.state) {
-      whereConditions.push("LOWER(property.state) LIKE LOWER(:state)");
-      parameters.state = `%${filters.state}%`;
-    }
-
-    /** Добавление фильтра по стране */
-    if (filters.country) {
-      whereConditions.push("LOWER(property.country) LIKE LOWER(:country)");
-      parameters.country = `%${filters.country}%`;
-    }
-
-    /** Добавление фильтра по типу недвижимости */
-    if (filters.propertyType) {
-      whereConditions.push("LOWER(property.propertyType) = LOWER(:propertyType)");
-      parameters.propertyType = filters.propertyType;
-    }
-
-    /** Добавление фильтра по разрешению на домашних животных */
-    if (filters.isPetsAllowed !== undefined) {
-      whereConditions.push("property.isPetsAllowed = :isPetsAllowed");
-      parameters.isPetsAllowed = filters.isPetsAllowed;
-    }
-
-    /** Добавление фильтра по наличию парковки */
-    if (filters.isParkingIncluded !== undefined) {
-      whereConditions.push("property.isParkingIncluded = :isParkingIncluded");
-      parameters.isParkingIncluded = filters.isParkingIncluded;
-    }
-
-    /** Добавление фильтра по расстоянию от заданной точки */
-    if (filters.latitude !== undefined && filters.longitude !== undefined && filters.maxDistance !== undefined) {
-      whereConditions.push(`
-    ST_DWithin(
-      property.location,
-      ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326),
-      :maxDistance * 1000
-    )
-  `);
-
-      parameters.latitude = filters.latitude;
-      parameters.longitude = filters.longitude;
-      parameters.maxDistance = filters.maxDistance; // в километрах, умножаем на 1000 для метров
-    }
-
-    /** Применение сортировки по расстоянию, если заданы координаты */
-    if (filters.latitude !== undefined && filters.longitude !== undefined) {
-      queryBuilder.addSelect(
-        `
-    ST_Distance(
-      property.location,
-      ST_SetSRID(ST_MakePoint(:longitudeSort, :latitudeSort), 4326)
-    )`,
-        "distance",
-      );
-
-      queryBuilder.setParameter("latitudeSort", filters.latitude);
-      queryBuilder.setParameter("longitudeSort", filters.longitude);
-
-      queryBuilder.orderBy("distance", "ASC");
+    // Геопоиск
+    if (filters.latitude && filters.longitude && filters.maxDistance) {
+      query
+        .addSelect(
+          `
+        ST_Distance(
+          property.location,
+          ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)
+        )`,
+          "distance",
+        )
+        .setParameters({
+          lat: filters.latitude,
+          lng: filters.longitude,
+          maxDist: filters.maxDistance * 1000,
+        })
+        .where(
+          `
+        ST_DWithin(
+          property.location,
+          ST_SetSRID(ST_MakePoint(:lng, :lat), 4326),
+          :maxDist
+        )`,
+        )
+        .orderBy("distance", "ASC");
     } else if (filters.sortBy) {
-      /** Применение обычной сортировки */
-      queryBuilder.orderBy(`property.${filters.sortBy}`, filters.sortDirection || "ASC");
+      query.orderBy(`property.${filters.sortBy}`, filters.sortDirection || "ASC");
     } else {
-      /** Сортировка по умолчанию - по дате публикации (от новых к старым) */
-      queryBuilder.orderBy("property.postedDate", "DESC");
+      query.orderBy("property.postedDate", "DESC");
     }
 
-    /** Применение пагинации */
-    if (filters.limit) {
-      queryBuilder.take(filters.limit);
-    }
-    if (filters.offset) {
-      queryBuilder.skip(filters.offset);
-    }
+    // Пагинация
+    if (filters.limit) query.take(filters.limit);
+    if (filters.offset) query.skip(filters.offset);
 
-    /** Выполнение запроса и возврат результатов */
-    return await queryBuilder.getMany();
+    return query.getMany();
   }
 
-  /**
-   * Находит избранные объекты недвижимости пользователя.
-   * @param userId ID пользователя
-   * @returns Промис с массивом объектов недвижимости
-   */
-  async findFavoritePropertiesByUserId(userId: number): Promise<Property[]> {
-    logger.info(`Finding favorite properties for user ID: ${userId}`);
+  async findFavoritePropertiesByUserId(userId: string): Promise<Property[]> {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { cognitoId: userId },
+        select: ["favoritePropertyIds"],
+      });
 
-    const user = await this.dbProvider.getRepository(Users).findOne({
-      where: { id: userId },
-      relations: ["favoriteProperties", "favoriteProperties.manager"],
-    });
+      // Проверка типа массива
+      if (!user?.favoritePropertyIds || !Array.isArray(user.favoritePropertyIds)) {
+        return [];
+      }
 
-    return user?.favoriteProperties || [];
-  }
-
-  /**
-   * Добавляет объект недвижимости в избранное пользователя.
-   * @param userId ID пользователя
-   * @param propertyId ID объекта недвижимости
-   * @returns Промис, который разрешается после добавления
-   */
-  async addPropertyToFavorites(userId: number, propertyId: number): Promise<void> {
-    logger.info(`Adding property ${propertyId} to favorites for user ${userId}`);
-
-    const user = await this.dbProvider.getRepository(Users).findOne({
-      where: { id: userId },
-      relations: ["favoriteProperties"],
-    });
-
-    if (!user) {
-      throw new Error("User not found");
-    }
-
-    const property = await this.findPropertyById(propertyId);
-    if (!property) {
-      throw new Error("Property not found");
-    }
-    const alreadyFavorited = user.favoriteProperties.some((p) => {
-      return p.id === propertyId;
-    });
-
-    if (!alreadyFavorited) {
-      user.favoriteProperties.push(property);
-      await this.dbProvider.getRepository(Users).save(user);
+      return this.repository.find({
+        where: { id: In(user.favoritePropertyIds) },
+        relations: ["manager"],
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      this.logger.error(`Ошибка поиска избранного: ${message}`);
+      throw new Error("Не удалось получить избранные объекты");
     }
   }
 
-  /**
-   * Удаляет объект недвижимости из избранного пользователя.
-   * @param userId ID пользователя
-   * @param propertyId ID объекта недвижимости
-   * @returns Промис, который разрешается после удаления
-   */
-  async removePropertyFromFavorites(userId: number, propertyId: number): Promise<void> {
-    logger.info(`Removing property ${propertyId} from favorites for user ${userId}`);
+  async addPropertyToFavorites(userId: string, propertyId: string): Promise<void> {
+    await this.userRepository
+      .createQueryBuilder()
+      .update(User)
+      .set({
+        favoritePropertyIds: () => "favorite_property_ids || ARRAY[:propertyId",
+      })
+      .where("cognito_id = :userId", { userId })
+      .setParameters({ propertyId })
+      .execute();
 
-    const user = await this.dbProvider.getRepository(Users).findOne({
-      where: { id: userId },
-      relations: ["favoriteProperties"],
-    });
+  }
+  async removePropertyFromFavorites(userId: string, propertyId: string): Promise<void> {
+    await this.userRepository
+      .createQueryBuilder()
+      .update(User)
+      .set({
+        favoritePropertyIds: () => "array_remove(favorite_property_ids, :propertyId)",
+      })
+      .where("cognito_id = :userId", { userId })
+      .setParameters({ propertyId })
+      .execute();
+  }
 
-    if (!user) {
-      throw new Error("User not found");
+  async findPropertiesByManagerId(managerId: string): Promise<Property[]> {
+    try {
+      return this.repository.find({
+        where: { manager: { cognitoId: managerId } },
+        relations: ["applications", "leases"],
+        order: { postedDate: "DESC" },
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      this.logger.error(`Ошибка поиска объектов: ${message}`);
+      throw new Error("Ошибка получения объектов");
     }
-
-    user.favoriteProperties = user.favoriteProperties.filter((p) => {
-      return p.id !== propertyId;
-    });
-    await this.dbProvider.getRepository(Users).save(user);
-  }
-  /**
-   * Обновляет существующий объект недвижимости в базе данных.
-   *
-   * @param id Идентификатор объекта недвижимости, которого нужно обновить.
-   * @param propertyData Объект с обновленными данными для объекта недвижимости.
-   * @returns Промис, который разрешается после обновления.
-   */
-  async updateProperty(id: number, propertyData: Partial<Property>): Promise<void> {
-    logger.info(`Updating property with ID ${id}: ${JSON.stringify(propertyData)}`);
-    await this.propertyRepository().update({ id }, propertyData);
-  }
-
-  /**
-   * Удаляет объект недвижимости из базы данных.
-   *
-   * @param id Идентификатор объекта недвижимости, которого нужно удалить.
-   * @returns Промис, который разрешается после удаления.
-   */
-  async deleteProperty(id: number): Promise<void> {
-    logger.info(`Deleting property with ID ${id}`);
-    await this.propertyRepository().delete({ id });
   }
 }

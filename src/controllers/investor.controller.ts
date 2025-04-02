@@ -1,20 +1,24 @@
+import { createClassLogger } from "@/src/config/logger";
 import { PropertyDTO } from "@/src/controllers/contract";
-import { LeaseRepository, PropertyRepository, UsersRepository } from "@/src/db/repository";
+import { UserRole } from "@/src/db/contract/enum/user-roles.enum";
+import { LeaseRepository, PropertyRepository, UserRepository } from "@/src/db/repository";
 import { Request, Response } from "express";
 
 /**
  * Контроллер для работы с инвесторами.
  */
 export class InvestorController {
-  private readonly usersRepository: UsersRepository;
+  private readonly usersRepository: UserRepository;
   private readonly propertyRepository: PropertyRepository;
   private readonly leaseRepository: LeaseRepository;
-
+  private readonly logger;
   constructor(
-    usersRepository: UsersRepository,
+    usersRepository: UserRepository,
     propertyRepository: PropertyRepository,
     leaseRepository: LeaseRepository,
   ) {
+    this.logger = createClassLogger(this.constructor.name);
+
     this.usersRepository = usersRepository;
     this.propertyRepository = propertyRepository;
     this.leaseRepository = leaseRepository;
@@ -27,19 +31,29 @@ export class InvestorController {
    * @param res Ответ.
    * @returns Промис, который разрешается после обработки запроса.
    */
-  async getInvestor(req: Request, res: Response): Promise<void> {
+  getInvestor = async (req: Request, res: Response): Promise<void> => {
     try {
       const { cognitoId } = req.params;
+      console.log(`Fetching investor with cognitoId: ${cognitoId}`);
+
       const investor = await this.usersRepository.findUserByCognitoId(cognitoId);
-      if (investor) {
-        res.json(investor);
-      } else {
-        res.status(404).json({ message: "Tenant not found" });
+
+      if (!investor) {
+        console.warn(`Investor not found: ${cognitoId}`);
+        res.status(404).json({ message: "Investor not found" });
+        return;
       }
+
+      console.log(`Found investor: ${investor.email}`);
+      res.json(investor);
     } catch (error: any) {
-      res.status(500).json({ message: `Error retrieving investor: ${error.message}` });
+      console.error(`Error fetching investor ${req.params.cognitoId}:`, error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      });
     }
-  }
+  };
 
   /**
    * Создаёт нового инвестора в базе данных.
@@ -57,7 +71,7 @@ export class InvestorController {
         name,
         email,
         phoneNumber,
-        role: "investor",
+        role: UserRole.INVESTOR,
       });
 
       res.status(201).json(investor);
@@ -83,7 +97,7 @@ export class InvestorController {
         return;
       }
 
-      await this.usersRepository.updateUser(Number(id), {
+      await this.usersRepository.updateUser(id, {
         name,
         email,
         phoneNumber,
@@ -171,7 +185,7 @@ export class InvestorController {
         return;
       }
 
-      await this.propertyRepository.addPropertyToFavorites(investorId, Number(propertyId));
+      await this.propertyRepository.addPropertyToFavorites(investorId, propertyId);
 
       res.status(200).json({ message: "Property added to favorites successfully" });
     } catch (error: any) {
@@ -201,7 +215,7 @@ export class InvestorController {
         return;
       }
 
-      await this.propertyRepository.removePropertyFromFavorites(investorId, Number(propertyId));
+      await this.propertyRepository.removePropertyFromFavorites(investorId, propertyId);
 
       res.status(200).json({ message: "Property removed from favorites successfully" });
     } catch (error: any) {

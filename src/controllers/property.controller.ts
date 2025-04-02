@@ -1,3 +1,4 @@
+import { createClassLogger } from "@/src/config/logger";
 import { PropertyDTO } from "@/src/controllers/contract/dto/property.dto";
 import { Property } from "@/src/db/entities";
 import { LeaseRepository, PropertyRepository } from "@/src/db/repository";
@@ -12,12 +13,14 @@ import { Request, Response } from "express";
 export class PropertyController {
   private readonly propertyRepository: PropertyRepository;
   private readonly leaseRepository: LeaseRepository;
+  private readonly logger;
 
   /**
    * Конструктор для инициализации контроллера.
    * @param propertyRepository Репозиторий для работы с недвижимостью
    */
   constructor(propertyRepository: PropertyRepository) {
+    this.logger = createClassLogger(this.constructor.name);
     this.propertyRepository = propertyRepository;
   }
   /**
@@ -150,13 +153,9 @@ export class PropertyController {
   async getProperty(req: Request<{ id: string }>, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const propertyId = Number(id);
 
-      if (isNaN(propertyId)) {
-        res.status(400).json({ message: "Invalid property ID" });
-        return;
-      }
-      const property = await this.propertyRepository.findPropertyById(propertyId);
+      const property = await this.propertyRepository.findPropertyById(id);
+
       if (property) {
         const propertyDto = PropertyDTO.fromEntity(property);
         res.json(propertyDto);
@@ -193,16 +192,9 @@ export class PropertyController {
   async updateProperty(req: Request<{ id: string }, unknown, Partial<Property>>, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const propertyId = Number(id);
-
-      if (isNaN(propertyId)) {
-        res.status(400).json({ message: "Invalid property ID" });
-        return;
-      }
-
       const updateData = req.body;
 
-      await this.propertyRepository.updateProperty(propertyId, updateData);
+      await this.propertyRepository.updateProperty(id, updateData);
       res.status(200).json({ message: "Property updated successfully" });
     } catch (error: any) {
       res.status(500).json({
@@ -219,14 +211,8 @@ export class PropertyController {
   async deleteProperty(req: Request<{ id: string }>, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const propertyId = Number(id);
 
-      if (isNaN(propertyId)) {
-        res.status(400).json({ message: "Invalid property ID" });
-        return;
-      }
-
-      await this.propertyRepository.deleteProperty(propertyId);
+      await this.propertyRepository.deleteProperty(id);
       res.status(200).json({ message: "Property deleted successfully" });
     } catch (error: any) {
       res.status(500).json({

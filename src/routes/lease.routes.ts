@@ -1,25 +1,24 @@
 import { LeaseController } from "@/src/controllers";
-import { DatabasePostgresProvider } from "@/src/db/database.postgres.provider";
 import { LeaseRepository } from "@/src/db/repository";
 import { Router } from "express";
 import { authMiddleware } from "../middleware/authMiddleware";
 
-const router = Router();
-const dbProvider = new DatabasePostgresProvider();
-const leaseRepo = new LeaseRepository(dbProvider);
-const leaseController = new LeaseController(leaseRepo);
+const createLeaseRoutes = async () => {
+  const leaseRepo = new LeaseRepository();
+  await leaseRepo.initializeRepository();
 
-/** Получить список договоров аренды */
-router.get("/", authMiddleware(["manager", "tenant"]), leaseController.getLeases.bind(leaseController));
+  const leaseController = new LeaseController(leaseRepo);
+  const router = Router();
 
-/** Получить конкретный договор аренды по ID */
-router.get("/:id", authMiddleware(["manager", "tenant"]), leaseController.getLease.bind(leaseController));
+  router.get("/", authMiddleware(["manager", "tenant"]), leaseController.getLeases.bind(leaseController));
+  router.get("/:id", authMiddleware(["manager", "tenant"]), leaseController.getLease.bind(leaseController));
+  router.get(
+    "/:id/payments",
+    authMiddleware(["manager", "tenant"]),
+    leaseController.getLeasePayments.bind(leaseController),
+  );
 
-/** Получить платежи по конкретному договору аренды */
-router.get(
-  "/:id/payments",
-  authMiddleware(["manager", "tenant"]),
-  leaseController.getLeasePayments.bind(leaseController),
-);
+  return router;
+};
 
-export default router;
+export default createLeaseRoutes;

@@ -1,32 +1,37 @@
 import { InvestorController } from "@/src/controllers/investor.controller";
-import { DatabasePostgresProvider } from "@/src/db/database.postgres.provider";
-import { LeaseRepository, PropertyRepository, UsersRepository } from "@/src/db/repository";
+import { LeaseRepository, PropertyRepository, UserRepository } from "@/src/db/repository";
 import { authMiddleware } from "@/src/middleware/authMiddleware";
 import { Router } from "express";
 
-const router = Router();
-const dbProvider = new DatabasePostgresProvider();
-const usersRepository = new UsersRepository(dbProvider);
-const propertyRepository = new PropertyRepository(dbProvider);
-const leaseRepository = new LeaseRepository(dbProvider);
-const investorController = new InvestorController(usersRepository, propertyRepository, leaseRepository);
+const createInvestorRoutes = async () => {
+  const usersRepository = new UserRepository();
+  const propertyRepository = new PropertyRepository();
+  const leaseRepository = new LeaseRepository();
 
-/** Получить данные инвестора по его Cognito ID */
-router.get("/:cognitoId", investorController.getInvestor);
+  await Promise.all([
+    usersRepository.initializeRepository(),
+    propertyRepository.initRepositories(),
+    leaseRepository.initializeRepository(),
+  ]);
 
-/** Обновить данные инвестора */
-router.put("/:cognitoId", investorController.updateInvestor);
+  const investorController = new InvestorController(usersRepository, propertyRepository, leaseRepository);
+  const router = Router();
 
-/** Создать нового инвестора */
-router.post("/", investorController.createInvestor);
+  router.get("/:cognitoId", investorController.getInvestor.bind(investorController));
+  router.put("/:cognitoId", investorController.updateInvestor.bind(investorController));
+  router.post("/", investorController.createInvestor.bind(investorController));
+  router.get(
+    "/properties",
+    authMiddleware(["investor"]),
+    investorController.getInvestorProperties.bind(investorController),
+  );
+  router.post("/:cognitoId/favourites/:propertyId", investorController.addPropertyToFavorites.bind(investorController));
+  router.delete(
+    "/:cognitoId/favourites/:propertyId",
+    investorController.removePropertyFromFavorites.bind(investorController),
+  );
 
-/** Получить объекты недвижимости, связанные с текущим инвестором */
-router.get("/properties", authMiddleware(["investor"]), investorController.getInvestorProperties);
+  return router;
+};
 
-/** Добавить объект недвижимости в избранное инвестора */
-router.post("/:cognitoId/favourites/:propertyId", investorController.addPropertyToFavorites);
-
-/** Удалить объект недвижимости из избранного инвестора */
-router.delete("/:cognitoId/favourites/:propertyId", investorController.removePropertyFromFavorites);
-
-export default router;
+export default createInvestorRoutes;

@@ -1,16 +1,20 @@
-import winston from "winston";
+import { createLogger, format, transports } from "winston";
 
-const logger = winston.createLogger({
-  level: "info",
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.printf((info) => {return `${info.timestamp} ${info.level}: ${info.message}`;}),
-  ),
-  transports: [
-    new winston.transports.Console(),
-    new winston.transports.File({ filename: "logs/error.log", level: "error" }),
-    new winston.transports.File({ filename: "logs/all.log" }),
-  ],
-});
-
-export default logger;
+/**
+ * Фабрика для создания логгера с указанием класса.
+ * @param className Имя класса, откуда вызывается логгер.
+ * @returns Логгер с предустановленным классом.
+ */
+export const createClassLogger = (className: string) => {
+  return createLogger({
+    level: process.env.NODE_ENV === "production" ? "info" : "debug",
+    format: format.combine(
+      format.timestamp(),
+      format.label({ label: className }),
+      format.printf(({ timestamp, level, message, label }) => {
+        return `${timestamp} [${label}] ${level}: ${message}`;
+      }),
+    ),
+    transports: [new transports.Console()],
+  });
+};

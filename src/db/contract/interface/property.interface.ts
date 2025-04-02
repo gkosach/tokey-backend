@@ -1,63 +1,31 @@
-import { IApplication } from "@/src/db/contract/interface/application.interface";
-import { ILease } from "@/src/db/contract/interface/lease.interface";
-import { IManager } from "@/src/db/contract/interface/manager.interface";
+import { IApplication, ILease, IManager } from "@/src/db/contract";
 
-/**
- * Интерфейс объекта недвижимости
- */
 export interface IProperty {
-  /** Уникальный идентификатор */
-  id: number;
-  /** Название объекта */
+  id: string; // Было number
   name: string;
-  /** Описание */
   description: string;
-  /** Цена аренды в месяц */
   pricePerMonth: number;
-  /** Залоговая сумма */
   securityDeposit: number;
-  /** Плата за заявку */
   applicationFee: number;
-  /** Ссылки на фотографии */
   photoUrls: string[];
-  /** Разрешены ли животные */
-  isPetsAllowed: boolean;
-  /** Включена ли парковка */
-  isParkingIncluded: boolean;
-  /** Количество спален */
-  beds: number;
-  /** Количество ванных */
-  baths: number;
-  /** Площадь (кв. футы) */
-  squareFeet: number;
-  /** Тип недвижимости */
-  propertyType: string;
-  /** Адрес */
-  address: string;
-  /** Город */
-  city: string;
-  /** Регион */
-  state: string;
-  /** Страна */
-  country: string;
-  /** Почтовый индекс */
-  postalCode: string;
-  /** Дата публикации */
-  postedDate: Date;
-  /** Средний рейтинг */
+  isPetsAllowed?: boolean; // Сделано опциональным
+  isParkingIncluded?: boolean; // Сделано опциональным
+  beds?: number; // Сделано опциональным
+  baths?: number; // Сделано опциональным
+  squareFeet?: number; // Сделано опциональным
+  propertyType?: string; // Сделано опциональным
+  address?: string; // Сделано опциональным
+  city?: string; // Сделано опциональным
+  state?: string; // Сделано опциональным
+  country?: string; // Сделано опциональным
+  postalCode?: string; // Сделано опциональным
+  postedDate?: Date; // Сделано опциональным
   averageRating?: number;
-  /** Количество отзывов */
   numberOfReviews?: number;
-  /** Геометрическая точка местоположения (PostGIS) */
   location?: any;
-  /** Широта местоположения */
-  latitude: number;
-  /** Долгота местоположения */
-  longitude: number;
-  /** Связанные договоры аренды */
+  latitude?: number;
+  longitude?: number;
   leases?: ILease[];
-  /** Ответственный менеджер */
-  manager: IManager;
-  /** Заявки на аренду */
+  manager?: IManager;
   applications?: IApplication[];
 }

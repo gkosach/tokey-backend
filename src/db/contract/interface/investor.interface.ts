@@ -1,3 +1,4 @@
+import { IProperty } from "@/src/db/contract";
 import type { ILease } from "./lease.interface";
 
 /**
@@ -5,7 +6,7 @@ import type { ILease } from "./lease.interface";
  */
 export interface IInvestor {
   /** Уникальный идентификатор пользователя. */
-  id: number;
+  id: string; // Было number
   /** Идентификатор пользователя в Cognito. */
   cognitoId: string;
   /** Полное имя пользователя. */
@@ -17,5 +18,7 @@ export interface IInvestor {
   /** Роль пользователя (инвестор). */
   role: "investor";
   /** Список договоров аренды, связанных с инвестором. */
-  leases: ILease[];
+  leases?: ILease[]; // Сделано опциональным
+  /** Избранные объекты недвижимости */
+  favoriteProperties?: IProperty[]; // Сделано опциональным
 }

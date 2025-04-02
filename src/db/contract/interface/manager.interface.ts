@@ -1,11 +1,8 @@
 import { IProperty } from "@/src/db/contract";
 
-/**
- * Интерфейс менеджера (управляющего).
- */
 export interface IManager {
   /** Уникальный идентификатор пользователя. */
-  id: number;
+  id: string; // Было number
   /** Идентификатор пользователя в Cognito. */
   cognitoId: string;
   /** Полное имя пользователя. */
@@ -17,5 +14,5 @@ export interface IManager {
   /** Роль пользователя (менеджер). */
   role: "manager";
   /** Список объектов недвижимости, которыми управляет менеджер. */
-  managedProperties: IProperty[];
+  managedProperties?: IProperty[]; // Сделано опциональным
 }

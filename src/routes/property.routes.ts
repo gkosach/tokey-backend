@@ -1,38 +1,31 @@
 import { PropertyController } from "@/src/controllers/property.controller";
-import { DatabasePostgresProvider } from "@/src/db/database.postgres.provider";
 import { PropertyRepository } from "@/src/db/repository";
 import { authMiddleware } from "@/src/middleware/authMiddleware";
 import { Router } from "express";
 import multer from "multer";
+
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
+const createPropertyRoutes = async () => {
+  const propertyRepo = new PropertyRepository();
+  await propertyRepo.initRepositories();
 
-const router = Router();
-const dbProvider = new DatabasePostgresProvider();
-const propertyRepo = new PropertyRepository(dbProvider);
-const propertyController = new PropertyController(propertyRepo);
+  const propertyController = new PropertyController(propertyRepo);
+  const router = Router();
 
-/** Фильтрация объектов недвижимости по различным параметрам */
-router.get("/filter", propertyController.filterProperties.bind(propertyController));
+  router.get("/filter", propertyController.filterProperties.bind(propertyController));
+  router.get("/user/:cognitoId", propertyController.getProperties.bind(propertyController));
+  router.get("/:id", propertyController.getProperty.bind(propertyController));
+  router.post(
+    "/",
+    authMiddleware(["manager"]),
+    upload.array("photos"),
+    propertyController.createProperty.bind(propertyController),
+  );
+  router.put("/:id", authMiddleware(["manager"]), propertyController.updateProperty.bind(propertyController));
+  router.delete("/:id", authMiddleware(["manager"]), propertyController.deleteProperty.bind(propertyController));
 
-/** Получить объекты недвижимости, связанные с пользователем */
-router.get("/user/:cognitoId", propertyController.getProperties.bind(propertyController));
+  return router;
+};
 
-/** Получить детальную информацию об объекте недвижимости по ID */
-router.get("/:id", propertyController.getProperty.bind(propertyController));
-
-/** Создать новый объект недвижимости с возможностью загрузки фотографий */
-router.post(
-  "/",
-  authMiddleware(["manager"]),
-  upload.array("photos"),
-  propertyController.createProperty.bind(propertyController),
-);
-
-/** Обновить существующий объект недвижимости */
-router.put("/:id", authMiddleware(["manager"]), propertyController.updateProperty.bind(propertyController));
-
-/** Удалить объект недвижимости */
-router.delete("/:id", authMiddleware(["manager"]), propertyController.deleteProperty.bind(propertyController));
-
-export default router;
+export default createPropertyRoutes;

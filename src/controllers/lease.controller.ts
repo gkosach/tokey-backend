@@ -1,3 +1,4 @@
+import { createClassLogger } from "@/src/config/logger";
 import { LeaseRepository } from "@/src/db/repository";
 import { Request, Response } from "express";
 
@@ -6,8 +7,11 @@ import { Request, Response } from "express";
  */
 export class LeaseController {
   private readonly leaseRepository: LeaseRepository;
+  private readonly logger;
 
   constructor(leaseRepository: LeaseRepository) {
+    this.logger = createClassLogger(this.constructor.name);
+
     this.leaseRepository = leaseRepository;
   }
 
@@ -31,7 +35,7 @@ export class LeaseController {
   async getLease(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const lease = await this.leaseRepository.findLeaseById(Number(id));
+      const lease = await this.leaseRepository.findLeaseById(id);
 
       if (lease) {
         res.json(lease);
@@ -44,10 +48,10 @@ export class LeaseController {
       });
     }
   }
+
   /**
    * Получает список всех договоров аренды
    */
-
   async getLeases(req: Request, res: Response): Promise<void> {
     try {
       const user = req.user as { id: string; role: string } | undefined;
@@ -59,9 +63,9 @@ export class LeaseController {
       let leases;
 
       if (role === "manager") {
-        leases = await this.leaseRepository.findLeasesByManagerId(Number(id));
+        leases = await this.leaseRepository.findLeasesByManagerId(id);
       } else if (role === "tenant") {
-        leases = await this.leaseRepository.findLeasesByTenantId(Number(id));
+        leases = await this.leaseRepository.findLeasesByTenantId(id);
       } else {
         leases = await this.leaseRepository.findAllLeases();
       }
@@ -80,7 +84,7 @@ export class LeaseController {
   async getLeasePayments(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const payments = await this.leaseRepository.findPaymentsByLeaseId(Number(id));
+      const payments = await this.leaseRepository.findPaymentsByLeaseId(id);
 
       if (payments.length > 0) {
         res.json(payments);
@@ -107,7 +111,7 @@ export class LeaseController {
         return;
       }
 
-      await this.leaseRepository.updateLease(Number(id), updateData);
+      await this.leaseRepository.updateLease(id, updateData);
       res.status(200).json({ message: "Lease updated successfully" });
     } catch (error: any) {
       res.status(500).json({
@@ -128,7 +132,7 @@ export class LeaseController {
         return;
       }
 
-      await this.leaseRepository.deleteLease(Number(id));
+      await this.leaseRepository.deleteLease(id);
       res.status(200).json({ message: "Lease deleted successfully" });
     } catch (error: any) {
       res.status(500).json({

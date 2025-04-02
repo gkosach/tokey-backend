@@ -1,25 +1,28 @@
 import { ManagerController } from "@/src/controllers/manager.controller";
 import { DatabasePostgresProvider } from "@/src/db/database.postgres.provider";
-import { PropertyRepository, UsersRepository } from "@/src/db/repository";
+import { PropertyRepository, UserRepository } from "@/src/db/repository";
 import { authMiddleware } from "@/src/middleware/authMiddleware";
 import { Router } from "express";
 
-const router = Router();
-const dbProvider = new DatabasePostgresProvider();
-const usersRepository = new UsersRepository(dbProvider);
-const propertyRepository = new PropertyRepository(dbProvider);
-const managerController = new ManagerController(usersRepository, propertyRepository);
+const createManagerRoutes = async () => {
+  const usersRepository = new UserRepository();
+  const propertyRepository = new PropertyRepository();
 
-/** Получить данные менеджера по его Cognito ID */
-router.get("/:cognitoId", managerController.getManager);
+  await Promise.all([usersRepository.initializeRepository(), propertyRepository.initRepositories()]);
 
-/** Обновить данные менеджера */
-router.put("/:cognitoId", managerController.updateManager);
+  const managerController = new ManagerController(usersRepository, propertyRepository);
+  const router = Router();
 
-/** Создать нового менеджера */
-router.post("/", managerController.createmanager);
+  router.get("/:cognitoId", managerController.getManager.bind(managerController));
+  router.put("/:cognitoId", managerController.updateManager.bind(managerController));
+  router.post("/", managerController.createmanager.bind(managerController));
+  router.get(
+    "/properties",
+    authMiddleware(["manager"]),
+    managerController.getManagerProperties.bind(managerController),
+  );
 
-/** Получить объекты недвижимости, управляемые текущим менеджером */
-router.get("/properties", authMiddleware(["manager"]), managerController.getManagerProperties);
+  return router;
+};
 
-export default router;
+export default createManagerRoutes;

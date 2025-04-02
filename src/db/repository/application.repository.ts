@@ -1,98 +1,115 @@
-import logger from "@/src/config/logger";
-import { Repository } from "typeorm";
+import { createClassLogger } from "@/src/config/logger";
+import { DeepPartial, Repository } from "typeorm";
 import { DatabasePostgresProvider } from "../database.postgres.provider";
 import { Application } from "../entities";
 
+/**
+ * Репозиторий для работы с сущностью "Заявка".
+ */
 export class ApplicationRepository {
-  private readonly dbProvider: DatabasePostgresProvider;
+  private readonly logger = createClassLogger(ApplicationRepository.name);
+  private repository: Repository<Application>;
 
-  constructor(dbProvider: DatabasePostgresProvider) {
-    this.dbProvider = dbProvider;
+  constructor() {
+    this.initializeRepository();
   }
 
-  private applicationRepository(): Repository<Application> {
-    return this.dbProvider.getRepository(Application);
+  async initializeRepository() {
+    this.repository = await DatabasePostgresProvider.getRepository(Application);
   }
-
   /**
-   * Находит заявку по ее идентификатору.
-   *
+   * Находит заявку по её идентификатору.
    * @param id Идентификатор заявки.
-   * @returns Промис, который разрешается с найденной заявкой или null, если не найдена.
+   * @returns Промис, который разрешается найденной заявкой или null, если не найдена.
    */
-  async findApplicationById(id: number): Promise<Application | null> {
-    logger.info(`ApplicationRepository: Finding application by ID ${id}`);
-    return await this.applicationRepository().findOne({ where: { id } });
+  async findApplicationById(id: string): Promise<Application | null> {
+    return this.repository.findOne({
+      where: { id },
+      relations: {
+        property: { manager: true },
+        applicant: true,
+      },
+    });
   }
 
   /**
    * Создаёт новую заявку в базе данных.
-   *
-   * @param applicationData Объект с данными для создания заявки.
-   * @returns Промис, который разрешается с созданной заявкой.
+   * @param applicationData Данные для создания заявки.
+   * @returns Промис с созданной заявкой.
    */
-  async createApplication(applicationData: Partial<Application>): Promise<Application> {
-    logger.info(`Creating application: ${JSON.stringify(applicationData)}`);
-    return await this.applicationRepository().save(applicationData);
+  async createApplication(applicationData: DeepPartial<Application>): Promise<Application> {
+    this.logger.info(`Создаём заявку: ${JSON.stringify(applicationData)}`);
+    return this.repository.save(applicationData);
   }
 
   /**
    * Удаляет заявку из базы данных.
-   *
-   * @param id Идентификатор заявки, которую нужно удалить.
-   * @returns Промис, который разрешается после удаления.
+   * @param id Идентификатор заявки для удаления.
+   * @returns Промис, который разрешается true, если заявка удалена, или false, если не найдена.
    */
-  async deleteApplication(id: number): Promise<void> {
-    logger.info(`Deleting application with ID ${id}`);
-    await this.applicationRepository().delete({ id });
+  async deleteApplication(id: string): Promise<boolean> {
+    const result = await this.repository.delete(id);
+    return (result.affected ?? 0) > 0;
   }
 
   /**
    * Находит все заявки, связанные с менеджером.
-   * @param managerId ID менеджера
-   * @returns Промис с массивом заявок
+   * @param managerId Идентификатор менеджера.
+   * @returns Промис с массивом заявок.
    */
-  async findApplicationsByManagerId(managerId: number): Promise<Application[]> {
-    logger.info(`Finding applications by manager ID: ${managerId}`);
-    return this.applicationRepository().find({
-      where: { property: { manager: { id: managerId } } },
-      relations: ["property", "applicant"],
+  async findApplicationsByManagerId(managerId: string): Promise<Application[]> {
+    return this.repository.find({
+      where: { property: { manager: { cognitoId: managerId } } }, // Используем cognitoId
+      relations: {
+        property: { manager: true },
+        applicant: true,
+      },
+      order: { applicationDate: "DESC" },
     });
   }
 
   /**
    * Находит все заявки, поданные конкретным арендатором.
-   * @param tenantId ID арендатора
-   * @returns Промис с массивом заявок
+   * @param tenantId Идентификатор арендатора.
+   * @returns Промис с массивом заявок.
    */
-  async findApplicationsByTenantId(tenantId: number): Promise<Application[]> {
-    logger.info(`Finding applications by tenant ID: ${tenantId}`);
-    return this.applicationRepository().find({
-      where: { applicant: { id: tenantId } },
-      relations: ["property"],
+  async findApplicationsByTenantId(tenantId: string): Promise<Application[]> {
+    return this.repository.find({
+      where: { applicant: { cognitoId: tenantId } }, // Используем cognitoId
+      relations: {
+        property: { manager: true },
+      },
+      order: { applicationDate: "DESC" },
     });
   }
 
   /**
    * Находит все заявки в системе.
-   * @returns Промис с массивом всех заявок
+   * @returns Промис с массивом всех заявок.
    */
   async findAllApplications(): Promise<Application[]> {
-    logger.info("Finding all applications");
-    return this.applicationRepository().find({
-      relations: ["property", "applicant"],
+    this.logger.info("Ищем все заявки");
+    return this.repository.find({
+      relations: {
+        property: { manager: true },
+        applicant: true,
+      },
+      order: { applicationDate: "DESC" },
     });
   }
 
   /**
-   * Обновляет заявку в базе данных.
-   *
-   * @param id Идентификатор заявки, которую нужно обновить.
-   * @param applicationData Объект с обновленными данными для заявки.
-   * @returns Промис, который разрешается после обновления.
+   * Обновляет данные существующей заявки.
+   * @param id Идентификатор заявки для обновления.
+   * @param applicationData Новые данные для обновления заявки.
+   * @returns Промис с обновлённой заявкой или null, если заявка не найдена.
    */
-  async updateApplication(id: number, applicationData: Partial<Application>): Promise<void> {
-    logger.info(`Updating application with ID ${id}: ${JSON.stringify(applicationData)}`);
-    await this.applicationRepository().update({ id }, applicationData);
+  async updateApplication(
+    id: string,
+    applicationData: DeepPartial<Application>,
+  ): Promise<Application | null> {
+    const result = await this.repository.update(id, applicationData);
+    if (result.affected === 0) return null;
+    return this.findApplicationById(id);
   }
 }

@@ -1,11 +1,8 @@
 import { IApplication, IInvestor, IManager, IPayment, IProperty } from "@/src/db/contract";
 
-/**
- * Интерфейс договора аренды
- */
 export interface ILease {
   /** Уникальный идентификатор */
-  id: number;
+  id: string; // Было number
   /** Дата начала аренды */
   startDate: Date;
   /** Дата окончания аренды */
@@ -21,7 +18,7 @@ export interface ILease {
   /** Ответственный менеджер */
   manager: IManager;
   /** Исходная заявка */
-  application: IApplication;
+  application?: IApplication; // Сделано опциональным
   /** Платежи по договору */
-  payments?: IPayment[];
+  payments?: IPayment[]; // Сделано опциональным
 }
