@@ -1,4 +1,3 @@
-import { ILease } from "@/src/db/contract";
 import { PaymentStatus } from "@/src/db/contract/enum/payment-status.enum";
 
 /**

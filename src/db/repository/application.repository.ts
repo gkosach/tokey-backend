@@ -104,10 +104,7 @@ export class ApplicationRepository {
    * @param applicationData Новые данные для обновления заявки.
    * @returns Промис с обновлённой заявкой или null, если заявка не найдена.
    */
-  async updateApplication(
-    id: string,
-    applicationData: DeepPartial<Application>,
-  ): Promise<Application | null> {
+  async updateApplication(id: string, applicationData: DeepPartial<Application>): Promise<Application | null> {
     const result = await this.repository.update(id, applicationData);
     if (result.affected === 0) return null;
     return this.findApplicationById(id);

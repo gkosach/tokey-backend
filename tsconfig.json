@@ -14,11 +14,11 @@
     "allowSyntheticDefaultImports": true,
     "target": "ES2017",
     "sourceMap": true,
-    "outDir": "./dist/out-tsc",
-    "baseUrl": "./",
     "incremental": true,
     "types": ["node"],
     "lib": ["ES2020", "DOM"],
+    "outDir": "./dist",
+    "baseUrl": "./",
     "paths": {
       "@test/*": ["test/*"],
       "@test": ["test"],

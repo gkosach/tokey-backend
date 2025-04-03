@@ -15,22 +15,22 @@ export class Lease {
   @ManyToOne(() => User, (user) => user.leases)
   investor: User;
 
-  @Column({ name: "start_date" })
+  @Column({ name: "start_date", type: "timestamp" })
   startDate: Date;
 
-  @Column({ name: "end_date" })
+  @Column({ name: "end_date", type: "timestamp" })
   endDate: Date;
 
-  @Column()
+  @Column("float")
   rent: number;
 
-  @Column()
+  @Column("float")
   deposit: number;
 
-  @ManyToOne(() => Property)
+  @ManyToOne(() => Property, (property) => property.leases)
   property: Property;
 
-  @ManyToOne(() => Application)
+  @ManyToOne(() => Application, (application) => application.property)
   application: Application;
 
   @OneToMany(() => Payment, (payment) => payment.lease)

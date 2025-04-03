@@ -1,5 +1,4 @@
 import { ManagerController } from "@/src/controllers/manager.controller";
-import { DatabasePostgresProvider } from "@/src/db/database.postgres.provider";
 import { PropertyRepository, UserRepository } from "@/src/db/repository";
 import { authMiddleware } from "@/src/middleware/authMiddleware";
 import { Router } from "express";

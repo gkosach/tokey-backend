@@ -83,13 +83,34 @@ export class Property {
   numberOfReviews: number;
 
   // Менеджер свойства (без промежуточной таблицы)
-  @ManyToOne(() => User, (user) => user.managedProperties)
+  @ManyToOne(
+    () => {
+      return User;
+    },
+    (user) => {
+      return user.managedProperties;
+    },
+  )
   @JoinColumn({ name: "manager_id" })
   manager: User;
 
-  @OneToMany(() => Lease, (lease) => lease.property)
+  @OneToMany(
+    () => {
+      return Lease;
+    },
+    (lease) => {
+      return lease.property;
+    },
+  )
   leases: Lease[];
 
-  @OneToMany(() => Application, (application) => application.property)
+  @OneToMany(
+    () => {
+      return Application;
+    },
+    (application) => {
+      return application.property;
+    },
+  )
   applications: Application[];
 }

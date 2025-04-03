@@ -1,4 +1,9 @@
+// prettier-ignore
 import "reflect-metadata";
+
+import { addAliases } from "module-alias";
+import "module-alias/register";
+
 /**
  * Package imports
  */
@@ -8,6 +13,7 @@ import * as dotenv from "dotenv";
 import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
+
 /**
  * Provider imports
  */
@@ -21,6 +27,11 @@ import createPropertyRoutes from "@/src/routes/property.routes";
 /**
  * Route imports
  */
+
+addAliases({
+  "@src": __dirname + "/src",
+  "@db": __dirname + "/src/db",
+});
 
 /**
  * Configuration

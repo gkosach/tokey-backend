@@ -22,12 +22,26 @@ export class Application {
   message: string;
 
   // Свойство заявки
-  @ManyToOne(() => Property, (property) => property.applications)
+  @ManyToOne(
+    () => {
+      return Property;
+    },
+    (property) => {
+      return property.applications;
+    },
+  )
   @JoinColumn({ name: "property_id" })
   property: Property;
 
   // Заявитель
-  @ManyToOne(() => User, (user) => user.applications)
+  @ManyToOne(
+    () => {
+      return User;
+    },
+    (user) => {
+      return user.applications;
+    },
+  )
   @JoinColumn({ name: "applicant_id" })
   applicant: User;
 }

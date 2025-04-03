@@ -16,12 +16,12 @@ export class Payment {
   dueDate: Date;
 
   @Column("timestamp", { name: "payment_date", nullable: true })
-  paymentDate: Date;
+  paymentDate?: Date;
 
   @Column("text", { name: "payment_status" })
   paymentStatus: string;
 
-  @ManyToOne(() => Lease, (lease) => lease.payments)
+  @ManyToOne(() => Lease, (lease) => lease.payments, { onDelete: "CASCADE" })
   @JoinColumn({ name: "lease_id" })
   lease: Lease;
 }

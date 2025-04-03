@@ -1,4 +1,7 @@
-FROM ubuntu:latest
-LABEL authors="drdev"
+FROM node:20-alpine
 
-ENTRYPOINT ["top", "-b"]
+RUN apk update && \
+	apk upgrade && \
+	apk add --no-cache bash git openssh make cmake g++ python3;
+
+WORKDIR /app

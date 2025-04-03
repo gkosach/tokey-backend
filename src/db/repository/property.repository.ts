@@ -195,19 +195,22 @@ export class PropertyRepository {
       .createQueryBuilder()
       .update(User)
       .set({
-        favoritePropertyIds: () => "favorite_property_ids || ARRAY[:propertyId",
+        favoritePropertyIds: () => {
+          return "favorite_property_ids || ARRAY[:propertyId";
+        },
       })
       .where("cognito_id = :userId", { userId })
       .setParameters({ propertyId })
       .execute();
-
   }
   async removePropertyFromFavorites(userId: string, propertyId: string): Promise<void> {
     await this.userRepository
       .createQueryBuilder()
       .update(User)
       .set({
-        favoritePropertyIds: () => "array_remove(favorite_property_ids, :propertyId)",
+        favoritePropertyIds: () => {
+          return "array_remove(favorite_property_ids, :propertyId)";
+        },
       })
       .where("cognito_id = :userId", { userId })
       .setParameters({ propertyId })

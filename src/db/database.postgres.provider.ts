@@ -46,7 +46,9 @@ export class DatabasePostgresProvider {
         this.isInitialized = true;
         console.log(
           "Loaded entities:",
-          instance.entityMetadatas.map((e) => e.name),
+          instance.entityMetadatas.map((e) => {
+            return e.name;
+          }),
         );
       } catch (error) {
         console.error("Database connection error:", error);
@@ -71,11 +73,13 @@ export class DatabasePostgresProvider {
 
       console.log("\n=== Database Structure Report ===");
       console.table(
-        tables.map((t) => ({
-          Table: t.table_name,
-          Column: t.column_name,
-          Type: t.data_type,
-        })),
+        tables.map((t) => {
+          return {
+            Table: t.table_name,
+            Column: t.column_name,
+            Type: t.data_type,
+          };
+        }),
       );
 
       await queryRunner.release();
