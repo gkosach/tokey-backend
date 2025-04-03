@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   back-app:
-    container_name: sona_back_app
+    container_name: back-app
     build:
       context: .
       args:
