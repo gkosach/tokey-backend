@@ -3,7 +3,7 @@ import { Lease } from "./lease.entity";
 
 @Entity("payment")
 export class Payment {
-  @PrimaryColumn("uuid") // Заменить на UUID
+  @PrimaryColumn("uuid")
   id: string;
 
   @Column("float", { name: "amount_due" })
