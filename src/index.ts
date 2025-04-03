@@ -1,37 +1,68 @@
+import "reflect-metadata";
 /**
- * imports
+ * Package imports
  */
-import express from 'express'
-import dotenv from 'dotenv'
 import bodyParser from "body-parser";
-import cors from "cors"
-import helmet from 'helmet'
-import morgan from 'morgan'
-
-/** Configurations
+import cors from "cors";
+import * as dotenv from "dotenv";
+import express from "express";
+import helmet from "helmet";
+import morgan from "morgan";
+/**
+ * Provider imports
+ */
+import { DatabasePostgresProvider } from "@/src/db/database.postgres.provider";
+import { authMiddleware } from "@/src/middleware/authMiddleware";
+import createApplicationRoutes from "@/src/routes/application.routes";
+import createInvestorRoutes from "@/src/routes/investor.routes";
+import createLeaseRoutes from "@/src/routes/lease.routes";
+import createManagerRoutes from "@/src/routes/manager.routes";
+import createPropertyRoutes from "@/src/routes/property.routes";
+/**
+ * Route imports
  */
 
-dotenv.config();
+/**
+ * Configuration
+ */
+const envFile = process.env.NODE_ENV === "development" ? "./env/.development.env" : "./env/.production.env";
+dotenv.config({ path: envFile });
 const app = express();
-app.use(express.json());
-app.use(helmet());
-app.use(helmet.crossOriginResourcePolicy({policy: "cross-origin"}));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({extended: false}));
-app.use(cors())
-
 
 /**
- * Routes
+ * Основная функция для инициализации и запуска сервера
+ * Устанавливает соединение с базой данных, настраивает middleware и маршруты
  */
-app.get('/', (req, res) => {
-    res.send("This is home route")
-});
+async function main() {
+  try {
+    await DatabasePostgresProvider.initialize();
 
-/**
- * Server
- */
-const port = process.env.PORT || 3002
-app.listen(port, () => {
-    console.log(`Server running on: ${port}`)
-})
+    app.use(express.json());
+    app.use(helmet());
+    app.use(morgan("common"));
+    app.use(bodyParser.json());
+    app.use(cors());
+
+    // Initialize routes properly
+    const applicationRoutes = await createApplicationRoutes();
+    const propertyRoutes = await createPropertyRoutes();
+    const leaseRoutes = await createLeaseRoutes();
+    const investorRoutes = await createInvestorRoutes();
+    const managerRoutes = await createManagerRoutes();
+
+    app.use("/applications", applicationRoutes);
+    app.use("/properties", propertyRoutes);
+    app.use("/leases", leaseRoutes);
+    app.use("/investors", authMiddleware(["investor"]), investorRoutes);
+    app.use("/managers", authMiddleware(["manager"]), managerRoutes);
+
+    const port = Number(process.env.PORT) || 3002;
+    app.listen(port, "0.0.0.0", () => {
+      console.log(`Server running on port ${port}`);
+    });
+  } catch (error) {
+    console.error("Error starting server:", error);
+  }
+}
+
+main();
