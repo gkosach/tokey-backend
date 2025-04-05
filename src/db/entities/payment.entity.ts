@@ -1,7 +1,7 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from "typeorm";
+import { Column, Entity, ManyToOne, PrimaryColumn } from "typeorm";
 import { Lease } from "./lease.entity";
 
-@Entity("payment")
+@Entity("payments")
 export class Payment {
   @PrimaryColumn("uuid")
   id: string;
@@ -16,12 +16,11 @@ export class Payment {
   dueDate: Date;
 
   @Column("timestamp", { name: "payment_date", nullable: true })
-  paymentDate?: Date;
+  paymentDate: Date | null;
 
-  @Column("text", { name: "payment_status" })
+  @Column("varchar", { name: "payment_status", length: 50 })
   paymentStatus: string;
 
-  @ManyToOne(() => Lease, (lease) => lease.payments, { onDelete: "CASCADE" })
-  @JoinColumn({ name: "lease_id" })
+  @ManyToOne(() => Lease, (lease) => lease.payments)
   lease: Lease;
 }

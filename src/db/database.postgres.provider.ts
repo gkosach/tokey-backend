@@ -1,43 +1,23 @@
 import { createClassLogger } from "@/src/config/logger";
-import { Application, Lease, Payment, Property, User } from "@/src/db/entities";
-import { DataSource, EntityTarget, ObjectLiteral, Repository } from "typeorm";
-import { SnakeNamingStrategy } from "typeorm-naming-strategies";
+import { AppDataSource } from "@/src/db/contract/config/typeorm.config";
+import { EntityTarget, ObjectLiteral, Repository } from "typeorm";
 
 /**
  * Класс для работы с PostgreSQL базой данных.
  * Предоставляет методы для выполнения запросов и управления транзакциями.
  */
 export class DatabasePostgresProvider {
-  private static instance: DataSource;
   private static isInitialized = false;
   private readonly logger = createClassLogger(DatabasePostgresProvider.name);
-
-  /**
-   * Конструктор для инициализации провайдера базы данных.
-   */
-  public static getDataSource(): DataSource {
-    if (!this.instance) {
-      this.instance = new DataSource({
-        type: "postgres",
-        url: process.env.DATABASE_URL,
-        entities: [User, Application, Lease, Payment, Property],
-        namingStrategy: new SnakeNamingStrategy(),
-        synchronize: false,
-        logging: ["query", "error"],
-      });
-    }
-    return this.instance;
-  }
 
   /**
    * Инициализирует подключение к базе данных.
    * @returns Промис, который разрешается после успешной инициализации.
    */
   public static async initialize(options = { inspectStructure: false }): Promise<void> {
-    if (!this.isInitialized) {
+    if (!this.isInitialized && !AppDataSource.isInitialized) {
       try {
-        const instance = this.getDataSource();
-        await instance.initialize();
+        await AppDataSource.initialize();
 
         if (options.inspectStructure) {
           await this.inspectDatabaseStructure();
@@ -46,7 +26,7 @@ export class DatabasePostgresProvider {
         this.isInitialized = true;
         console.log(
           "Loaded entities:",
-          instance.entityMetadatas.map((e) => {
+          AppDataSource.entityMetadatas.map((e) => {
             return e.name;
           }),
         );
@@ -62,8 +42,7 @@ export class DatabasePostgresProvider {
    */
   public static async inspectDatabaseStructure(): Promise<void> {
     try {
-      const instance = this.getDataSource();
-      const queryRunner = instance.createQueryRunner();
+      const queryRunner = AppDataSource.createQueryRunner();
 
       const tables = await queryRunner.query(`
         SELECT table_name, column_name, data_type 
@@ -97,6 +76,6 @@ export class DatabasePostgresProvider {
     if (!this.isInitialized) {
       await this.initialize();
     }
-    return this.instance.getRepository(entity);
+    return AppDataSource.getRepository(entity);
   }
 }

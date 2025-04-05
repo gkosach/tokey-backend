@@ -1,14 +1,15 @@
 import { Application } from "@/src/db/entities/application.entity";
 import { Lease } from "@/src/db/entities/lease.entity";
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryColumn } from "typeorm";
+import { UserFavorites } from "@/src/db/entities/user-favourites.entity";
+import { Column, Entity, ManyToOne, OneToMany, PrimaryColumn } from "typeorm";
 import { User } from "./user.entity";
 
-@Entity("property")
+@Entity("properties")
 export class Property {
   @PrimaryColumn("uuid")
   id: string;
 
-  @Column("text")
+  @Column("varchar", { length: 255 })
   name: string;
 
   @Column("text")
@@ -59,14 +60,11 @@ export class Property {
   @Column("text", { name: "postal_code" })
   postalCode: string;
 
-  @Column("float")
+  @Column("numeric", { precision: 10, scale: 6 })
   latitude: number;
 
-  @Column("float")
+  @Column("numeric", { precision: 10, scale: 6 })
   longitude: number;
-
-  @Column("geometry", { spatialFeatureType: "Point", srid: 4326 })
-  location: string;
 
   @Column("timestamp", {
     name: "posted_date",
@@ -82,35 +80,15 @@ export class Property {
   @Column("int", { name: "number_of_reviews", default: 0 })
   numberOfReviews: number;
 
-  // Менеджер свойства (без промежуточной таблицы)
-  @ManyToOne(
-    () => {
-      return User;
-    },
-    (user) => {
-      return user.managedProperties;
-    },
-  )
-  @JoinColumn({ name: "manager_id" })
+  @ManyToOne(() => User, (user) => user.managedProperties)
   manager: User;
 
-  @OneToMany(
-    () => {
-      return Lease;
-    },
-    (lease) => {
-      return lease.property;
-    },
-  )
+  @OneToMany(() => Lease, (lease) => lease.property)
   leases: Lease[];
 
-  @OneToMany(
-    () => {
-      return Application;
-    },
-    (application) => {
-      return application.property;
-    },
-  )
+  @OneToMany(() => Application, (app) => app.property)
   applications: Application[];
+
+  @OneToMany(() => UserFavorites, (favorite) => favorite.property)
+  favoritedBy: UserFavorites[];
 }

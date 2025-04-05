@@ -9,8 +9,8 @@ services:
         - NODE_ENV=production
     environment:
       - NODE_ENV=production
-    env_file: .production.env
-    command: sh -c "npm run build && npm run start:prod"
+    env_file: ./env.production.env
+    command: sh -c "npm run build && npm run start"
     networks:
       - site
     restart: unless-stopped

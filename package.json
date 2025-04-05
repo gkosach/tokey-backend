@@ -7,7 +7,11 @@
     "dev": "cross-env NODE_ENV=development ts-node -r tsconfig-paths/register src/index.ts",
     "start": "cross-env NODE_ENV=production npm run build && node dist/index.js",
     "format:prettier": "prettier . --write",
-    "format:eslint:fix": "eslint --fix --ext .ts,.tsx ."
+    "format:eslint:fix": "eslint --fix --ext .ts,.tsx .",
+    "typeorm": "cross-env ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js -d src/db/contract/config/typeorm.config.ts",
+    "migrate:dev": "cross-env NODE_ENV=development npm run typeorm --",
+    "migrate:prod": "cross-env NODE_ENV=production npm run typeorm --",
+    "seed:dev": "cross-env NODE_ENV=development ts-node -r tsconfig-paths/register src/db/contract/seed/seed.ts"
   },
   "repository": {
     "type": "git",
@@ -46,6 +50,7 @@
     "winston": "^3.17.0"
   },
   "devDependencies": {
+    "@faker-js/faker": "^9.6.0",
     "@nestjs/cli": "^11.0.5",
     "@types/cors": "^2.8.17",
     "@types/jsonwebtoken": "^9.0.9",

@@ -1,4 +1,3 @@
-// prettier-ignore
 import "reflect-metadata";
 
 import { addAliases } from "module-alias";
