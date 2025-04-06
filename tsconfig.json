@@ -24,7 +24,8 @@
       "@test": ["test"],
       "@/*": ["./*"],
       "@/src/*": ["./src/*"]
-    }
+    },
+    "typeRoots": ["./node_modules/@types", "./src/common/types"]
   },
   "include": ["src/**/*", "src/data/**/*.json", "prisma/**/*", "src/db/**/*"]
 }

@@ -1,2 +1,2 @@
-# .prettierignore
-src/index.ts
+## .prettierignore
+#src/index.ts

@@ -1,73 +1,75 @@
-import "reflect-metadata";
-
-import { addAliases } from "module-alias";
-import "module-alias/register";
-
-/**
- * Package imports
- */
 import bodyParser from "body-parser";
 import cors from "cors";
-import * as dotenv from "dotenv";
+import dotenv from "dotenv";
 import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
+import "reflect-metadata";
 
-/**
- * Provider imports
- */
-import { DatabasePostgresProvider } from "@/src/db/database.postgres.provider";
-import { authMiddleware } from "@/src/middleware/authMiddleware";
-import createApplicationRoutes from "@/src/routes/application.routes";
-import createInvestorRoutes from "@/src/routes/investor.routes";
-import createLeaseRoutes from "@/src/routes/lease.routes";
-import createManagerRoutes from "@/src/routes/manager.routes";
-import createPropertyRoutes from "@/src/routes/property.routes";
-/**
- * Route imports
- */
+import createApplicationRoutes from "@/src/application/application.routes";
+import { DatabasePostgresProvider } from "@/src/database/database.postgres.provider";
+import {
+  LeaseRepository,
+  PropertyRepository,
+  UserFavoritesRepository,
+  UserRepository,
+} from "@/src/database/repository";
+import createLeaseRoutes from "@/src/lease/lease.routes";
+import createPropertyRoutes from "@/src/property/property.routes";
+import { InvestorController } from "@/src/user/controllers/investor.controller";
+import { ManagerController } from "@/src/user/controllers/manager.controller";
+import { createInvestorRoutes } from "@/src/user/routes/investor.routes";
+import { createManagerRoutes } from "@/src/user/routes/manager.routes";
 
-addAliases({
-  "@src": __dirname + "/src",
-  "@db": __dirname + "/src/db",
-});
+dotenv.config();
 
-/**
- * Configuration
- */
-const envFile = process.env.NODE_ENV === "development" ? "./env/.development.env" : "./env/.production.env";
-dotenv.config({ path: envFile });
 const app = express();
 
-/**
- * Основная функция для инициализации и запуска сервера
- * Устанавливает соединение с базой данных, настраивает middleware и маршруты
- */
 async function main() {
   try {
-    await DatabasePostgresProvider.initialize();
-
+    /* CONFIGURATIONS */
     app.use(express.json());
     app.use(helmet());
     app.use(morgan("common"));
     app.use(bodyParser.json());
     app.use(cors());
 
-    // Initialize routes properly
-    const applicationRoutes = await createApplicationRoutes();
-    const propertyRoutes = await createPropertyRoutes();
-    const leaseRoutes = await createLeaseRoutes();
-    const investorRoutes = await createInvestorRoutes();
-    const managerRoutes = await createManagerRoutes();
+    /* DATABASE INITIALIZATION */
+    await DatabasePostgresProvider.initialize(); // Первая операция
 
-    app.use("/applications", applicationRoutes);
-    app.use("/properties", propertyRoutes);
-    app.use("/leases", leaseRoutes);
-    app.use("/investors", authMiddleware(["investor"]), investorRoutes);
-    app.use("/managers", authMiddleware(["manager"]), managerRoutes);
+    /* REPOSITORIES INITIALIZATION */
+    const userRepo = new UserRepository();
+    const propertyRepo = new PropertyRepository();
+    const leaseRepo = new LeaseRepository();
+    const userFavouritesRepo = new UserFavoritesRepository();
 
-    const port = Number(process.env.PORT) || 3002;
-    app.listen(port, "0.0.0.0", () => {
+    /* CONTROLLERS INITIALIZATION */
+    const managerController = new ManagerController(userRepo, propertyRepo);
+    const investorController = new InvestorController(userRepo, leaseRepo, propertyRepo, userFavouritesRepo);
+
+    /* ROUTES INITIALIZATION */
+    const investorRoutes = createInvestorRoutes(investorController);
+    const managerRoutes = createManagerRoutes(managerController);
+    const applicationRoutes = createApplicationRoutes();
+    const propertyRoutes = createPropertyRoutes();
+    const leaseRoutes = createLeaseRoutes();
+
+    /* MIDDLEWARE */
+    app.use((req, res, next) => {
+      console.log(`[DEBUG] Incoming request: ${req.method} ${req.originalUrl}`);
+      next();
+    });
+
+    /* ROUTES */
+    app.use("/api/investors", investorRoutes);
+    app.use("/api/managers", managerRoutes);
+    app.use("/api/applications", applicationRoutes);
+    app.use("/api/properties", propertyRoutes);
+    app.use("/api/leases", leaseRoutes);
+
+    /* SERVER */
+    const port = process.env.PORT || 3000;
+    app.listen(port, () => {
       console.log(`Server running on port ${port}`);
     });
   } catch (error) {
