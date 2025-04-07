@@ -1,48 +1,19 @@
-import { APPLICATION_STATUS } from "@/src/application";
-import { Application } from "@/src/database/entities";
-import { PropertyDto } from "@/src/property/contract/dto/property.dto";
-import { UserDto } from "@/src/user/contract/dto/user.dto";
-import { Expose, Type } from "class-transformer";
-import { IsDate, IsEnum, IsString, IsUUID, ValidateNested } from "class-validator";
-
-@Expose()
 export class ApplicationDto {
-  @IsUUID()
+  /** Уникальный ID заявки (UUID) */
   id!: string;
 
-  @IsDate()
-  @Type(() => Date)
-  applicationDate!: Date;
+  /** Дата подачи в формате ISO (например: "2025-04-07T14:48:00.000Z") */
+  applicationDate!: string;
 
-  @IsEnum(APPLICATION_STATUS)
-  status!: string;
+  /** Статус заявки. Допустимые значения: PENDING, APPROVED, REJECTED */
+  status!: "PENDING" | "APPROVED" | "REJECTED";
 
-  @IsString()
-  message!: string;
+  /** Опциональное сообщение от пользователя (макс. 500 символов) */
+  message?: string;
 
-  @ValidateNested()
-  @Type(() => PropertyDto)
-  property!: PropertyDto;
+  /** ID связанного объекта недвижимости (UUID) */
+  propertyId!: string;
 
-  @ValidateNested()
-  @Type(() => UserDto)
-  applicant!: UserDto;
-
-  static fromEntity(entity: Application): ApplicationDto {
-    const dto = new ApplicationDto();
-    dto.id = entity.id;
-    dto.applicationDate = entity.applicationDate;
-    dto.status = entity.status;
-    dto.message = entity.message;
-
-    if (entity.property) {
-      dto.property = PropertyDto.fromEntity(entity.property);
-    }
-
-    if (entity.applicant) {
-      dto.applicant = UserDto.fromEntity(entity.applicant);
-    }
-
-    return dto;
-  }
+  /** ID пользователя-заявителя (UUID) */
+  applicantId!: string;
 }

@@ -1,5 +1,4 @@
 import { BaseRepository } from "@/src/database/repository/base.repository";
-import { FindOneOptions } from "typeorm";
 import { Application } from "../entities";
 
 /**
@@ -29,8 +28,8 @@ export class ApplicationRepository extends BaseRepository<Application> {
   async findApplicationById(id: string): Promise<Application | null> {
     return this.repository.findOne({
       where: { id },
-      relations: ["applicant", "property"],
-    } as FindOneOptions<Application>);
+      relations: ["property", "applicant"],
+    });
   }
 
   async updateApplication(id: string, updateData: Partial<Application>): Promise<void> {

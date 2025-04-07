@@ -14,10 +14,6 @@ export class PaymentRepository extends BaseRepository<Payment> {
     return this.repository.find();
   }
 
-  async create(data: Partial<Payment>): Promise<Payment> {
-    return this.repository.save(data);
-  }
-
   async update(id: string, data: Partial<Payment>): Promise<void> {
     await this.repository.update(id, data);
   }

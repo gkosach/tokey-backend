@@ -1,8 +1,6 @@
 import { createClassLogger } from "@/src/common/config/logger.config";
 import { User } from "@/src/database/entities";
 import { PropertyRepository, UserRepository } from "@/src/database/repository";
-import { PropertyDto } from "@/src/property/contract/dto/property.dto";
-import { UserDto } from "@/src/user";
 import { Response } from "express";
 
 export class ManagerController {
@@ -13,19 +11,58 @@ export class ManagerController {
     private readonly propertyRepository: PropertyRepository,
   ) {}
 
+  async createManager(userId: string, name: string, email: string, res: Response): Promise<void> {
+    try {
+      const existingUser = await this.userRepository.findOne({
+        where: { id: userId },
+      });
+
+      if (existingUser) {
+        res.status(409).json({ error: "User already exists" });
+        return;
+      }
+
+      const newUser = this.userRepository.create({
+        id: userId,
+        role: "manager",
+        name,
+        email,
+      });
+
+      const savedUser = await this.userRepository.save(newUser);
+      res.status(201).json({
+        id: savedUser.id,
+        name: savedUser.name,
+        email: savedUser.email,
+        role: savedUser.role,
+      });
+    } catch (error) {
+      this.handleError(res, error, "createManager");
+    }
+  }
+
   async getManager(userId: string, res: Response): Promise<void> {
     try {
       const manager = await this.userRepository.findOne({
         where: { id: userId },
         relations: ["managedProperties"],
       });
+
       if (!manager) {
         this.logger.warn(`Manager not found: ${userId}`);
         res.status(404).json({ message: "Manager not found" });
         return;
       }
-      manager.managedProperties = manager.managedProperties || [];
-      res.status(200).json(UserDto.fromEntity(manager));
+
+      res.status(200).json({
+        id: manager.id,
+        name: manager.name,
+        email: manager.email,
+        role: manager.role,
+        managedPropertyIds: manager.managedProperties.map((property) => {
+          return property.id;
+        }),
+      });
     } catch (error) {
       this.handleError(res, error, "getManager");
     }
@@ -34,9 +71,41 @@ export class ManagerController {
   async getManagerProperties(userId: string, res: Response): Promise<void> {
     try {
       const properties = await this.propertyRepository.findPropertiesByManagerId(userId);
-      res.status(200).json(properties.map(PropertyDto.fromEntity));
+      res.status(200).json(
+        properties.map((property) => {
+          return {
+            id: property.id,
+            name: property.name,
+          };
+        }),
+      );
     } catch (error) {
       this.handleError(res, error, "getManagerProperties");
+    }
+  }
+
+  async updateManager(userId: string, updateData: Partial<User>, res: Response): Promise<void> {
+    try {
+      this.logger.info(`Updating manager: ${userId}`);
+
+      const manager = await this.userRepository.findOne({ where: { id: userId } });
+      if (!manager) {
+        this.logger.warn(`Manager not found: ${userId}`);
+        res.status(404).json({ message: "Manager not found" });
+        return;
+      }
+
+      Object.assign(manager, updateData);
+      const updatedManager = await this.userRepository.save(manager);
+
+      res.status(200).json({
+        id: updatedManager.id,
+        name: updatedManager.name,
+        email: updatedManager.email,
+        role: updatedManager.role,
+      });
+    } catch (error) {
+      this.handleError(res, error, "updateManager");
     }
   }
 
@@ -50,25 +119,5 @@ export class ManagerController {
       error: message.includes("not found") ? "Not Found" : "Internal Server Error",
       details: message,
     });
-  }
-
-  async updateManager(userId: string, updateData: Partial<User>, res: Response): Promise<void> {
-    try {
-      this.logger.info(`Updating manager: ${userId}`);
-
-      const manager = await this.userRepository.findOne({ where: { id: userId } });
-      if (!manager) {
-        this.logger.warn(`Manager not found: ${userId}`);
-        res.status(404).json({ message: "Manager not found" }); // Убрали return
-        return;
-      }
-
-      Object.assign(manager, updateData);
-      const updatedManager = await this.userRepository.save(manager);
-
-      res.status(200).json(UserDto.fromEntity(updatedManager));
-    } catch (error) {
-      this.handleError(res, error, "updateManager");
-    }
   }
 }

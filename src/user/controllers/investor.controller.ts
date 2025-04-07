@@ -1,15 +1,7 @@
 import { createClassLogger } from "@/src/common/config/logger.config";
-import { Property } from "@/src/database/entities";
-import { PropertyDto } from "@/src/property/contract/dto/property.dto";
-import { UserDto } from "@/src/user";
 import { Response } from "express";
 import { In } from "typeorm";
-import {
-  LeaseRepository,
-  PropertyRepository,
-  UserFavoritesRepository,
-  UserRepository,
-} from "../../database/repository";
+import { LeaseRepository, PropertyRepository, UserRepository } from "../../database/repository";
 
 /**
  * Контроллер для работы с инвесторами
@@ -18,27 +10,56 @@ export class InvestorController {
   private readonly logger = createClassLogger(this.constructor.name);
 
   constructor(
-    private readonly userRepo: UserRepository,
-    private readonly leaseRepo: LeaseRepository,
-    private readonly propertyRepo: PropertyRepository,
-    private readonly favoritesRepo: UserFavoritesRepository,
+    private readonly userRepository: UserRepository,
+    private readonly leaseRepository: LeaseRepository,
+    private readonly propertyRepository: PropertyRepository,
   ) {}
+
+  async createInvestor(userId: string, res: Response): Promise<void> {
+    try {
+      this.logger.debug(`Received request to create investor with ID: ${userId}`);
+
+      const investor = await this.userRepository.save({ id: userId, role: "investor" });
+
+      this.logger.debug(`Successfully created and saved investor: ${JSON.stringify(investor)}`);
+
+      res.status(201).json({
+        id: investor.id,
+        name: investor.name,
+        email: investor.email,
+        role: investor.role,
+      });
+    } catch (error) {
+      this.handleError(res, error, "createInvestor");
+    }
+  }
 
   /**
    * Получение данных инвестора
    */
   async getInvestor(userId: string, res: Response): Promise<void> {
     try {
-      const investor = await this.userRepo.findOne({
+      const investor = await this.userRepository.findOne({
         where: { id: userId },
-        relations: ["favorites", "leases", "applications"],
+        relations: [ "leases", "applications"],
       });
 
       if (!investor) {
         return this.sendError(res, 404, "Investor not found");
       }
 
-      res.status(200).json(UserDto.fromEntity(investor));
+      res.status(200).json({
+        id: investor.id,
+        name: investor.name,
+        email: investor.email,
+        role: investor.role,
+        leaseIds: investor.leases.map((l) => {
+          return l.id;
+        }),
+        applicationIds: investor.applications.map((a) => {
+          return a.id;
+        }),
+      });
     } catch (error) {
       this.handleError(res, error, "getInvestor");
     }
@@ -49,7 +70,7 @@ export class InvestorController {
    */
   async getInvestorProperties(userId: string, res: Response): Promise<void> {
     try {
-      const activeLeases = await this.leaseRepo.find({
+      const activeLeases = await this.leaseRepository.find({
         where: { investor: { id: userId } },
         relations: ["property"],
       });
@@ -63,42 +84,26 @@ export class InvestorController {
         });
 
       if (propertyIds.length === 0) {
-        res.status(200).json([]); // Убрали return
-        return; // Явное завершение функции
+        res.status(200).json([]);
+        return;
       }
 
-      const properties = await this.propertyRepo.find({
+      const properties = await this.propertyRepository.find({
         where: { id: In(propertyIds) },
       });
 
-      res.status(200).json(properties.map(PropertyDto.fromEntity));
+      res.status(200).json(
+        properties.map((property) => {
+          return {
+            id: property.id,
+            name: property.name,
+            description: property.description,
+            pricePerMonth: property.pricePerMonth,
+          };
+        }),
+      );
     } catch (error) {
       this.handleError(res, error, "getInvestorProperties");
-    }
-  }
-
-  /**
-   * Получение избранных объектов недвижимости
-   */
-  async getFavoriteProperties(userId: string, res: Response): Promise<void> {
-    try {
-      const favorites = await this.favoritesRepo.find({
-        where: { userId },
-        relations: ["property"],
-        loadRelationIds: false,
-      });
-
-      const properties = favorites
-        .map((f) => {
-          return f.property;
-        })
-        .filter((p): p is Property => {
-          return !!p;
-        });
-
-      res.status(200).json(properties.map(PropertyDto.fromEntity));
-    } catch (error) {
-      this.handleError(res, error, "getFavoriteProperties");
     }
   }
 

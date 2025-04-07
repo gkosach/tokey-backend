@@ -20,13 +20,17 @@ export abstract class BaseRepository<T extends ObjectLiteral> {
   async findOne(options: FindOneOptions<T>): Promise<T | null> {
     return this.repository.findOne(options);
   }
-
   /**
-   * Сохраняет сущность или массив сущностей в базу данных.
-   * @param data - Данные для сохранения. Поддерживает тип DeepPartial.
+   * Сохраняет сущность в базе данных.
+   * Если сущность уже существует (по ID), она будет обновлена.
+   * @param data - Данные для создания или обновления сущности.
    */
   async save(data: DeepPartial<T>): Promise<T> {
     return this.repository.save(data);
+  }
+
+  create(data: DeepPartial<T>): T {
+    return this.repository.create(data);
   }
 
 

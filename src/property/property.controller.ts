@@ -27,12 +27,13 @@ export class PropertyController {
   async getAllProperties(req: Request, res: Response): Promise<void> {
     try {
       const properties = await this.propertyRepository.find();
-      const propertyDtos = properties.map(PropertyDto.fromEntity);
-      res.status(200).json(propertyDtos);
+      res.status(200).json(
+        properties.map((p) => {
+          return this.mapToDto(p);
+        }),
+      );
     } catch (error: any) {
-      res.status(500).json({
-        message: `Error retrieving properties: ${error.message}`,
-      });
+      res.status(500).json({ message: `Error retrieving properties: ${error.message}` });
     }
   }
 
@@ -42,28 +43,27 @@ export class PropertyController {
       if (!managerId) throw new Error("User not authenticated");
 
       const properties = await this.propertyRepository.findPropertiesByManagerId(managerId);
-      const propertyDtos = properties.map(PropertyDto.fromEntity);
-
-      res.status(200).json(propertyDtos);
+      res.status(200).json(
+        properties.map((p) => {
+          return this.mapToDto(p);
+        }),
+      );
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Unknown error";
       res.status(500).json({ error: "Failed to get managed properties", details: message });
     }
   }
 
-  /**
-   *
-   * @param req
-   * @param res
-   */
   async createProperty(req: Request, res: Response): Promise<void> {
     try {
       const files = req.files as Express.Multer.File[];
       const { latitude, longitude, ...propertyData } = req.body;
+
       if (!propertyData.name || !propertyData.pricePerMonth) {
         res.status(400).json({ message: "Missing required fields" });
         return;
       }
+
       const photoUrls = await Promise.all(
         files.map(async (file) => {
           const key = `properties/${Date.now()}-${file.originalname}`;
@@ -82,33 +82,20 @@ export class PropertyController {
           return uploadResult.Location;
         }),
       );
-      let propertyLongitude = longitude ? parseFloat(longitude) : null;
+
       let propertyLatitude = latitude ? parseFloat(latitude) : null;
-      if (propertyLongitude === null || propertyLatitude === null) {
-        try {
-          const geocodingUrl = `https://nominatim.openstreetmap.org/search?${new URLSearchParams({
-            street: propertyData.address,
-            city: propertyData.city,
-            country: propertyData.country,
-            postalcode: propertyData.postalCode,
-            format: "json",
-            limit: "1",
-          }).toString()}`;
+      let propertyLongitude = longitude ? parseFloat(longitude) : null;
 
-          const geocodingResponse = await axios.get(geocodingUrl, {
-            headers: {
-              "User-Agent": "RealEstateApp (german1kosach@gmail.com)",
-            },
-          });
+      if (propertyLatitude === null || propertyLongitude === null) {
+        const coordinates = await this.getCoordinatesFromAddress({
+          address: propertyData.address,
+          postalCode: propertyData.postalCode,
+        });
 
-          if (geocodingResponse.data && geocodingResponse.data.length > 0) {
-            propertyLongitude = parseFloat(geocodingResponse.data[0].lon);
-            propertyLatitude = parseFloat(geocodingResponse.data[0].lat);
-          }
-        } catch (geocodingError) {
-          console.error("Geocoding error:", geocodingError);
-        }
+        propertyLatitude = coordinates.latitude;
+        propertyLongitude = coordinates.longitude;
       }
+
       if (
         propertyLatitude !== null &&
         propertyLongitude !== null &&
@@ -117,10 +104,11 @@ export class PropertyController {
         res.status(400).json({ message: "Invalid coordinates" });
         return;
       }
+
       const normalizedPropertyData = {
         ...propertyData,
         photoUrls,
-        managerId: (req as any).user.id,
+        managerId: req.user?.id,
         latitude: propertyLatitude ?? 0,
         longitude: propertyLongitude ?? 0,
         isPetsAllowed: propertyData.isPetsAllowed === "true",
@@ -134,20 +122,15 @@ export class PropertyController {
       };
 
       const newProperty = await this.propertyRepository.save(normalizedPropertyData);
-      const propertyWithRelations = await this.propertyRepository.findById(newProperty.id);
-
-      if (!propertyWithRelations) {
-        res.status(500).json({ message: "Error retrieving created property" });
-        return;
+      res.status(201).json(this.mapToDto(newProperty));
+    } catch (error) {
+      if (error instanceof Error) {
+        this.logger.error("Error creating property:", error.message);
+        res.status(500).json({ message: `Error creating property: ${error.message}` });
+      } else {
+        this.logger.error("Unknown error occurred while creating property:", error);
+        res.status(500).json({ message: "An unknown error occurred while creating the property." });
       }
-      const propertyDto = PropertyDto.fromEntity(propertyWithRelations);
-
-      res.status(201).json(propertyDto);
-    } catch (error: any) {
-      console.error("Error creating property:", error);
-      res.status(500).json({
-        message: `Error creating property: ${error.message}`,
-      });
     }
   }
 
@@ -158,34 +141,29 @@ export class PropertyController {
    */
   async getProperty(req: Request<{ id: string }>, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
-
-      const property = await this.propertyRepository.findById(id);
-
+      const property = await this.propertyRepository.findById(req.params.id);
       if (property) {
-        const propertyDto = PropertyDto.fromEntity(property);
-        res.json(propertyDto);
+        res.json(this.mapToDto(property));
       } else {
         res.status(404).json({ message: "Property not found" });
       }
-    } catch (error: any) {
-      res.status(500).json({
-        message: `Error retrieving property: ${error.message}`,
-      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ message: `Error retrieving property: ${message}` });
     }
   }
 
   async filterProperties(req: Request, res: Response): Promise<void> {
     try {
-      const filters = req.query;
-      const properties = await this.propertyRepository.findByFilters(filters);
-      const propertyDtos = properties.map(PropertyDto.fromEntity);
-
-      res.json(propertyDtos);
-    } catch (error: any) {
-      res.status(500).json({
-        message: `Error filtering properties: ${error.message}`,
-      });
+      const properties = await this.propertyRepository.findByFilters(req.query);
+      res.json(
+        properties.map((p) => {
+          return this.mapToDto(p);
+        }),
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ message: `Error filtering properties: ${message}` });
     }
   }
 
@@ -194,25 +172,27 @@ export class PropertyController {
    * @param req Запрос с ID в параметрах и данными для обновления в теле
    * @param res Ответ с подтверждением или ошибкой
    */
-  async updateProperty(req: Request<{ id: string }, unknown, Partial<Property>>, res: Response): Promise<void> {
+  async updateProperty(req: Request<{ id: string }>, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
-      const updateData = req.body;
-      await this.propertyRepository.update(id, updateData);
-
-      const updatedProperty = await this.propertyRepository.findById(id);
-
-      if (!updatedProperty) {
-        res.status(404).json({ message: "Property not found after update" });
+      const existingProperty = await this.propertyRepository.findById(req.params.id);
+      if (!existingProperty) {
+        res.status(404).json({ message: "Property not found" });
         return;
       }
 
-      res.status(200).json(PropertyDto.fromEntity(updatedProperty));
-    } catch (error: any) {
-      this.logger.error(`Update property error: ${error.message}`);
-      res.status(500).json({
-        message: `Error updating property: ${error.message}`,
-      });
+      await this.propertyRepository.update(req.params.id, req.body);
+      const updatedProperty = await this.propertyRepository.findById(req.params.id);
+
+      if (!updatedProperty) {
+        res.status(500).json({ message: "Failed to fetch updated property" });
+        return;
+      }
+
+      res.json(this.mapToDto(updatedProperty));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      this.logger.error(`Update property error: ${message}`);
+      res.status(500).json({ message: `Error updating property: ${message}` });
     }
   }
 
@@ -224,13 +204,52 @@ export class PropertyController {
   async deleteProperty(req: Request<{ id: string }>, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-
       await this.propertyRepository.delete(id);
       res.status(200).json({ message: "Property deleted successfully" });
-    } catch (error: any) {
-      res.status(500).json({
-        message: `Error deleting property: ${error.message}`,
-      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ message: `Error deleting property: ${message}` });
     }
+  }
+
+  private mapToDto(property: Property): PropertyDto {
+    return {
+      ...property,
+      postedDate: property.postedDate.toISOString(),
+      postalCode: property.postalCode,
+      latitude: property.latitude,
+      longitude: property.longitude,
+    };
+  }
+
+  private async getCoordinatesFromAddress(addressData: {
+    address: string;
+    postalCode: string;
+  }): Promise<{ latitude: number | null; longitude: number | null }> {
+    try {
+      const geocodingUrl = `https://nominatim.openstreetmap.org/search?${new URLSearchParams({
+        street: addressData.address,
+        postalcode: addressData.postalCode,
+        format: "json",
+        limit: "1",
+      }).toString()}`;
+
+      const geocodingResponse = await axios.get(geocodingUrl, {
+        headers: {
+          "User-Agent": "RealEstateApp (german1kosach@gmail.com)",
+        },
+      });
+
+      if (geocodingResponse.data && geocodingResponse.data.length > 0) {
+        return {
+          latitude: parseFloat(geocodingResponse.data[0].lat),
+          longitude: parseFloat(geocodingResponse.data[0].lon),
+        };
+      }
+    } catch (error) {
+      this.logger.error("Geocoding error:", error);
+    }
+
+    return { latitude: null, longitude: null };
   }
 }

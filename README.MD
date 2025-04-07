@@ -5,7 +5,7 @@ psql -h turntable.proxy.rlwy.net -p 54156 -U postgres -d railway -c "DROP SCHEMA
 # Ручная генерация миграции
 
 ```npm
-npm run typeorm -- migration:create src/db/migrations/RenameCognitoIdToId
+npm run typeorm -- migration:create src/database/migrations/RenameCognitoIdToId
 
 ```
 

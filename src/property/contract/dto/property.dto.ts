@@ -1,60 +1,62 @@
-import { Property } from "@/src/database/entities";
-import { Expose } from "class-transformer";
-import { IsArray, IsBoolean, IsDate, IsInt, IsNumber, IsString, IsUUID } from "class-validator";
-
-@Expose()
 export class PropertyDto {
-  @IsUUID() id!: string;
-  @IsString() name!: string;
-  @IsString() description!: string;
-  @IsNumber() pricePerMonth!: number;
-  @IsNumber() securityDeposit!: number;
-  @IsNumber() applicationFee!: number;
-  @IsArray()
-  @IsString({ each: true })
-  photoUrls!: string[];
-  @IsBoolean() isPetsAllowed!: boolean;
-  @IsBoolean() isParkingIncluded!: boolean;
-  @IsInt() beds!: number;
-  @IsNumber() baths!: number;
-  @IsInt() squareFeet!: number;
-  @IsString() propertyType!: string;
-  @IsString() address!: string;
-  @IsString() city!: string;
-  @IsString() state!: string;
-  @IsString() country!: string;
-  @IsString() postalCode!: string;
-  @IsNumber() latitude!: number;
-  @IsNumber() longitude!: number;
-  @IsDate() postedDate!: Date;
-  @IsNumber() averageRating!: number;
-  @IsInt() numberOfReviews!: number;
+  /** Уникальный ID объекта недвижимости (UUID) */
+  id!: string;
 
-  static fromEntity(entity: Property): PropertyDto {
-    const dto = new PropertyDto();
-    dto.id = entity.id;
-    dto.name = entity.name;
-    dto.description = entity.description;
-    dto.pricePerMonth = entity.pricePerMonth;
-    dto.securityDeposit = entity.securityDeposit;
-    dto.applicationFee = entity.applicationFee;
-    dto.photoUrls = entity.photoUrls;
-    dto.isPetsAllowed = entity.isPetsAllowed;
-    dto.isParkingIncluded = entity.isParkingIncluded;
-    dto.beds = entity.beds;
-    dto.baths = entity.baths;
-    dto.squareFeet = entity.squareFeet;
-    dto.propertyType = entity.propertyType;
-    dto.address = entity.address;
-    dto.city = entity.city;
-    dto.state = entity.state;
-    dto.country = entity.country;
-    dto.postalCode = entity.postalCode;
-    dto.latitude = entity.latitude;
-    dto.longitude = entity.longitude;
-    dto.postedDate = entity.postedDate;
-    dto.averageRating = entity.averageRating;
-    dto.numberOfReviews = entity.numberOfReviews;
-    return dto;
-  }
+  /** Название объекта недвижимости */
+  name!: string;
+
+  /** Описание объекта недвижимости */
+  description!: string;
+
+  /** Цена за месяц аренды */
+  pricePerMonth!: number;
+
+  /** Сумма депозита за аренду */
+  securityDeposit!: number;
+
+  /** Сумма за подачу заявки на аренду */
+  applicationFee!: number;
+
+  /** Список URL фотографий объекта недвижимости */
+  photoUrls!: string[];
+
+  /** Разрешены ли домашние животные? */
+  isPetsAllowed!: boolean;
+
+  /** Включена ли парковка? */
+  isParkingIncluded!: boolean;
+
+  /** Количество спален в объекте недвижимости */
+  beds!: number;
+
+  /** Количество ванных комнат в объекте недвижимости */
+  baths!: number;
+
+  /** Площадь объекта недвижимости в квадратных футах */
+  squareFeet!: number;
+
+  /** Тип объекта недвижимости (например, квартира, дом) */
+  propertyType!: string;
+
+  /** Адрес объекта недвижимости */
+  address!: string;
+
+  /** Почтовый индекс объекта недвижимости */
+  postalCode!: string;
+
+  /** Широта географического расположения объекта недвижимости */
+  latitude!: number;
+
+  /** Долгота географического расположения объекта недвижимости */
+  longitude!: number;
+
+  /** Дата публикации объекта недвижимости (ISO строка) */
+  postedDate!: string;
+
+
+  /** Средний рейтинг объекта недвижимости (от 0 до 5) */
+  averageRating!: number;
+
+  /** Количество отзывов о объекте недвижимости */
+  numberOfReviews!: number;
 }

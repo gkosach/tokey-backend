@@ -1,6 +1,11 @@
 import { NextFunction, Request, Response } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 
+interface DecodedToken extends JwtPayload {
+  sub: string;
+  "custom:role"?: string;
+}
+
 declare global {
   namespace Express {
     interface Request {
@@ -12,53 +17,51 @@ declare global {
   }
 }
 
-interface DecodedToken extends JwtPayload {
-  sub: string;
-  "custom:role": string;
-}
+export const authMiddleware = (allowedRoles: string[]) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const authHeader = req.headers.authorization || "";
+    const [authType, token] = authHeader.split(" ");
 
-export const authMiddleware = (allowedRoles: string[] = []) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
+    console.log("[AUTH] Authorization header:", authHeader);
+
+    if (authType.toLowerCase() !== "bearer" || !token) {
+      console.log("[AUTH] Invalid authorization format");
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
     try {
-      const authHeader = req.headers.authorization || "";
-      const [authType, token] = authHeader.split(" ");
-      if (authType.toLowerCase() !== "bearer" || !token) {
-        throw new Error("Invalid authorization format. Use: Bearer <token>");
-      }
-      const secretKey = process.env.JWT_SECRET;
-      if (!secretKey) {
-        throw new Error("JWT_SECRET is not defined in .env file");
-      }
-      const decoded = jwt.verify(token, secretKey) as DecodedToken;
-      const role = decoded["custom:role"]?.toLowerCase() || "manager";
-      if (!decoded.sub || !decoded["custom:role"]) {
+      console.log("[AUTH] Received token:", token);
+
+      const decoded = jwt.decode(token) as DecodedToken;
+      console.log("[AUTH] Decoded token:", JSON.stringify(decoded, null, 2));
+
+      if (!decoded?.sub) {
+        console.log("[AUTH] Missing sub in token");
         throw new Error("Invalid token structure");
       }
-      if (!allowedRoles.includes(role)) {
-        throw new Error(`Role '${role}' not allowed`);
-      }
+
+      const userRole = decoded["custom:role"]?.toLowerCase() || "";
+      console.log("[AUTH] User role detected:", userRole);
 
       req.user = {
         id: decoded.sub,
-        role: role,
+        role: userRole,
       };
+
+      console.log("[AUTH] Allowed roles:", allowedRoles);
+      const hasAccess = allowedRoles.includes(userRole);
+      if (!hasAccess) {
+        console.log(`[AUTH] Access denied for role '${userRole}'`);
+        res.status(403).json({ message: "Access Denied" });
+        return;
+      }
+
+      console.log("[AUTH] Authentication successful");
       next();
-    } catch (error) {
-      console.error("[AUTH] Authentication error:", error);
-      handleAuthError(error, res);
+    } catch (err) {
+      console.error("[AUTH] Authentication error:", err);
+      res.status(400).json({ message: "Invalid token" });
     }
   };
-};
-
-const handleAuthError = (error: unknown, res: Response) => {
-  const message = error instanceof Error ? error.message : "Authentication error";
-  let statusCode = 401;
-
-  if (message.includes("permissions")) statusCode = 403;
-  if (message.includes("invalid")) statusCode = 400;
-
-  res.status(statusCode).json({
-    error: "Authentication failed",
-    details: message.replace(/Token/g, "").trim(),
-  });
 };

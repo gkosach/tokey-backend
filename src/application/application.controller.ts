@@ -1,5 +1,5 @@
 import { APPLICATION_STATUS } from "@/src/application/contract/constants/application-status";
-import { ApplicationDto } from "@/src/application/index";
+import { ApplicationDto } from "@/src/application/contract/dto/application.dto";
 import { createClassLogger } from "@/src/common/config/logger.config";
 import { ApplicationRepository } from "@/src/database/repository";
 import { Request, Response } from "express";
@@ -23,7 +23,7 @@ export class ApplicationController {
       const application = await this.applicationRepository.findApplicationById(id);
 
       if (application) {
-        res.json(ApplicationDto.fromEntity(application));
+        res.json(this.mapToDto(application));
       } else {
         res.status(404).json({ message: "Application not found" });
       }
@@ -52,7 +52,7 @@ export class ApplicationController {
         return;
       }
 
-      res.json(applications.map(ApplicationDto.fromEntity));
+      res.json(applications.map((app) => this.mapToDto(app)));
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Unknown error";
       res.status(500).json({ error: "Failed to get applications", details: message });
@@ -72,7 +72,7 @@ export class ApplicationController {
       };
 
       const newApplication = await this.applicationRepository.save(applicationData);
-      res.status(201).json(ApplicationDto.fromEntity(newApplication));
+      res.status(201).json(this.mapToDto(newApplication));
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Unknown error";
       res.status(500).json({ error: "Failed to create application", details: message });
@@ -109,7 +109,7 @@ export class ApplicationController {
 
       res.status(200).json({
         message: `Application ${status.toLowerCase()} successfully`,
-        application: ApplicationDto.fromEntity(application),
+        application: this.mapToDto(application),
       });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Unknown error";
@@ -119,5 +119,16 @@ export class ApplicationController {
         details: message,
       });
     }
+  }
+
+  private mapToDto(application: Application): ApplicationDto {
+    return {
+      id: application.id,
+      applicationDate: application.applicationDate.toISOString(),
+      status: application.status as ApplicationDto["status"],
+      message: application.message,
+      propertyId: application.property.id,
+      applicantId: application.applicant.id,
+    };
   }
 }

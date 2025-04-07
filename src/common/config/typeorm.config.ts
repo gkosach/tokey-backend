@@ -2,7 +2,7 @@ import { config } from "dotenv";
 import * as path from "node:path";
 import { DataSource } from "typeorm";
 import { SnakeNamingStrategy } from "typeorm-naming-strategies";
-import { Application, Lease, Payment, Property, User, UserFavorites } from "../../database/entities";
+import { Application, Lease, Payment, Property, User } from "../../database/entities";
 
 const envPath = path.resolve(
   __dirname,
@@ -31,7 +31,7 @@ export const AppDataSource = new DataSource({
   username: process.env.DB_USERNAME,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  entities: [User, UserFavorites, Application, Lease, Payment, Property],
+  entities: [User, Application, Lease, Payment, Property],
   namingStrategy: new SnakeNamingStrategy(),
   migrations: ["src/database/migrations/*.ts"],
   synchronize: false,

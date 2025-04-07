@@ -1,4 +1,3 @@
-import bodyParser from "body-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
@@ -8,12 +7,7 @@ import "reflect-metadata";
 
 import createApplicationRoutes from "@/src/application/application.routes";
 import { DatabasePostgresProvider } from "@/src/database/database.postgres.provider";
-import {
-  LeaseRepository,
-  PropertyRepository,
-  UserFavoritesRepository,
-  UserRepository,
-} from "@/src/database/repository";
+import { LeaseRepository, PropertyRepository, UserRepository } from "@/src/database/repository";
 import createLeaseRoutes from "@/src/lease/lease.routes";
 import createPropertyRoutes from "@/src/property/property.routes";
 import { InvestorController } from "@/src/user/controllers/investor.controller";
@@ -31,7 +25,6 @@ async function main() {
     app.use(express.json());
     app.use(helmet());
     app.use(morgan("common"));
-    app.use(bodyParser.json());
     app.use(cors());
 
     /* DATABASE INITIALIZATION */
@@ -41,11 +34,10 @@ async function main() {
     const userRepo = new UserRepository();
     const propertyRepo = new PropertyRepository();
     const leaseRepo = new LeaseRepository();
-    const userFavouritesRepo = new UserFavoritesRepository();
 
     /* CONTROLLERS INITIALIZATION */
     const managerController = new ManagerController(userRepo, propertyRepo);
-    const investorController = new InvestorController(userRepo, leaseRepo, propertyRepo, userFavouritesRepo);
+    const investorController = new InvestorController(userRepo, leaseRepo, propertyRepo);
 
     /* ROUTES INITIALIZATION */
     const investorRoutes = createInvestorRoutes(investorController);
@@ -56,7 +48,10 @@ async function main() {
 
     /* MIDDLEWARE */
     app.use((req, res, next) => {
-      console.log(`[DEBUG] Incoming request: ${req.method} ${req.originalUrl}`);
+      console.log(`[DEBUG] Incoming request:
+Method: ${req.method}
+Endpoint: ${req.originalUrl}
+Body: ${JSON.stringify(req.body, null, 2)}`);
       next();
     });
 
@@ -68,7 +63,7 @@ async function main() {
     app.use("/api/leases", leaseRoutes);
 
     /* SERVER */
-    const port = process.env.PORT || 3000;
+    const port = process.env.PORT || 3002;
     app.listen(port, () => {
       console.log(`Server running on port ${port}`);
     });

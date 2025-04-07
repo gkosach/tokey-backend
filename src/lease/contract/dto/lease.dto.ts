@@ -1,53 +1,28 @@
-import { Lease } from "@/src/database/entities";
-import { PaymentDto } from "@/src/payment/contract/dto/payment.dto";
-import { PropertyDto } from "@/src/property/contract/dto/property.dto";
-import { UserDto } from "@/src/user/contract/dto/user.dto";
-import { Expose, Transform } from "class-transformer";
-import { IsDate, IsNumber, IsUUID, ValidateNested } from "class-validator";
-
-@Expose()
 export class LeaseDto {
-  @IsUUID() id!: string;
+  /** Уникальный ID аренды (UUID) */
+  id!: string;
 
-  @IsDate()
-  startDate!: Date;
+  /** Дата начала аренды (ISO строка) */
+  startDate!: string;
 
-  @IsDate()
-  endDate!: Date;
+  /** Дата окончания аренды (ISO строка) */
+  endDate!: string;
 
-  @IsNumber()
+  /** Сумма аренды в месяц */
   rent!: number;
 
-  @IsNumber()
+  /** Депозит за аренду */
   deposit!: number;
 
-  @ValidateNested()
-  @Transform(({ value }) => PropertyDto.fromEntity(value))
-  property!: PropertyDto;
+  /** ID объекта недвижимости (UUID) */
+  propertyId!: string;
 
-  @ValidateNested()
-  @Transform(({ value }) => UserDto.fromEntity(value))
-  manager!: UserDto;
+  /** ID менеджера (UUID) */
+  managerId!: string;
 
-  @ValidateNested()
-  @Transform(({ value }) => UserDto.fromEntity(value))
-  investor!: UserDto;
+  /** ID инвестора (UUID) */
+  investorId!: string;
 
-  @ValidateNested({ each: true })
-  @Transform(({ value }) => value.map(PaymentDto.fromEntity))
-  payments!: PaymentDto[];
-
-  static fromEntity(entity: Lease): LeaseDto {
-    const dto = new LeaseDto();
-    dto.id = entity.id;
-    dto.startDate = entity.startDate;
-    dto.endDate = entity.endDate;
-    dto.rent = entity.rent;
-    dto.deposit = entity.deposit;
-    dto.property = PropertyDto.fromEntity(entity.property);
-    dto.manager = UserDto.fromEntity(entity.manager);
-    dto.investor = UserDto.fromEntity(entity.investor);
-    dto.payments = entity.payments.map(PaymentDto.fromEntity);
-    return dto;
-  }
+  /** Список платежей, связанных с арендой */
+  paymentIds!: string[];
 }
