@@ -1,17 +1,18 @@
+# Prisma initial generation
+
 ```npm
-psql -h turntable.proxy.rlwy.net -p 54156 -U postgres -d railway -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+npx prisma migrate dev --name init
 ```
+# Перегенерация клиента Prisma
+
+```npm
+npm run prisma:generate
+```
+
 
 # Ручная генерация миграции
 
 ```npm
 npm run typeorm -- migration:create src/database/migrations/RenameCognitoIdToId
 
-```
-
-# Применение миграций
-
-```npm
-rm -rf src/migrations/*
-npm run migrate:dev migration:generate src/database/migrations/Initial
 ```

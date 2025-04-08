@@ -8,10 +8,9 @@
     "start": "cross-env NODE_ENV=production npm run build && node dist/index.js",
     "format:prettier": "prettier . --write",
     "format:eslint:fix": "eslint --fix --ext .ts,.tsx .",
-    "typeorm": "cross-env NODE_ENV=development ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js -d src/common/config/typeorm.config.ts",
-    "migration:generate": "npm run typeorm -- migration:generate src/database/migrations/removeFavourites",
-    "migration:run": "cross-env NODE_ENV=development npm run typeorm -- migration:run",
-    "seed:dev": "cross-env NODE_ENV=development ts-node -r tsconfig-paths/register src/database/contract/seed/seed.ts"
+    "seed": "ts-node prisma/seed.ts",
+    "prisma:generate": "prisma generate",
+    "postprisma:generate": "shx cp -r node_modules/.prisma/client/index.d.ts prisma/types/prismaTypes.d.ts"
   },
   "repository": {
     "type": "git",
@@ -28,7 +27,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.774.0",
     "@aws-sdk/lib-storage": "^3.774.0",
-    "@prisma/client": "^6.5.0",
+    "@prisma/client": "^6.3.0",
     "@terraformer/wkt": "^2.2.1",
     "@types/express": "^5.0.1",
     "axios": "^1.8.4",
@@ -45,8 +44,8 @@
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.2",
     "pg": "^8.14.1",
+    "prisma": "^6.5.0",
     "reflect-metadata": "^0.2.2",
-    "typeorm": "^0.3.21",
     "typeorm-naming-strategies": "^4.1.0",
     "uuid": "^11.1.0",
     "winston": "^3.17.0"
