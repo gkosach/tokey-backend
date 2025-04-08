@@ -20,14 +20,20 @@ function toCamelCase(str: string): string {
 
 async function insertLocationData(locations: any[]) {
   for (const location of locations) {
-    const { id, country, city, state, address, postalCode, coordinates } = location;
-    const [longitude, latitude] = coordinates.replace("POINT(", "").replace(")", "").split(" ").map(parseFloat);
-
+    const { id, country, city, state, address, postalCode, latitude, longitude } = location;
     try {
-      await prisma.$executeRaw`
-        INSERT INTO "Location" ("id", "country", "city", "state", "address", "postalCode", "latitude", "longitude") 
-        VALUES (${id}, ${country}, ${city}, ${state}, ${address}, ${postalCode}, ${latitude}, ${longitude});
-      `;
+      await prisma.location.create({
+        data: {
+          id,
+          country,
+          city,
+          state,
+          address,
+          postalCode,
+          latitude,
+          longitude,
+        },
+      });
       console.log(`Inserted location for ${city}`);
     } catch (error) {
       console.error(`Error inserting location for ${city}:`, error);

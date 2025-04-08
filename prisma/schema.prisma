@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://postgres:uLRJIKSOldIdnXMJoTKYZKOSYYZLNfPe@turntable.proxy.rlwy.net:54156/railway"
+  url      = env("DATABASE_URL")
 }
 
 enum Highlight {
