@@ -35,11 +35,9 @@ lerna-debug.log*
 !.vscode/extensions.json
 
 #storage-configs
-env/.*.env
-env/.*.env.bak
-!env/.example.env
-!env/.test.env
-env/.*.md
+.env
+!.example.env
+.development.env
 /package-lock.json
 /yarn.lock
 
