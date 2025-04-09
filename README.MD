@@ -8,12 +8,8 @@ npx prisma migrate dev --name init
 ```npm
 npm run prisma:generate
 ```
-
-
-# Ручная генерация миграции
-
+# Добавление моков в БД
 ```npm
-npm run typeorm -- migration:create src/database/migrations/RenameCognitoIdToId
+npm run seed
 ```
-
 # Запустить миграцию
