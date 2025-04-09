@@ -1,7 +1,5 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/src/database/prisma-client";
 import { Request, Response } from "express";
-
-const prisma = new PrismaClient();
 
 export const listApplications = async (req: Request, res: Response): Promise<void> => {
   try {

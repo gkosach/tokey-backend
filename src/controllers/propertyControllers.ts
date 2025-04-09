@@ -1,10 +1,10 @@
+import prisma from "@/src/database/prisma-client";
 import { S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
-import { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import axios from "axios";
 import { Request, Response } from "express";
 
-const prisma = new PrismaClient();
 const s3Client = new S3Client({ region: process.env.AWS_REGION });
 
 /**

@@ -14,5 +14,6 @@ npm run prisma:generate
 
 ```npm
 npm run typeorm -- migration:create src/database/migrations/RenameCognitoIdToId
-
 ```
+
+# Запустить миграцию
