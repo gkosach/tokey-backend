@@ -1,0 +1,21 @@
+version: "3.9"
+
+services:
+  back-app:
+    container_name: back-app
+    build:
+      context: .
+      args:
+        - NODE_ENV=production
+    environment:
+      - NODE_ENV=production
+    env_file: ./env.production.env
+    command: sh -c "npm run build && npm run start"
+    networks:
+      - site
+    restart: unless-stopped
+
+networks:
+  site:
+    driver: bridge
+    external: true
