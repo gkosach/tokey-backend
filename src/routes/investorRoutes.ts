@@ -5,7 +5,7 @@ import {
   getInvestor,
   removeFavoriteProperty,
   updateInvestor,
-} from "@/src/controllers/investorControllers";
+} from "../controllers/investorControllers";
 import express from "express";
 
 const router = express.Router();
