@@ -15,11 +15,11 @@ module.exports = {
     next: {
       rootDir: "./src",
     },
-    "import/resolver": {
-      alias: {
-        map: [["@", "./src"]],
-        extensions: [".js", ".ts", ".tsx"],
-      },
-    },
+    // "import/resolver": {
+    //   alias: {
+    //     map: [["@", "./src"]],
+    //     extensions: [".js", ".ts", ".tsx"],
+    //   },
+    // },
   },
 };

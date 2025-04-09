@@ -1,4 +1,4 @@
-import { prisma } from "@/src/database/prisma-client";
+import { prisma } from "../database/prisma-client";
 import { Request, Response } from "express";
 
 export const getManager = async (req: Request, res: Response): Promise<void> => {
