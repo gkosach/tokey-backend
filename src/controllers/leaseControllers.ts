@@ -1,5 +1,5 @@
-import prisma from "@/src/database/prisma-client";
 import { Request, Response } from "express";
+import { prisma } from "../database/prisma-client";
 
 export const getLeases = async (req: Request, res: Response): Promise<void> => {
   try {

@@ -1,4 +1,4 @@
-import prisma from "@/src/database/prisma-client";
+import { prisma } from "@/src/database/prisma-client";
 import { S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import { Prisma } from "@prisma/client";
