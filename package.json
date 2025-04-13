@@ -9,9 +9,8 @@
     "format:prettier": "prettier . --write",
     "lint": "eslint .",
     "lint:fix": "npm run lint -- --fix",
-    "seed": "ts-node src/prisma/seed.ts",
-    "prisma:generate": "src/prisma generate",
-    "postprisma:generate": "mkdir -p src/prisma/types && shx cp -r node_modules/.prisma/client/index.d.ts src/prisma/types/prismaTypes.d.ts"
+    "seed": "ts-node prisma/seed.ts",
+    "postprisma:generate": "mkdir -p prisma/types && shx cp -r node_modules/.prisma/client/index.d.ts prisma/types/prismaTypes.d.ts"
   },
   "repository": {
     "type": "git",
