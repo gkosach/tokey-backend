@@ -1,3 +1,5 @@
+import express from "express";
+
 import {
   addFavoriteProperty,
   createInvestor,
@@ -6,7 +8,6 @@ import {
   removeFavoriteProperty,
   updateInvestor,
 } from "../controllers/investorControllers";
-import express from "express";
 
 const router = express.Router();
 

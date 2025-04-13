@@ -4,28 +4,14 @@
     "esModuleInterop": true,
     "moduleResolution": "node",
     "module": "CommonJS",
-    "strictPropertyInitialization": false,
-    "strictNullChecks": true,
-    "noImplicitAny": false,
-    "declaration": false,
-    "removeComments": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "allowSyntheticDefaultImports": true,
     "target": "ES2017",
     "sourceMap": true,
-    "incremental": true,
-    "types": ["node"],
-    "lib": ["ES2020", "DOM"],
     "outDir": "./dist",
     "baseUrl": "./",
     "paths": {
-      "@test/*": ["test/*"],
-      "@test": ["test"],
-      "@/*": ["./*"],
-      "@/src/*": ["./src/*"]
+      "@/*": ["./src/*"]
     },
-    "typeRoots": ["./node_modules/@types", "./src/common/types"]
+    "typeRoots": ["./node_modules/@types"]
   },
-  "include": ["src/**/*", "src/data/**/*.json", "prisma/**/*", "src/db/**/*"]
+  "include": ["src/**/*"]
 }

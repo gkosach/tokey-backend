@@ -1,6 +1,13 @@
 import { Request, Response } from "express";
+
 import { prisma } from "../database/prisma-client";
 
+/**
+ * Получает список всех арендных договоров.
+ * @param req - HTTP-запрос.
+ * @param res - HTTP-ответ с данными договоров.
+ * @returns void
+ */
 export const getLeases = async (req: Request, res: Response): Promise<void> => {
   try {
     const leases = await prisma.lease.findMany({
@@ -15,6 +22,12 @@ export const getLeases = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+/**
+ * Получает список платежей по конкретному арендному договору.
+ * @param req - HTTP-запрос с параметром ID договора.
+ * @param res - HTTP-ответ с данными платежей.
+ * @returns void
+ */
 export const getLeasePayments = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;

@@ -1,8 +1,18 @@
 import { Request, Response } from "express";
+
+import logger from "../common/utils/logger";
 import { prisma } from "../database/prisma-client";
 
+/**
+ * Получает список заявок.
+ * @param req - HTTP-запрос, содержащий параметры фильтрации.
+ * @param res - HTTP-ответ, отправляемый клиенту.
+ * @returns void
+ */
 export const listApplications = async (req: Request, res: Response): Promise<void> => {
   try {
+    logger.debug(`Received request to list applications with query params: ${JSON.stringify(req.query)}`);
+
     const { userId, userType } = req.query;
 
     let whereClause = {};
@@ -69,15 +79,24 @@ export const listApplications = async (req: Request, res: Response): Promise<voi
         };
       }),
     );
-
+    logger.debug("Formatted applications data to send back to the client");
     res.json(formattedApplications);
   } catch (error: any) {
+    logger.error(`Error retrieving applications: ${error.message}`);
     res.status(500).json({ message: `Error retrieving applications: ${error.message}` });
   }
 };
 
+/**
+ * Создает новую заявку.
+ * @param req - HTTP-запрос с данными заявки в теле запроса.
+ * @param res - HTTP-ответ, отправляемый клиенту.
+ * @returns void
+ */
 export const createApplication = async (req: Request, res: Response): Promise<void> => {
   try {
+    logger.debug(`Received request to create application with body: ${JSON.stringify(req.body)}`);
+
     const { applicationDate, status, propertyId, investorCognitoId, name, email, phoneNumber, message } = req.body;
 
     const property = await prisma.property.findUnique({
@@ -91,10 +110,9 @@ export const createApplication = async (req: Request, res: Response): Promise<vo
     }
 
     const newApplication = await prisma.$transaction(async (prisma) => {
-      // Create lease first
       const lease = await prisma.lease.create({
         data: {
-          startDate: new Date(), // Today
+          startDate: new Date(),
           endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)), // 1 year from today
           rent: property.pricePerMonth,
           deposit: property.securityDeposit,
@@ -107,8 +125,7 @@ export const createApplication = async (req: Request, res: Response): Promise<vo
         },
       });
 
-      // Then create application with lease connection
-      const application = await prisma.application.create({
+      return prisma.application.create({
         data: {
           applicationDate: new Date(applicationDate),
           status,
@@ -132,18 +149,27 @@ export const createApplication = async (req: Request, res: Response): Promise<vo
           lease: true,
         },
       });
-
-      return application;
     });
 
     res.status(201).json(newApplication);
   } catch (error: any) {
+    logger.error(`Error creating application: ${error.message}`);
+
     res.status(500).json({ message: `Error creating application: ${error.message}` });
   }
 };
 
+/**
+ * Обновляет статус заявки.
+ * @param req - HTTP-запрос с ID заявки в параметрах и новым статусом в теле запроса.
+ * @param res - HTTP-ответ, отправляемый клиенту.
+ * @returns void
+ */
 export const updateApplicationStatus = async (req: Request, res: Response): Promise<void> => {
   try {
+    logger.debug(
+      `Received request to update application status with params ID=${req.params.id} and body ${JSON.stringify(req.body)}`,
+    );
     const { id } = req.params;
     const { status } = req.body;
     console.log("status:", status);
@@ -173,7 +199,6 @@ export const updateApplicationStatus = async (req: Request, res: Response): Prom
         },
       });
 
-      // Update the property to connect the investor
       await prisma.property.update({
         where: { id: application.propertyId },
         data: {
@@ -183,7 +208,6 @@ export const updateApplicationStatus = async (req: Request, res: Response): Prom
         },
       });
 
-      // Update the application with the new lease ID
       await prisma.application.update({
         where: { id: Number(id) },
         data: { status, leaseId: newLease.id },
@@ -194,14 +218,12 @@ export const updateApplicationStatus = async (req: Request, res: Response): Prom
         },
       });
     } else {
-      // Update the application status (for both "Denied" and other statuses)
       await prisma.application.update({
         where: { id: Number(id) },
         data: { status },
       });
     }
 
-    // Respond with the updated application details
     const updatedApplication = await prisma.application.findUnique({
       where: { id: Number(id) },
       include: {

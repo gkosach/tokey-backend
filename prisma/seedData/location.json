@@ -1,9 +1,6 @@
 [
   {
     "id": 1,
-    "country": "United Arab Emirates",
-    "city": "Dubai",
-    "state": "Dubai",
     "address": "Downtown Dubai, Sheikh Mohammed bin Rashid Blvd",
     "postalCode": "00000",
     "latitude": 25.1972,
@@ -11,9 +8,6 @@
   },
   {
     "id": 2,
-    "country": "United Arab Emirates",
-    "city": "Dubai",
-    "state": "Dubai",
     "address": "Dubai Marina, King Salman bin Abdulaziz Al Saud Street",
     "postalCode": "00000",
     "latitude": 25.0764,
@@ -21,19 +15,13 @@
   },
   {
     "id": 3,
-    "country": "United Arab Emirates",
-    "city": "Dubai",
-    "state": "Dubai",
     "address": "Palm Jumeirah, Crescent Road",
     "postalCode": "00000",
-    "latitude": 25.1210,
+    "latitude": 25.121,
     "longitude": 55.1532
   },
   {
     "id": 4,
-    "country": "United Arab Emirates",
-    "city": "Dubai",
-    "state": "Dubai",
     "address": "Business Bay, Bay Avenue",
     "postalCode": "00000",
     "latitude": 25.1867,
@@ -41,9 +29,6 @@
   },
   {
     "id": 5,
-    "country": "United Arab Emirates",
-    "city": "Dubai",
-    "state": "Dubai",
     "address": "Jumeirah Beach Residence, The Walk",
     "postalCode": "00000",
     "latitude": 25.0784,
@@ -51,9 +36,6 @@
   },
   {
     "id": 6,
-    "country": "United Arab Emirates",
-    "city": "Dubai",
-    "state": "Dubai",
     "address": "Al Barsha, Sheikh Zayed Road",
     "postalCode": "00000",
     "latitude": 25.1193,
@@ -61,9 +43,6 @@
   },
   {
     "id": 7,
-    "country": "United Arab Emirates",
-    "city": "Dubai",
-    "state": "Dubai",
     "address": "Deira, Baniyas Road",
     "postalCode": "00000",
     "latitude": 25.2667,
@@ -71,9 +50,6 @@
   },
   {
     "id": 8,
-    "country": "United Arab Emirates",
-    "city": "Dubai",
-    "state": "Dubai",
     "address": "Dubai International Financial Centre, Gate Avenue",
     "postalCode": "00000",
     "latitude": 25.2089,
@@ -81,9 +57,6 @@
   },
   {
     "id": 9,
-    "country": "United Arab Emirates",
-    "city": "Dubai",
-    "state": "Dubai",
     "address": "Al Quoz, Alserkal Avenue",
     "postalCode": "00000",
     "latitude": 25.1449,
@@ -91,9 +64,6 @@
   },
   {
     "id": 10,
-    "country": "United Arab Emirates",
-    "city": "Dubai",
-    "state": "Dubai",
     "address": "Dubai Silicon Oasis, Emirates Road",
     "postalCode": "00000",
     "latitude": 25.1214,

@@ -1,13 +1,12 @@
-import { Prisma, PrismaClient } from "@prisma/client";
 import fs from "fs";
 import path from "path";
+
+import { Prisma, PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 function sleep(ms: number) {
-  return new Promise((resolve) => {
-    return setTimeout(resolve, ms);
-  });
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function toPascalCase(str: string): string {
@@ -20,23 +19,19 @@ function toCamelCase(str: string): string {
 
 async function insertLocationData(locations: any[]) {
   for (const location of locations) {
-    const { id, country, city, state, address, postalCode, latitude, longitude } = location;
+    const { id, address, postalCode, latitude, longitude } = location;
     try {
       await prisma.location.create({
         data: {
           id,
-          country,
-          city,
-          state,
           address,
           postalCode,
           latitude,
           longitude,
         },
       });
-      console.log(`Inserted location for ${city}`);
     } catch (error) {
-      console.error(`Error inserting location for ${city}:`, error);
+      console.log(error);
     }
   }
 }
@@ -62,9 +57,7 @@ async function resetSequence(modelName: string) {
 }
 
 async function deleteAllData(orderedFileNames: string[]) {
-  const modelNames = orderedFileNames.map((fileName) => {
-    return toPascalCase(path.basename(fileName, path.extname(fileName)));
-  });
+  const modelNames = orderedFileNames.map((fileName) => toPascalCase(path.basename(fileName, path.extname(fileName))));
 
   for (const modelName of modelNames.reverse()) {
     const modelNameCamel = toCamelCase(modelName);
@@ -129,9 +122,5 @@ async function main() {
 }
 
 main()
-  .catch((e) => {
-    return console.error(e);
-  })
-  .finally(async () => {
-    return await prisma.$disconnect();
-  });
+  .catch((e) => console.error(e))
+  .finally(async () => await prisma.$disconnect());
