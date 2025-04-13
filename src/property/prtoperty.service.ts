@@ -1,5 +1,5 @@
 import { ObjectCannedACL, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient, Property } from "@prisma/client";
 import axios, { AxiosInstance } from "axios";
 
 import { GEOCODING_BASE_URL, S3_BUCKET_NAME, USER_AGENT } from "../common";
@@ -7,7 +7,6 @@ import { ErrorStatus } from "../common/enum/error/error-status.enum";
 import { PropertyErrorMessages } from "../common/enum/error/property-error.enum";
 import { PropertyError } from "../controllers/contract/error/property.error";
 import { CreatePropertyDto } from "./contract/dto/property.dto";
-import { Property } from "../../prisma/types/prismaTypes";
 import logger from "../common/utils/logger";
 
 export class PropertyService {
