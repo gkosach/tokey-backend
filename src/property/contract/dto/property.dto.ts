@@ -1,4 +1,4 @@
-import { PropertyType } from "../../../../prisma/types/prismaTypes";
+import { PropertyType } from "../../../prisma/types/prismaTypes";
 
 /**
  * DTO для создания нового свойства.
