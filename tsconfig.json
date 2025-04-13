@@ -10,7 +10,7 @@
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
-    "rootDir": "./",
+    "rootDir": "./src",
     "typeRoots": ["./node_modules/@types"]
   },
   "include": ["src/**/*"]
