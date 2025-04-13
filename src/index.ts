@@ -11,7 +11,7 @@ import applicationRoutes from "./routes/applicationRoutes";
 import investorRoutes from "./routes/investorRoutes";
 import leaseRoutes from "./routes/leaseRoutes";
 import managerRoutes from "./routes/managerRoutes";
-import propertyRoutes from "./routes/propertyRoutes";
+import propertyRoutes from "./property/property.routes";
 
 /* CONFIGURATIONS */
 dotenv.config();
