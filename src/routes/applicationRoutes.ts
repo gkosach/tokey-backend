@@ -1,6 +1,6 @@
 import express from "express";
 
-import { createApplication, listApplications, updateApplicationStatus } from "../controllers/applicationControllers";
+import { createApplication, listApplications, updateApplicationStatus } from "../application/applicationControllers";
 import { authMiddleware } from "../middleware/authMiddleware";
 
 const router = express.Router();

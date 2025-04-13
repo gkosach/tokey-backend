@@ -1,40 +1,40 @@
 /**
- * Сообщения об ошибках, связанных с операциями с недвижимостью
+ * Коды и сообщения об ошибках, связанных с операциями с недвижимостью
  */
 export enum PropertyErrorMessages {
   /**
-   * Ошибка геокодирования: не удалось преобразовать адрес в координаты
-   * (некорректный адрес или проблемы с сервисом геокодирования)
+   * Ошибка при обращении к базе данных
+   * @example Не удалось создать запись из-за нарушения уникальности
    */
-  PROPERTY_ERROR_GEOCODING_FAILED = "PROPERTY_ERROR_GEOCODING_FAILED",
+  PROPERTY_ERROR_DATABASE_FAILED = "Ошибка работы с базой данных",
 
   /**
-   * Некорректный ответ от внешнего сервиса
-   * (отсутствуют необходимые данные в ответе API)
+   * Некорректные данные в ответе внешнего сервиса
+   * @example Отсутствуют координаты в ответе геокодера
    */
-  PROPERTY_ERROR_INVALID_RESPONSE = "PROPERTY_ERROR_INVALID_RESPONSE",
+  PROPERTY_ERROR_INVALID_RESPONSE = "Некорректный ответ сервиса",
 
   /**
-   * Ошибка взаимодействия с базой данных
-   * (проблемы с подключением, нарушение ограничений БД)
+   * Ошибка преобразования адреса в координаты
+   * @example Неверный формат почтового индекса
    */
-  PROPERTY_ERROR_DATABASE_FAILED = "PROPERTY_ERROR_DATABASE_FAILED",
+  PROPERTY_ERROR_GEOCODING_FAILED = "Ошибка геокодирования адреса",
 
   /**
    * Некорректные входные данные
-   * (отсутствуют обязательные поля, неверный формат данных)
+   * @example Отсутствует обязательное поле 'address'
    */
-  PROPERTY_ERROR_INVALID_INPUT = "PROPERTY_ERROR_INVALID_INPUT",
+  PROPERTY_ERROR_INVALID_INPUT = "Некорректные входные данные",
 
   /**
-   * Ошибка загрузки файлов в хранилище
-   * (проблемы с подключением к S3, неверные права доступа)
+   * Ошибка загрузки файлов
+   * @example Превышен максимальный размер файла
    */
-  PROPERTY_ERROR_FILE_UPLOAD_FAILED = "PROPERTY_ERROR_FILE_UPLOAD_FAILED",
+  PROPERTY_ERROR_FILE_UPLOAD_FAILED = "Ошибка загрузки файлов",
 
   /**
    * Ошибка валидации данных
-   * (некорректные числовые значения, нарушение бизнес-правил)
+   * @example Значение цены отрицательное
    */
-  PROPERTY_ERROR_VALIDATION_FAILED = "PROPERTY_ERROR_VALIDATION_FAILED",
+  PROPERTY_ERROR_VALIDATION_FAILED = "Ошибка проверки данных",
 }

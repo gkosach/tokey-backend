@@ -6,6 +6,9 @@ import { GEOCODING_BASE_URL, S3_BUCKET_NAME, USER_AGENT } from "../common";
 import { ErrorStatus } from "../common/enum/error/error-status.enum";
 import { PropertyErrorMessages } from "../common/enum/error/property-error.enum";
 import { PropertyError } from "../controllers/contract/error/property.error";
+import { CreatePropertyDto } from "./contract/dto/property.dto";
+import { Property } from "../../prisma/types/prismaTypes";
+import logger from "../common/utils/logger";
 
 export class PropertyService {
   private readonly prisma: PrismaClient;
@@ -70,7 +73,8 @@ export class PropertyService {
    */
   private async uploadFilesToS3(files: Express.Multer.File[]): Promise<string[]> {
     return Promise.all(
-      files.map(async (file) => {
+      files.map(async (file: Express.Multer.File) => {
+        // Явное указание типа
         const uploadParams = {
           Bucket: S3_BUCKET_NAME,
           Key: `properties/${Date.now()}-${file.originalname}`,
@@ -91,45 +95,17 @@ export class PropertyService {
    * Валидация входных данных для создания свойства
    * @private
    */
-  private async validateCreateInput(body: any, files: Express.Multer.File[]) {
-    const requiredFields = ["address", "postalCode"];
-    requiredFields.forEach((field) => {
-      if (!body[field]?.trim()) {
-        throw new PropertyError(ErrorStatus.BadRequest, PropertyErrorMessages.PROPERTY_ERROR_INVALID_INPUT);
-      }
-    });
-
-    if (!files?.length) {
-      throw new PropertyError(ErrorStatus.BadRequest, PropertyErrorMessages.PROPERTY_ERROR_FILE_UPLOAD_FAILED);
-    }
-
-    const numericFields = {
-      pricePerMonth: Number(body.pricePerMonth),
-      securityDeposit: Number(body.securityDeposit),
-      beds: Number(body.beds),
-      baths: Number(body.baths),
-      squareFeet: Number(body.squareFeet),
-    };
-
-    Object.entries(numericFields).forEach(([_key, value]) => {
-      if (isNaN(value)) {
-        throw new PropertyError(ErrorStatus.BadRequest, PropertyErrorMessages.PROPERTY_ERROR_VALIDATION_FAILED);
-      }
-    });
-
+  private async validateCreateInput(dto: CreatePropertyDto, files: Express.Multer.File[]) {
     const [coords, photoUrls] = await Promise.all([
-      this.geocodeAddress(body.address, body.postalCode),
+      this.geocodeAddress(dto.address, dto.postalCode),
       this.uploadFilesToS3(files),
     ]);
 
     return {
-      ...numericFields,
+      ...dto,
       longitude: coords[0],
       latitude: coords[1],
       photoUrls,
-      isPetsAllowed: body.isPetsAllowed === "true",
-      isParkingIncluded: body.isParkingIncluded === "true",
-      propertyType: body.propertyType,
     };
   }
 
@@ -137,117 +113,161 @@ export class PropertyService {
    * Получает список свойств с фильтрацией
    */
   async getProperties(queryParams: any) {
-    const { latitude, longitude, ...otherParams } = queryParams;
-    const whereConditions: Prisma.Sql[] = [];
+    const {
+      lat,
+      lng,
+      radius = 5,
+      page = 1,
+      limit = 10,
+      priceMin,
+      priceMax,
+      beds,
+      baths,
+      squareFeetMin,
+      squareFeetMax,
+      propertyType,
+      availableFrom,
+      favoriteIds,
+    } = queryParams;
 
-    if (otherParams.favoriteIds) {
-      const ids = this.normalizeArray(otherParams.favoriteIds as string).map(Number);
+    logger.debug(`Full request: ${JSON.stringify(queryParams)}`);
+
+    const whereConditions: Prisma.Sql[] = [];
+    const earthRadiusKm = 6371;
+
+    // Фильтр по избранному
+    if (favoriteIds) {
+      const ids = this.normalizeArray(favoriteIds).map(Number);
       whereConditions.push(Prisma.sql`p.id IN (${Prisma.join(ids)})`);
     }
 
-    if (otherParams.priceMin || otherParams.priceMax) {
-      const min = Number(otherParams.priceMin) || 0;
-      const max = Number(otherParams.priceMax) || Number.MAX_SAFE_INTEGER;
+    // Фильтр по цене
+    if (priceMin || priceMax) {
+      const min = Number(priceMin) || 0;
+      const max = Number(priceMax) || Number.MAX_SAFE_INTEGER;
       whereConditions.push(Prisma.sql`p."pricePerMonth" BETWEEN ${min} AND ${max}`);
     }
 
-    if (otherParams.beds) {
-      const beds = Number(otherParams.beds);
-      if (!isNaN(beds)) whereConditions.push(Prisma.sql`p.beds >= ${beds}`);
+    // Фильтр по количеству спален
+    if (beds) {
+      const bedsNumber = Number(beds);
+      if (!isNaN(bedsNumber)) whereConditions.push(Prisma.sql`p.beds >= ${bedsNumber}`);
     }
 
-    if (otherParams.baths) {
-      const baths = Number(otherParams.baths);
-      if (!isNaN(baths)) whereConditions.push(Prisma.sql`p.baths >= ${baths}`);
+    // Фильтр по количеству ванных
+    if (baths) {
+      const bathsNumber = Number(baths);
+      if (!isNaN(bathsNumber)) whereConditions.push(Prisma.sql`p.baths >= ${bathsNumber}`);
     }
 
-    if (otherParams.squareFeetMin || otherParams.squareFeetMax) {
-      const min = Number(otherParams.squareFeetMin) || 0;
-      const max = Number(otherParams.squareFeetMax) || Number.MAX_SAFE_INTEGER;
+    // Фильтр по площади
+    if (squareFeetMin || squareFeetMax) {
+      const min = Number(squareFeetMin) || 0;
+      const max = Number(squareFeetMax) || Number.MAX_SAFE_INTEGER;
       whereConditions.push(Prisma.sql`p."squareFeet" BETWEEN ${min} AND ${max}`);
     }
 
-    if (otherParams.propertyType) {
-      whereConditions.push(Prisma.sql`p."propertyType" = ${otherParams.propertyType}::"PropertyType"`);
+    // Фильтр по типу недвижимости
+    if (propertyType) {
+      whereConditions.push(Prisma.sql`p."propertyType" = ${propertyType}::"PropertyType"`);
     }
 
-    if (otherParams.availableFrom) {
-      const date = new Date(otherParams.availableFrom as string);
+    // Фильтр по дате доступности
+    if (availableFrom) {
+      const date = new Date(availableFrom);
       if (!isNaN(date.getTime())) {
         whereConditions.push(
           Prisma.sql`EXISTS (
-            SELECT 1 FROM "Lease" l 
-            WHERE l."propertyId" = p.id 
-            AND l."startDate" <= ${date.toISOString()}
-          )`,
+          SELECT 1 FROM "Lease" l 
+          WHERE l."propertyId" = p.id 
+          AND l."startDate" <= ${date.toISOString()}
+        )`,
         );
       }
     }
 
-    if (latitude && longitude) {
-      const lat = parseFloat(latitude as string);
-      const lng = parseFloat(longitude as string);
-      const radiusKm = 5;
+    // Гео-фильтр
+    if (lat && lng) {
+      const maxLatDiff = radius / 111.2;
+      const maxLngDiff = radius / (111.2 * Math.cos((lat * Math.PI) / 180));
 
       whereConditions.push(Prisma.sql`
-        ST_DWithin(
-          l.coordinates,
-          ST_MakePoint(${lng}, ${lat})::geography,
-          ${radiusKm * 1000}
+      l.latitude BETWEEN ${lat - maxLatDiff} AND ${lat + maxLatDiff}
+      AND l.longitude BETWEEN ${lng - maxLngDiff} AND ${lng + maxLngDiff}
+      AND (
+        ${earthRadiusKm} * ACOS(
+          COS(RADIANS(${lat})) * 
+          COS(RADIANS(l.latitude)) * 
+          COS(RADIANS(l.longitude) - RADIANS(${lng})) + 
+          SIN(RADIANS(${lat})) * SIN(RADIANS(l.latitude))
         )
-      `);
+      ) <= ${radius}
+    `);
     }
 
     const query = Prisma.sql`
-      SELECT 
-        p.*,
-        json_build_object(
-          'id', l.id,
-          'address', l.address,
-          'postalCode', l."postalCode",
-          'coordinates', ST_AsGeoJSON(l.coordinates)::jsonb
-        ) as location
-      FROM "Property" p
-      JOIN "Location" l ON p."locationId" = l.id
-      ${whereConditions.length ? Prisma.sql`WHERE ${Prisma.join(whereConditions, " AND ")}` : Prisma.empty}
-      ORDER BY p."createdAt" DESC
-      LIMIT 100
-    `;
+    SELECT 
+      p.*,
+      json_build_object(
+        'id', l.id,
+        'address', l.address,
+        'postalCode', l."postalCode",
+        'latitude', l.latitude,
+        'longitude', l.longitude
+      ) as location,
+      ${earthRadiusKm} * ACOS(
+        COS(RADIANS(${lat})) * 
+        COS(RADIANS(l.latitude)) * 
+        COS(RADIANS(l.longitude) - RADIANS(${lng})) + 
+        SIN(RADIANS(${lat})) * SIN(RADIANS(l.latitude))
+      ) as distance
+    FROM "Property" p
+    JOIN "Location" l ON p."locationId" = l.id
+    ${whereConditions.length ? Prisma.sql`WHERE ${Prisma.join(whereConditions, " AND ")}` : Prisma.empty}
+    ORDER BY distance ASC
+    LIMIT ${limit}
+    OFFSET ${(page - 1) * limit}
+  `;
 
     return this.prisma.$queryRaw(query);
   }
 
   /**
-   * Создает новое свойство с прикрепленными фото
+   * Создает новое свойство в базе данных.
+   * @param dto DTO с данными о создаваемом свойстве.
+   * @param files Массив файлов для загрузки фотографий.
+   * @returns Созданное свойство с данными о локации.
    */
-  async createProperty(body: any, files: Express.Multer.File[]) {
-    const validatedData = await this.validateCreateInput(body, files);
+  async createProperty(dto: CreatePropertyDto, files: Express.Multer.File[]): Promise<Property> {
+    const photoUrls = await this.uploadFilesToS3(files);
+    const [longitude, latitude] = await this.geocodeAddress(dto.address, dto.postalCode);
+
     return this.prisma.$transaction(async (tx) => {
       const location = await tx.location.create({
         data: {
-          address: body.address,
-          postalCode: body.postalCode,
-          longitude: validatedData.longitude,
-          latitude: validatedData.latitude,
+          address: dto.address,
+          postalCode: dto.postalCode,
+          longitude,
+          latitude,
         },
       });
 
       return tx.property.create({
         data: {
-          name: body.name,
-          description: body.description,
-          pricePerMonth: validatedData.pricePerMonth,
-          securityDeposit: validatedData.securityDeposit,
-          applicationFee: body.applicationFee || 0,
-          photoUrls: validatedData.photoUrls,
-          isPetsAllowed: validatedData.isPetsAllowed,
-          isParkingIncluded: validatedData.isParkingIncluded,
-          propertyType: validatedData.propertyType,
-          beds: validatedData.beds,
-          baths: validatedData.baths,
-          squareFeet: validatedData.squareFeet,
+          name: dto.name,
+          description: dto.description,
+          pricePerMonth: dto.pricePerMonth,
+          securityDeposit: dto.securityDeposit,
+          applicationFee: dto.applicationFee || 0,
+          isPetsAllowed: dto.isPetsAllowed,
+          isParkingIncluded: dto.isParkingIncluded,
+          propertyType: dto.propertyType,
+          beds: dto.beds,
+          baths: dto.baths,
+          squareFeet: dto.squareFeet,
+          photoUrls: photoUrls,
+          managerCognitoId: dto.managerCognitoId,
           locationId: location.id,
-          managerCognitoId: body.managerCognitoId,
         },
         include: { location: true },
       });

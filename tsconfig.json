@@ -1,5 +1,7 @@
 {
   "compilerOptions": {
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "strict": true,
     "esModuleInterop": true,
     "moduleResolution": "node",
@@ -8,9 +10,6 @@
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
-    "paths": {
-      "@/*": ["./src/*"]
-    },
     "typeRoots": ["./node_modules/@types"]
   },
   "include": ["src/**/*"]
