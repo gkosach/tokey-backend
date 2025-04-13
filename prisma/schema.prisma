@@ -4,41 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://postgres:uLRJIKSOldIdnXMJoTKYZKOSYYZLNfPe@turntable.proxy.rlwy.net:54156/railway"
-}
-
-enum Highlight {
-  HighSpeedInternetAccess
-  WasherDryer
-  AirConditioning
-  Heating
-  SmokeFree
-  CableReady
-  SatelliteTV
-  DoubleVanities
-  TubShower
-  Intercom
-  SprinklerSystem
-  RecentlyRenovated
-  CloseToTransit
-  GreatView
-  QuietNeighborhood
-}
-
-enum Amenity {
-  WasherDryer
-  AirConditioning
-  Dishwasher
-  HighSpeedInternet
-  HardwoodFloors
-  WalkInClosets
-  Microwave
-  Refrigerator
-  Pool
-  Gym
-  Parking
-  PetsAllowed
-  WiFi
+  url      = "postgresql://dev_user:dev_password@localhost:5432/dev_db"
 }
 
 enum PropertyType {
@@ -71,8 +37,6 @@ model Property {
   securityDeposit   Float
   applicationFee    Float
   photoUrls         String[]
-  amenities         Amenity[]
-  highlights        Highlight[]
   isPetsAllowed     Boolean      @default(false)
   isParkingIncluded Boolean      @default(false)
   beds              Int
@@ -119,9 +83,6 @@ model Investor {
 model Location {
   id         Int    @id @default(autoincrement())
   address    String
-  city       String
-  state      String
-  country    String
   postalCode String
   latitude   Float
   longitude  Float

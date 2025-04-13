@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
+
 import { authMiddleware } from "./middleware/authMiddleware";
 /* ROUTE IMPORT */
 import applicationRoutes from "./routes/applicationRoutes";

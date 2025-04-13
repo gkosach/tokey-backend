@@ -1,15 +1,26 @@
-# Prisma initial generation
+# Prisma migration generation
 
-```npm
-npx prisma migrate dev --name init
+```bash
+npx prisma migrate dev --name removeHighlisghtsAmenities
 ```
+
 # Перегенерация клиента Prisma
 
 ```npm
 npm run prisma:generate
 ```
+
 # Добавление моков в БД
+
 ```npm
 npm run seed
 ```
-# Запустить миграцию
+
+---
+
+## 📚 Документация
+
+1. [Конфигурирование приложения](asset/docs/nginx.md)
+2. [AWS EC2 (не используется)](assets/docs/aws-ec2-instructions.md)
+
+---
