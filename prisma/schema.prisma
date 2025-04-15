@@ -4,17 +4,28 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://german:prioraKisel124!@postgres-db:5432/sona"
-  //  url      = "postgresql://dev_user:dev_password@localhost:5432/dev_db"
+  url      = "postgresql://dev_user:dev_password@localhost:5432/dev_db"
 }
 
+// Типы недвижимости
 enum PropertyType {
-  Rooms
-  Tinyhouse
-  Apartment
-  Villa
-  Townhouse
-  Cottage
+  Rooms // Комнаты
+  Apartment // Квартира
+  Villa // Вилла
+  Townhouse // Таунхаус
+}
+
+// Статусы платежей
+enum PaymentStatus {
+  Pending // Ожидает
+  Paid // Оплачен
+  Failed // Неудачный
+}
+
+// Методы оплаты
+enum PaymentMethod {
+  CRYPTO // Криптовалюта
+  VISA // банковаская карта
 }
 
 enum ApplicationStatus {
@@ -23,114 +34,100 @@ enum ApplicationStatus {
   Approved
 }
 
-enum PaymentStatus {
-  Pending
-  Paid
-  PartiallyPaid
-  Overdue
-}
-
 model Property {
-  id                Int          @id @default(autoincrement())
-  name              String
-  description       String
-  pricePerMonth     Float
-  securityDeposit   Float
-  applicationFee    Float
-  photoUrls         String[]
-  isPetsAllowed     Boolean      @default(false)
-  isParkingIncluded Boolean      @default(false)
-  beds              Int
-  baths             Float
-  squareFeet        Int
-  propertyType      PropertyType
-  postedDate        DateTime     @default(now())
-  averageRating     Float?       @default(0)
-  numberOfReviews   Int?         @default(0)
-  locationId        Int
-  managerCognitoId  String
+  id               Int          @id @default(autoincrement())
+  name             String       @db.VarChar(255)
+  description      String       @db.Text
+  photoUrls        String[]     @db.Text
+  tokenPrice       Float        @default(0)
+  totalTokens      Int          @default(1000)
+  tokensSold       Int          @default(0)
+  rentalPercent    Float        @default(5)
+  tokenizationDate DateTime?
+  locationId       Int
+  managerId        Int?
+  propertyType     PropertyType
 
-  location     Location      @relation(fields: [locationId], references: [id])
-  manager      Manager       @relation(fields: [managerCognitoId], references: [cognitoId])
-  leases       Lease[]
-  applications Application[]
-  favoritedBy  Investor[]    @relation("InvestorFavorites")
-  investors    Investor[]    @relation("InvestorProperties")
+  location    Location         @relation(fields: [locationId], references: [id])
+  manager     Manager?         @relation(fields: [managerId], references: [id])
+  tokens      PaymentHistory[]
+  Application Application[]
+  investors   Investor[]       @relation("PropertyInvestors")
+  favoritedBy Investor[]       @relation("FavoriteProperties")
+
+  @@index([locationId])
+  @@index([managerId])
+  @@index([tokenizationDate])
 }
 
 model Manager {
   id          Int    @id @default(autoincrement())
-  cognitoId   String @unique
-  name        String
-  email       String
-  phoneNumber String
+  cognitoId   String @unique @db.VarChar(255)
+  name        String @db.VarChar(100)
+  email       String @unique @db.VarChar(255)
+  phoneNumber String @unique @db.VarChar(20)
 
-  managedProperties Property[]
+  properties Property[]
+
+  @@index([email])
+  @@index([phoneNumber])
 }
 
 model Investor {
-  id          Int    @id @default(autoincrement())
-  cognitoId   String @unique
-  name        String
-  email       String
-  phoneNumber String
+  id                 Int           @id @default(autoincrement())
+  cognitoId          String        @unique @db.VarChar(255)
+  name               String        @db.VarChar(100)
+  email              String        @unique @db.VarChar(255)
+  phoneNumber        String        @unique @db.VarChar(20)
+  cryptoWallet       String?       @db.VarChar(42)
+  bankAccount        String?       @db.VarChar(34)
+  preferredMethod    PaymentMethod @default(CRYPTO)
+  investedProperties Property[]    @relation("PropertyInvestors")
 
-  properties   Property[]    @relation("InvestorProperties")
-  favorites    Property[]    @relation("InvestorFavorites")
-  applications Application[]
-  leases       Lease[]
-}
-
-model Location {
-  id         Int    @id @default(autoincrement())
-  address    String
-  postalCode String
-  latitude   Float
-  longitude  Float
-
-  properties Property[]
+  tokens      PaymentHistory[]
+  Application Application[]
+  favorites   Property[]       @relation("FavoriteProperties")
 }
 
 model Application {
-  id                Int               @id @default(autoincrement())
-  applicationDate   DateTime
-  status            ApplicationStatus
-  propertyId        Int
-  investorCognitoId String
-  name              String
-  email             String
-  phoneNumber       String
-  message           String?
-  leaseId           Int?              @unique
+  id              Int               @id @default(autoincrement())
+  applicationDate DateTime          @default(now())
+  status          ApplicationStatus
+  message         String?
+  propertyId      Int
+  investorId      Int
 
   property Property @relation(fields: [propertyId], references: [id])
-  investor Investor @relation(fields: [investorCognitoId], references: [cognitoId])
-  lease    Lease?   @relation(fields: [leaseId], references: [id])
+  investor Investor @relation(fields: [investorId], references: [id])
+
+  @@index([propertyId])
+  @@index([investorId])
 }
 
-model Lease {
-  id                Int      @id @default(autoincrement())
-  startDate         DateTime
-  endDate           DateTime
-  rent              Float
-  deposit           Float
-  propertyId        Int
-  investorCognitoId String
-
-  property    Property     @relation(fields: [propertyId], references: [id])
-  investor    Investor     @relation(fields: [investorCognitoId], references: [cognitoId])
-  application Application?
-  payments    Payment[]
-}
-
-model Payment {
+model PaymentHistory {
   id            Int           @id @default(autoincrement())
-  amountDue     Float
-  amountPaid    Float
-  dueDate       DateTime
-  paymentDate   DateTime
-  paymentStatus PaymentStatus
-  leaseId       Int
+  quantity      Int
+  purchaseDate  DateTime      @default(now())
+  propertyId    Int
+  investorId    Int
+  paymentMethod PaymentMethod
+  paymentStatus PaymentStatus @default(Pending)
+  txHash        String?
+  amount        Float
 
-  lease Lease @relation(fields: [leaseId], references: [id])
+  property Property @relation(fields: [propertyId], references: [id])
+  investor Investor @relation(fields: [investorId], references: [id])
+
+  @@index([propertyId, investorId])
+  @@index([purchaseDate])
+}
+
+model Location {
+  id        Int        @id @default(autoincrement())
+  address   String     @db.VarChar(255)
+  latitude  Float
+  longitude Float
+  Property  Property[]
+
+  @@index([latitude, longitude])
 }

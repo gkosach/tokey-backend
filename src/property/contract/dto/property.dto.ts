@@ -1,52 +1,35 @@
-import { PropertyType } from "../../../../prisma/types/prismaTypes";
+import { PropertyType } from "@prisma/client";
+import { IsArray, IsEnum, IsInt, IsNumber, IsOptional, IsString, Max, Min } from "class-validator";
 
-/**
- * DTO для создания нового свойства.
- * Содержит все необходимые поля для передачи данных о недвижимости.
- */
 export class CreatePropertyDto {
-  /** Название недвижимости. */
+  @IsString()
   name!: string;
 
-  /** Описание недвижимости. */
+  @IsString()
   description!: string;
 
-  /** Цена аренды за месяц. */
-  pricePerMonth!: number;
+  @IsNumber()
+  tokenPrice!: number;
 
-  /** Сумма залога за аренду. */
-  securityDeposit!: number;
+  @IsInt()
+  totalTokens!: number;
 
-  /** Сумма за подачу заявки на аренду (опционально). */
-  applicationFee?: number;
+  @IsNumber()
+  @IsOptional()
+  rentalPercent?: number;
 
-  /** Разрешено ли проживание с домашними животными. */
-  isPetsAllowed: boolean = false;
-
-  /** Включена ли парковка в стоимость аренды. */
-  isParkingIncluded: boolean = false;
-
-  /** Тип недвижимости (из enum PropertyType). */
-  propertyType!: PropertyType;
-
-  /** Количество спальных мест. */
-  beds!: number;
-
-  /** Количество ванных комнат. */
-  baths!: number;
-
-  /** Площадь недвижимости в квадратных метрах. */
-  squareFeet!: number;
-
-  /** Массив URL-адресов фотографий недвижимости. */
-  photoUrls!: string[];
-
-  /** Уникальный идентификатор менеджера (Cognito ID). */
-  managerCognitoId!: string;
-
-  /** Адрес недвижимости. */
+  @IsString()
   address!: string;
 
-  /** Почтовый индекс недвижимости. */
-  postalCode!: string;
+  @IsEnum(PropertyType)
+  propertyType!: PropertyType;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  photoUrls?: string[];
+
+  @IsString()
+  @IsOptional()
+  managerCognitoId?: string;
 }

@@ -1,18 +1,12 @@
-import { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { Request, Response } from "express";
 import { ErrorStatus } from "../common/enum/error/error-status.enum";
 import { PropertyErrorMessages } from "../common/enum/error/property-error.enum";
-import { PropertyError } from "../controllers/contract/error/property.error";
-import { PropertyService } from "./prtoperty.service";
-import { S3Client } from "@aws-sdk/client-s3";
-import { CreatePropertyDto } from "./contract/dto/property.dto";
+import { PropertyError } from "./contract/error/property.error";
+import { PropertyService } from "./property.service";
 
 export class PropertyController {
-  private readonly propertyService: PropertyService;
-
-  constructor() {
-    this.propertyService = new PropertyService(new PrismaClient(), new S3Client({}));
-  }
+  private propertyService = new PropertyService();
 
   /**
    * Универсальный обработчик ошибок для операций с недвижимостью
@@ -59,7 +53,16 @@ export class PropertyController {
    */
   async getProperty(req: Request, res: Response): Promise<Response> {
     try {
-      const property = await this.propertyService.getProperty(req.params.id);
+      const propertyId = Number(req.params.id);
+      if (isNaN(propertyId)) {
+        throw new PropertyError(ErrorStatus.BadRequest, PropertyErrorMessages.PROPERTY_ERROR_INVALID_ID);
+      }
+
+      const property = await this.propertyService.getProperty(propertyId.toString());
+      if (!property) {
+        throw new PropertyError(ErrorStatus.NotFound, PropertyErrorMessages.PROPERTY_ERROR_INVALID_RESPONSE);
+      }
+
       return res.json(property);
     } catch (error) {
       this.handleError(error, res);
@@ -72,12 +75,16 @@ export class PropertyController {
    * @param req Запрос с параметрами фильтрации
    * @param res Ответ с отфильтрованным списком или ошибкой
    */
-  async getProperties(req: Request, res: Response): Promise<void> {
+  async getProperties(req: Request, res: Response) {
     try {
-      const properties = await this.propertyService.getProperties(req.query);
-      res.json(properties);
+      const result = await this.propertyService.getProperties({
+        page: Number(req.query.page),
+        type: req.query.type as any,
+      });
+      res.json(result);
     } catch (error) {
       this.handleError(error, res);
+      return res;
     }
   }
 
@@ -86,29 +93,14 @@ export class PropertyController {
    * @param req Запрос с данными объекта и файлами
    * @param res Ответ с созданным объектом или ошибкой
    */
-  async createProperty(req: Request, res: Response): Promise<Response> {
+  async createProperty(req: Request, res: Response) {
     try {
-      const dto = this.prepareDto(req);
-      const result = await this.propertyService.createProperty(dto, req.files as Express.Multer.File[]);
-      return res.status(201).json(result);
+      const result = await this.propertyService.createProperty(req.body, req.files as []);
+      res.status(201).json(result);
     } catch (error) {
       this.handleError(error, res);
       return res;
     }
-  }
-
-  /**
-   * Подготавливает DTO из данных запроса
-   * @param req Объект запроса Express
-   * @returns Валидный DTO объект
-   */
-  private prepareDto(req: Request): CreatePropertyDto {
-    return {
-      ...req.body,
-      photoUrls: req.body.photoUrls || [],
-      isPetsAllowed: Boolean(req.body.isPetsAllowed),
-      isParkingIncluded: Boolean(req.body.isParkingIncluded),
-    };
   }
 }
 
