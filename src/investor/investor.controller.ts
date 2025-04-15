@@ -18,11 +18,12 @@ export class InvestorController {
       this.sendErrorResponse(res, error.statusCode, error.message);
       return;
     }
-
     this.sendErrorResponse(res, ErrorStatus.InternalError, InvestorErrorMessages.INVESTOR_ERROR_UNKNOWN);
   }
 
   private sendErrorResponse(res: Response, code: ErrorStatus, message: string): void {
+    console.error(message);
+
     res.status(code).json({
       error: {
         code,

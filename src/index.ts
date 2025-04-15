@@ -23,15 +23,33 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors());
 
-/* ROUTES */
-app.get("/", (req, res) => {
-  res.send("This is home route");
-});
+app.use((req, res, next) => {
+  console.log("\n=== Incoming Request ===");
+  console.log("Method:", req.method);
+  console.log("Path:  ", req.path);
+  console.log("Body:  ", JSON.stringify(req.body, null, 2));
+  console.log("-----------------------");
+  /* ROUTES */
+  app.get("/", (req, res) => {
+    res.send("This is home route");
+  });
 
-app.use("/applications", applicationRoutes);
-app.use("/properties", propertyRoutes);
-app.use("/investors", authMiddleware(["investor"]), investorRoutes);
-app.use("/managers", authMiddleware(["manager"]), managerRoutes);
+  app.use("/applications", applicationRoutes);
+  app.use("/properties", propertyRoutes);
+  app.use("/investors", authMiddleware(["investor"]), investorRoutes);
+  app.use("/managers", authMiddleware(["manager"]), managerRoutes);
+
+  const originalSend = res.send;
+  res.send = function (body) {
+    console.log("\n=== Outgoing Response ===");
+    console.log("Status:", res.statusCode);
+    console.log("Body:  ", JSON.stringify(JSON.parse(body), null, 2));
+    console.log("==========================\n");
+    return originalSend.call(this, body);
+  };
+
+  next();
+});
 
 /* SERVER */
 const port = Number(process.env.PORT) || 3002;

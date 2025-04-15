@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { ApplicationService } from "./application.service";
 import { Prisma } from "@prisma/client";
-import { ApplicationError } from "./contract/error/application.error";
 import { CreateApplicationDto, UpdateApplicationStatusDto } from "./contract/dto/application.dto";
 import { ErrorStatus } from "../common/enum/error/error-status.enum";
 import { ApplicationErrorMessages } from "../common/enum/error/apllication-error.enum";
@@ -18,12 +17,6 @@ export class ApplicationController {
       );
       return;
     }
-
-    if (error instanceof ApplicationError) {
-      this.sendErrorResponse(res, error.statusCode, error.message);
-      return;
-    }
-
     this.sendErrorResponse(res, ErrorStatus.InternalError, ApplicationErrorMessages.APPLICATION_ERROR_DATABASE_FAILED);
   }
 

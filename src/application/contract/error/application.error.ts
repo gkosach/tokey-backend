@@ -5,5 +5,6 @@ import { ApplicationErrorMessages } from "../../../common/enum/error/apllication
 export class ApplicationError extends BaseError {
   constructor(code: ErrorStatus, message: ApplicationErrorMessages) {
     super(code, message);
+
   }
 }

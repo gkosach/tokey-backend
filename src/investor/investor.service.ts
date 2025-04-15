@@ -1,10 +1,13 @@
 import { PrismaClient } from "@prisma/client";
+import { InvestorError } from "./contract/error/investor.error";
+import { ErrorStatus } from "../common/enum/error/error-status.enum";
+import { InvestorErrorMessages } from "../common/enum/error/investor-error.enum";
 
 const prisma = new PrismaClient();
 
 export class InvestorService {
   async getInvestor(cognitoId: string) {
-    return prisma.investor.findUnique({
+    const investor = await prisma.investor.findUnique({
       where: { cognitoId },
       include: {
         favorites: true,
@@ -12,6 +15,11 @@ export class InvestorService {
         tokens: true,
       },
     });
+    if (!investor) {
+      throw new InvestorError(ErrorStatus.NotFound, InvestorErrorMessages.INVESTOR_NOT_FOUND); // Throw custom error here
+    }
+
+    return investor;
   }
 
   async createInvestor(data: {
@@ -56,8 +64,9 @@ export class InvestorService {
       select: { id: true },
     });
 
-    if (!investor) throw new Error("Investor not found");
-
+    if (!investor) {
+      throw new InvestorError(ErrorStatus.NotFound, InvestorErrorMessages.INVESTOR_NOT_FOUND); // Replace generic Error
+    }
     return prisma.property.findMany({
       where: {
         tokens: {
@@ -69,7 +78,6 @@ export class InvestorService {
       include: { location: true },
     });
   }
-
 
   async addFavoriteProperty(cognitoId: string, propertyId: number) {
     return prisma.$transaction(async (tx) => {

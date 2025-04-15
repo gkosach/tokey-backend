@@ -15,11 +15,6 @@ export class ManagerController {
       return;
     }
 
-    if (error instanceof ManagerError) {
-      this.sendErrorResponse(res, error.statusCode, error.message);
-      return;
-    }
-
     this.sendErrorResponse(res, ErrorStatus.InternalError, ManagerErrorMessages.MANAGER_ERROR_UNKNOWN);
   }
 

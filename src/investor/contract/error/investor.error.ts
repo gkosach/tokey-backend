@@ -3,7 +3,7 @@ import { BaseError } from "../../../common/utils/base-error";
 import { ErrorStatus } from "../../../common/enum/error/error-status.enum";
 
 export class InvestorError extends BaseError {
-  constructor(code: ErrorStatus, message: InvestorErrorMessages) {
-    super(code, message);
+  constructor(statusCode: ErrorStatus, message: InvestorErrorMessages) {
+    super(statusCode, message);
   }
 }

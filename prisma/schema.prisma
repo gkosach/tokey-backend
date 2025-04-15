@@ -48,16 +48,27 @@ model Property {
   managerId        Int?
   propertyType     PropertyType
 
-  location    Location         @relation(fields: [locationId], references: [id])
-  manager     Manager?         @relation(fields: [managerId], references: [id])
-  tokens      PaymentHistory[]
-  Application Application[]
-  investors   Investor[]       @relation("PropertyInvestors")
-  favoritedBy Investor[]       @relation("FavoriteProperties")
+  location           Location             @relation(fields: [locationId], references: [id])
+  manager            Manager?             @relation(fields: [managerId], references: [id])
+  tokens             PaymentHistory[]
+  Application        Application[]
+  investors          Investor[]           @relation("PropertyInvestors")
+  favoritedBy        Investor[]           @relation("FavoriteProperties")
+  FavoriteProperties FavoriteProperties[]
 
   @@index([locationId])
   @@index([managerId])
   @@index([tokenizationDate])
+}
+
+model FavoriteProperties {
+  investor   Investor @relation(fields: [investorId], references: [id])
+  investorId Int
+  property   Property @relation(fields: [propertyId], references: [id])
+  propertyId Int
+
+  @@id([investorId, propertyId])
+  @@map("_FavoriteProperties")
 }
 
 model Manager {
@@ -84,9 +95,10 @@ model Investor {
   preferredMethod    PaymentMethod @default(CRYPTO)
   investedProperties Property[]    @relation("PropertyInvestors")
 
-  tokens      PaymentHistory[]
-  Application Application[]
-  favorites   Property[]       @relation("FavoriteProperties")
+  tokens             PaymentHistory[]
+  Application        Application[]
+  favorites          Property[]           @relation("FavoriteProperties")
+  FavoriteProperties FavoriteProperties[]
 }
 
 model Application {

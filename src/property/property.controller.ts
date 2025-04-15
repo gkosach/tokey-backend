@@ -22,10 +22,7 @@ export class PropertyController {
       );
     }
 
-    if (error instanceof PropertyError) {
-      return this.sendErrorResponse(res, error.statusCode, error.message as PropertyErrorMessages);
-    }
-    console.error("Критическая ошибка:", error);
+    console.error("Critical error:", error);
     this.sendErrorResponse(res, ErrorStatus.InternalError, PropertyErrorMessages.PROPERTY_ERROR_INVALID_RESPONSE);
   }
 

@@ -1,10 +1,12 @@
-export class BaseError extends Error {
-  public readonly statusCode: number;
+import { ErrorStatus } from "../enum/error/error-status.enum";
 
-  constructor(statusCode: number, message: string) {
+export class BaseError extends Error {
+  constructor(
+    public statusCode: ErrorStatus,
+    public message: string,
+  ) {
     super(message);
-    this.statusCode = statusCode;
-    this.name = this.constructor.name;
+    // Критически важная строка
     Object.setPrototypeOf(this, new.target.prototype);
   }
 }
