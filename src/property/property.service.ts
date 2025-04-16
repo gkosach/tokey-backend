@@ -1,13 +1,14 @@
 import { PrismaClient, PropertyType } from "@prisma/client";
 import { CreatePropertyDto } from "./contract/dto/property.dto";
-import { GEOCODING_BASE_URL } from "../common";
+import { UpdateModerationStatusDto } from "./contract/dto/property-moderation.dto";
+import { Geocoder } from "../common/utils/geocoder";
 
 const prisma = new PrismaClient();
 
 export class PropertyService {
   async createProperty(dto: CreatePropertyDto, files: Express.Multer.File[]) {
     const photoUrls = files?.length ? this.uploadToS3(files) : [];
-    const [lng, lat] = await this.geocode(dto.address);
+    const { lat, lng } = await Geocoder.geocode(dto.address);
 
     return prisma.$transaction(async (tx) => {
       return tx.property.create({
@@ -72,10 +73,31 @@ export class PropertyService {
     return files.map((file) => `s3://bucket/${Date.now()}-${file.originalname}`);
   }
 
-  private async geocode(address: string): Promise<[number, number]> {
-    const response = await fetch(`${GEOCODING_BASE_URL}?q=${encodeURIComponent(address)}`);
-    const [result] = await response.json();
-    if (!result?.lon || !result?.lat) throw new Error("Geocoding failed");
-    return [parseFloat(result.lon), parseFloat(result.lat)];
+  async getPropertiesForModeration() {
+    return prisma.property.findMany({
+      where: {
+        moderationStatus: "Pending",
+        manager: { kycStatus: "Approved" }, // Только от верифицированных менеджеров
+      },
+      include: {
+        location: true,
+        manager: true,
+      },
+    });
+  }
+
+  async updateModerationStatus(id: number, dto: UpdateModerationStatusDto) {
+    return prisma.property.update({
+      where: { id },
+      data: {
+        moderationStatus: dto.status,
+        moderationComment: dto.comment,
+        tokenizationDate: dto.status === "Approved" ? new Date() : null,
+      },
+      include: {
+        location: true,
+        manager: true,
+      },
+    });
   }
 }

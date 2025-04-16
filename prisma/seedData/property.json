@@ -1,6 +1,8 @@
 [
   {
     "name": "Luxury Palm Villa",
+    "moderationStatus": "Approved",
+    "moderationComment": null,
     "description": "5-bedroom villa with private beach access",
     "photoUrls": ["/villa1.jpg", "/villa2.jpg"],
     "tokenPrice": 5000,
@@ -13,6 +15,8 @@
   },
   {
     "name": "Burj View Apartment",
+    "moderationStatus": "Pending",
+    "moderationComment": "Need property proof documents",
     "description": "3-bed apartment with Burj Khalifa view",
     "photoUrls": ["/burj1.jpg"],
     "tokenPrice": 2500,

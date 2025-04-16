@@ -17,4 +17,6 @@ router.delete("/:cognitoId/favorites/:propertyId", authMiddleware(["investor"]),
   investorController.removeFavoriteProperty(req, res),
 );
 
+
+
 export default router;

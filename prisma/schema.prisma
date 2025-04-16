@@ -7,6 +7,13 @@ datasource db {
   url      = "postgresql://dev_user:dev_password@localhost:5432/dev_db"
 }
 
+enum KYCStatus {
+  NotStarted // Не начата
+  Pending // На проверке
+  Approved // Подтверждён
+  Rejected // Отклонён
+}
+
 // Типы недвижимости
 enum PropertyType {
   Rooms // Комнаты
@@ -28,30 +35,31 @@ enum PaymentMethod {
   VISA // банковаская карта
 }
 
-enum ApplicationStatus {
-  Pending
-  Denied
-  Approved
+enum ModerationStatus {
+  Pending // На модерации
+  Approved // Одобрено
+  Rejected // Отклонено
 }
 
 model Property {
-  id               Int          @id @default(autoincrement())
-  name             String       @db.VarChar(255)
-  description      String       @db.Text
-  photoUrls        String[]     @db.Text
-  tokenPrice       Float        @default(0)
-  totalTokens      Int          @default(1000)
-  tokensSold       Int          @default(0)
-  rentalPercent    Float        @default(5)
-  tokenizationDate DateTime?
-  locationId       Int
-  managerId        Int?
-  propertyType     PropertyType
+  id                Int              @id @default(autoincrement())
+  name              String           @db.VarChar(255)
+  description       String           @db.Text
+  photoUrls         String[]         @db.Text
+  tokenPrice        Float            @default(0)
+  totalTokens       Int              @default(1000)
+  tokensSold        Int              @default(0)
+  rentalPercent     Float            @default(5)
+  tokenizationDate  DateTime?
+  locationId        Int
+  managerId         Int?
+  propertyType      PropertyType
+  moderationStatus  ModerationStatus @default(Pending)
+  moderationComment String?
 
   location           Location             @relation(fields: [locationId], references: [id])
   manager            Manager?             @relation(fields: [managerId], references: [id])
   tokens             PaymentHistory[]
-  Application        Application[]
   investors          Investor[]           @relation("PropertyInvestors")
   favoritedBy        Investor[]           @relation("FavoriteProperties")
   FavoriteProperties FavoriteProperties[]
@@ -72,11 +80,14 @@ model FavoriteProperties {
 }
 
 model Manager {
-  id          Int    @id @default(autoincrement())
-  cognitoId   String @unique @db.VarChar(255)
-  name        String @db.VarChar(100)
-  email       String @unique @db.VarChar(255)
-  phoneNumber String @unique @db.VarChar(20)
+  id             Int       @id @default(autoincrement())
+  cognitoId      String    @unique @db.VarChar(255)
+  name           String    @db.VarChar(100)
+  email          String    @unique @db.VarChar(255)
+  phoneNumber    String    @unique @db.VarChar(20)
+  kycStatus      KYCStatus @default(NotStarted)
+  kycSubmittedAt DateTime?
+  kycApprovedAt  DateTime?
 
   properties Property[]
 
@@ -94,26 +105,13 @@ model Investor {
   bankAccount        String?       @db.VarChar(34)
   preferredMethod    PaymentMethod @default(CRYPTO)
   investedProperties Property[]    @relation("PropertyInvestors")
+  kycStatus          KYCStatus     @default(NotStarted)
+  kycSubmittedAt     DateTime? // Дата подачи на проверку
+  kycApprovedAt      DateTime? // Дата подтверждения
 
   tokens             PaymentHistory[]
-  Application        Application[]
   favorites          Property[]           @relation("FavoriteProperties")
   FavoriteProperties FavoriteProperties[]
-}
-
-model Application {
-  id              Int               @id @default(autoincrement())
-  applicationDate DateTime          @default(now())
-  status          ApplicationStatus
-  message         String?
-  propertyId      Int
-  investorId      Int
-
-  property Property @relation(fields: [propertyId], references: [id])
-  investor Investor @relation(fields: [investorId], references: [id])
-
-  @@index([propertyId])
-  @@index([investorId])
 }
 
 model PaymentHistory {

@@ -4,6 +4,7 @@ import { ErrorStatus } from "../common/enum/error/error-status.enum";
 import { PropertyErrorMessages } from "../common/enum/error/property-error.enum";
 import { PropertyError } from "./contract/error/property.error";
 import { PropertyService } from "./property.service";
+import { UpdateModerationStatusDto } from "./contract/dto/property-moderation.dto";
 
 export class PropertyController {
   private propertyService = new PropertyService();
@@ -92,11 +93,36 @@ export class PropertyController {
    */
   async createProperty(req: Request, res: Response) {
     try {
-      const result = await this.propertyService.createProperty(req.body, req.files as []);
-      res.status(201).json(result);
+      const result = await this.propertyService.createProperty(req.body, req.files as Express.Multer.File[]);
+
+      res.status(201).json({
+        ...result,
+        location: {
+          lat: result.location.latitude,
+          lng: result.location.longitude,
+        },
+      });
     } catch (error) {
       this.handleError(error, res);
-      return res;
+    }
+  }
+
+  async listForModeration(req: Request, res: Response) {
+    try {
+      const result = await this.propertyService.getPropertiesForModeration();
+      res.json(result);
+    } catch (error) {
+      this.handleError(error, res);
+    }
+  }
+
+  async updateModerationStatus(req: Request, res: Response) {
+    try {
+      const dto: UpdateModerationStatusDto = req.body;
+      const result = await this.propertyService.updateModerationStatus(Number(req.params.id), dto);
+      res.json(result);
+    } catch (error) {
+      this.handleError(error, res);
     }
   }
 }

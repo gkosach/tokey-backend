@@ -8,9 +8,9 @@ const dataDir = path.join(__dirname, "seedData");
 // Функция для преобразования kebab-case в PascalCase
 function toPascalCase(str: string) {
   return str
-    .split('-')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join('');
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join("");
 }
 
 async function seed() {
@@ -19,7 +19,6 @@ async function seed() {
     "manager.json",
     "investor.json",
     "property.json",
-    "application.json",
     "payment-history.json", // Преобразуется в PaymentHistory
   ];
 

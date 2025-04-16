@@ -3,12 +3,17 @@
     "cognitoId": "64a8a4e8-3001-70ea-71e0-b577a78107e0",
     "name": "German Kosach",
     "email": "german1kosach@gmail.com",
-    "phoneNumber": "+1 (555) 123-4567"
+    "phoneNumber": "+1 (555) 123-4567",
+    "kycStatus": "Approved",
+    "kycSubmittedAt": "2025-04-05T08:15:00Z",
+    "kycApprovedAt": "2025-04-06T12:00:00Z"
   },
   {
     "cognitoId": "23456789-90ab-cdef-1234-567890abcdef",
     "name": "Sarah Johnson",
     "email": "sarah.johnson@example.com",
-    "phoneNumber": "+1 (555) 987-6543"
+    "phoneNumber": "+1 (555) 987-6543",
+    "kycStatus": "Pending",
+    "kycSubmittedAt": "2025-04-14T10:00:00Z"
   }
 ]
