@@ -11,7 +11,6 @@ export class InvestorService {
       where: { cognitoId },
       include: {
         favorites: true,
-        Application: true,
         tokens: true,
       },
     });

@@ -8,8 +8,7 @@
     "bankAccount": "AE070331234567890123456",
     "preferredMethod": "CRYPTO",
     "kycStatus": "Approved",
-    "kycSubmittedAt": "2025-04-10T09:00:00Z",
-    "kycApprovedAt": "2025-04-11T14:30:00Z"
+    "verificationId": "i333333333"
   },
   {
     "cognitoId": "00a8a4e8-3001-70ea-71e0-b577a78107e1",
@@ -19,7 +18,6 @@
     "bankAccount": "AE460090000000123456789",
     "preferredMethod": "VISA",
     "kycStatus": "Approved",
-    "kycSubmittedAt": "2025-04-12T11:20:00Z",
-    "kycApprovedAt": "2025-04-13T16:45:00Z"
+    "verificationId": "i44444444444"
   }
 ]

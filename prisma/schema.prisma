@@ -86,8 +86,7 @@ model Manager {
   email          String    @unique @db.VarChar(255)
   phoneNumber    String    @unique @db.VarChar(20)
   kycStatus      KYCStatus @default(NotStarted)
-  kycSubmittedAt DateTime?
-  kycApprovedAt  DateTime?
+  verificationId String?   @unique
 
   properties Property[]
 
@@ -106,8 +105,7 @@ model Investor {
   preferredMethod    PaymentMethod @default(CRYPTO)
   investedProperties Property[]    @relation("PropertyInvestors")
   kycStatus          KYCStatus     @default(NotStarted)
-  kycSubmittedAt     DateTime? // Дата подачи на проверку
-  kycApprovedAt      DateTime? // Дата подтверждения
+  verificationId     String?       @unique
 
   tokens             PaymentHistory[]
   favorites          Property[]           @relation("FavoriteProperties")
