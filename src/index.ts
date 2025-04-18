@@ -5,7 +5,7 @@ import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
 
-import { authMiddleware } from "./middleware/authMiddleware";
+import { authMiddleware } from "./middleware/auth.middleware";
 /* ROUTE IMPORT */
 import investorRoutes from "./investor/investor.routes";
 import managerRoutes from "./manager/manager.routes";
