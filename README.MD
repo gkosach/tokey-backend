@@ -1,43 +1,49 @@
-# Prisma Commands Documentation
+#Docker CheatSheet
 
-Reset migariont history:
+1. !important
+   `Dont forget to change datasource db  `
+
+Prisma Cheatsheet
+Сброс базы и миграций
 
 ```bash
 npx prisma migrate reset
-y
 rm -rf prisma/migrations
 npx prisma migrate dev --name init
 npx prisma migrate deploy
+
 ```
 
-Generate a new migration with a specified name.
+Создать новую миграцию
 
 ```bash
-npx prisma migrate dev --name tokens
+npx prisma migrate dev --name <название>
+
 ```
 
-Apply all migrations from the`migrations` folder.
+Применить все миграции
 
 ```bash
 npx prisma migrate dev
+
 ```
 
-Regenerate the Prisma client based on schema changes.
+Сгенерировать Prisma Client
 
 ```npm
 npm run prisma:generate
+
 ```
 
-Seed the database with mock data.
+Заполнить базу тестовыми данными
 
 ```npm
 npm run seed
+
 ```
 
-Primsa Types
+Сгенерировать дополнительные типы
 
 ```npm
 npm run postprisma:generate
 ```
-
----
