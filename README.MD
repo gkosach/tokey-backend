@@ -41,15 +41,3 @@ npm run postprisma:generate
 ```
 
 ---
-
-## 📚 Documentation Links
-
-| **Topic**                                                   |
-| ----------------------------------------------------------- |
-| [Конфигурирование приложения](assets/docs/nginx.md)         |
-| [AWS EC2 Instructions](assets/docs/aws-ec2-instructions.md) |
-| [Technical Task SOlana](assets/docs/purchase-token.md)      |
-| [KYC Technical Task](assets/docs/)                          |
-| [Financial Management](assets/docs/costs.md)                |
-
----
