@@ -1,12 +1,7 @@
 import axios from "axios";
-import { PrismaClient } from "@prisma/client";
-import { KycError } from "./contract/error/kyc.error";
-import { ErrorStatus } from "../common/enum/error/error-status.enum";
-import { KycErrorMessages } from "../common/enum/error/kyc-error.enum";
+import { KycError } from "./index";
+import { prisma, ErrorStatus, KycErrorMessages, PERSONA_BASE_URI } from "../common";
 import { KYCStatus } from "@prisma/client";
-import { PERSONA_BASE_URI } from "../common";
-
-const prisma = new PrismaClient();
 
 export class KycService {
   /**

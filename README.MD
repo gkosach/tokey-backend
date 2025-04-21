@@ -2,6 +2,9 @@
 
 1. !important
    `Dont forget to change datasource db  `
+Add in VPC
+> docker exec -it back-app
+
 
 Prisma Cheatsheet
 Сброс базы и миграций
@@ -11,7 +14,6 @@ npx prisma migrate reset
 rm -rf prisma/migrations
 npx prisma migrate dev --name init
 npx prisma migrate deploy
-
 ```
 
 Создать новую миграцию
@@ -39,7 +41,6 @@ npm run prisma:generate
 
 ```npm
 npm run seed
-
 ```
 
 Сгенерировать дополнительные типы

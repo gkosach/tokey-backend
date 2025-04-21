@@ -1,8 +1,7 @@
 import express from "express";
 import { KycService } from "./kyc.service";
-import { CreateKycSessionDto } from "./contract/dto/kyc.dto";
-import { KycErrorMessages } from "../common/enum/error/kyc-error.enum";
-import { KycError } from "./contract/error/kyc.error";
+import { CreateKycSessionDto, KycError } from "./index";
+import { KycErrorMessages } from "../common";
 
 const router = express.Router();
 const kycService = new KycService();

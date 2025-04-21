@@ -1,13 +1,23 @@
-import { PrismaClient, PropertyType } from "@prisma/client";
-import { CreatePropertyDto } from "./contract/dto/property.dto";
-import { UpdateModerationStatusDto } from "./contract/dto/property-moderation.dto";
-import { Geocoder } from "../common/utils/geocoder";
+import { PropertyType } from "@prisma/client";
+import { CreatePropertyDto, UpdateModerationStatusDto } from "./index";
+import { prisma, s3, Geocoder } from "../common";
+import { v4 as uuidv4 } from "uuid";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 
-const prisma = new PrismaClient();
-
+/**
+ * Сервис для работы с объектами недвижимости
+ */
 export class PropertyService {
+  /**
+   * Создает новый объект недвижимости
+   * @param dto - DTO для создания объекта
+   * @param files - Массив файлов изображений
+   * @returns Созданный объект недвижимости с локацией и менеджером
+   */
   async createProperty(dto: CreatePropertyDto, files: Express.Multer.File[]) {
-    const photoUrls = files?.length ? this.uploadToS3(files) : [];
+    const uploadPromises = files.map((file) => this.uploadToS3(file));
+    const photoUrls = await Promise.all(uploadPromises);
+
     const { lat, lng } = await Geocoder.geocode(dto.address);
 
     return prisma.$transaction(async (tx) => {
@@ -22,7 +32,11 @@ export class PropertyService {
               longitude: lng,
             },
           },
-          manager: dto.managerCognitoId ? { connect: { cognitoId: dto.managerCognitoId } } : undefined,
+          manager: dto.managerCognitoId
+            ? {
+                connect: { cognitoId: dto.managerCognitoId },
+              }
+            : undefined,
         },
         include: {
           location: true,
@@ -32,6 +46,11 @@ export class PropertyService {
     });
   }
 
+  /**
+   * Получает объект недвижимости по ID
+   * @param id - Идентификатор объекта
+   * @returns Объект недвижимости с локацией и информацией о менеджере
+   */
   async getProperty(id: string) {
     const propertyId = Number(id);
     if (isNaN(propertyId)) throw new Error("Invalid ID");
@@ -45,6 +64,11 @@ export class PropertyService {
     });
   }
 
+  /**
+   * Получает список объектов недвижимости с пагинацией и фильтрацией
+   * @param filter - Параметры фильтрации и пагинации
+   * @returns Отфильтрованный список объектов с локациями
+   */
   async getProperties(filter: {
     page?: number;
     limit?: number;
@@ -69,15 +93,41 @@ export class PropertyService {
     });
   }
 
-  private uploadToS3(files: Express.Multer.File[]): string[] {
-    return files.map((file) => `s3://bucket/${Date.now()}-${file.originalname}`);
+  /**
+   * Загружает файл в S3 хранилище
+   * @param file - Файл для загрузки
+   * @returns URL загруженного файла
+   */
+  private async uploadToS3(file: Express.Multer.File): Promise<string> {
+    try {
+      const extension = file.originalname.split(".").pop() || "bin";
+      const filename = `${uuidv4()}.${extension}`;
+
+      const command = new PutObjectCommand({
+        Bucket: process.env.S3_BUCKET_NAME,
+        Key: filename,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+        ACL: "public-read",
+      });
+
+      await s3.send(command);
+      return `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${filename}`;
+    } catch (error) {
+      console.error("S3 upload failed:", error);
+      throw new Error("Failed to upload file to S3");
+    }
   }
 
+  /**
+   * Получает объекты недвижимости для модерации
+   * @returns Список объектов, ожидающих модерацию
+   */
   async getPropertiesForModeration() {
     return prisma.property.findMany({
       where: {
         moderationStatus: "Pending",
-        manager: { kycStatus: "Approved" }, // Только от верифицированных менеджеров
+        manager: { kycStatus: "Approved" },
       },
       include: {
         location: true,
@@ -86,6 +136,12 @@ export class PropertyService {
     });
   }
 
+  /**
+   * Обновляет статус модерации объекта
+   * @param id - Идентификатор объекта
+   * @param dto - DTO с новым статусом и комментарием
+   * @returns Обновленный объект недвижимости
+   */
   async updateModerationStatus(id: number, dto: UpdateModerationStatusDto) {
     return prisma.property.update({
       where: { id },

@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import { KycError } from "../kyc/contract/error/kyc.error";
-import { ErrorStatus } from "../common/enum/error/error-status.enum";
-import { prisma } from "../database/prisma-client";
-import { KycErrorMessages } from "../common/enum/error/kyc-error.enum";
+import { KycError } from "../kyc";
+import { prisma, ErrorStatus, KycErrorMessages } from "../common";
 
 export const kycGuard = (userType: "investor" | "manager") => {
   return async (req: Request, res: Response, next: NextFunction) => {

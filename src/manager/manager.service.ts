@@ -1,6 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "../common";
 
 export class ManagerService {
   async getManager(cognitoId: string) {

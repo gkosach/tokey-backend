@@ -1,8 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { Request, Response } from "express";
-import { ErrorStatus } from "../common/enum/error/error-status.enum";
-import { PropertyErrorMessages } from "../common/enum/error/property-error.enum";
-import { PropertyError } from "./contract/error/property.error";
+import { ErrorStatus, PropertyErrorMessages } from "../common";
+import { PropertyError } from "./index";
 import { PropertyService } from "./property.service";
 import { UpdateModerationStatusDto } from "./contract/dto/property-moderation.dto";
 
@@ -49,22 +48,19 @@ export class PropertyController {
    * @param req Запрос с параметром ID в URL
    * @param res Ответ с данными объекта или ошибкой
    */
-  async getProperty(req: Request, res: Response): Promise<Response> {
+  async getProperty(req: Request, res: Response): Promise<void> {
     try {
       const propertyId = Number(req.params.id);
       if (isNaN(propertyId)) {
         throw new PropertyError(ErrorStatus.BadRequest, PropertyErrorMessages.PROPERTY_ERROR_INVALID_ID);
       }
-
       const property = await this.propertyService.getProperty(propertyId.toString());
       if (!property) {
         throw new PropertyError(ErrorStatus.NotFound, PropertyErrorMessages.PROPERTY_ERROR_INVALID_RESPONSE);
       }
-
-      return res.json(property);
+      res.json(property);
     } catch (error) {
       this.handleError(error, res);
-      return res;
     }
   }
 
@@ -73,7 +69,7 @@ export class PropertyController {
    * @param req Запрос с параметрами фильтрации
    * @param res Ответ с отфильтрованным списком или ошибкой
    */
-  async getProperties(req: Request, res: Response) {
+  getProperties = async (req: Request, res: Response) => {
     try {
       const result = await this.propertyService.getProperties({
         page: Number(req.query.page),
@@ -81,20 +77,16 @@ export class PropertyController {
       });
       res.json(result);
     } catch (error) {
-      this.handleError(error, res);
-      return res;
+      this.handleError(error, res); // this корректно ссылается на экземпляр
     }
-  }
+  };
 
   /**
    * Создает новый объект недвижимости с прикрепленными фотографиями
-   * @param req Запрос с данными объекта и файлами
-   * @param res Ответ с созданным объектом или ошибкой
    */
-  async createProperty(req: Request, res: Response) {
+  async createProperty(req: Request, res: Response): Promise<void> {
     try {
       const result = await this.propertyService.createProperty(req.body, req.files as Express.Multer.File[]);
-
       res.status(201).json({
         ...result,
         location: {

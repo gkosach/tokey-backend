@@ -1,10 +1,9 @@
 import { Request, Response } from "express";
 import { ManagerService } from "./manager.service";
 import { Prisma } from "@prisma/client";
-import { ManagerErrorMessages } from "../common/enum/error/manager-error.enum";
-import { ManagerError } from "./contract/error/manager.error";
+import { ManagerErrorMessages, ErrorStatus } from "../common";
+import { ManagerError } from "./index";
 import { CreateManagerDto, UpdateManagerDto } from "./contract/dto/manager.dto";
-import { ErrorStatus } from "../common/enum/error/error-status.enum";
 
 export class ManagerController {
   private readonly managerService = new ManagerService();

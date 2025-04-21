@@ -1,9 +1,8 @@
 import { Request, Response } from "express";
 import { InvestorService } from "./investor.service";
 import { Prisma } from "@prisma/client";
-import { InvestorErrorMessages } from "../common/enum/error/investor-error.enum";
-import { InvestorError } from "./contract/error/investor.error";
-import { ErrorStatus } from "../common/enum/error/error-status.enum";
+import { InvestorErrorMessages, ErrorStatus } from "../common";
+import { InvestorError } from "./index";
 
 export class InvestorController {
   private readonly investorService = new InvestorService();

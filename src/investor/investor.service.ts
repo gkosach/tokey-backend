@@ -1,9 +1,5 @@
-import { PrismaClient } from "@prisma/client";
-import { InvestorError } from "./contract/error/investor.error";
-import { ErrorStatus } from "../common/enum/error/error-status.enum";
-import { InvestorErrorMessages } from "../common/enum/error/investor-error.enum";
-
-const prisma = new PrismaClient();
+import { InvestorError } from "./index";
+import { prisma, InvestorErrorMessages, ErrorStatus } from "../common";
 
 export class InvestorService {
   async getInvestor(cognitoId: string) {

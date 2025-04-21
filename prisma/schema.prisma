@@ -5,8 +5,8 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // url      = "postgresql://dev_user:dev_password@localhost:5432/dev_db"
-  url      = env("DATABASE_URL")
+  url      = "postgresql://dev_user:dev_password@localhost:5432/dev_db"
+  // url      = env("DATABASE_URL")
 }
 
 enum KYCStatus {
