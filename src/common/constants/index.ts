@@ -1,0 +1,2 @@
+export const MAXIMUM_PHOTOS_PER_PROPERTY = 5;
+export const MAXIMUM_MB_TO_UPLOAD = 10 * 1024 * 1024;

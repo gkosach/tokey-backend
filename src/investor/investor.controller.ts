@@ -1,103 +1,93 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { InvestorService } from "./investor.service";
-import { Prisma } from "@prisma/client";
 import { InvestorErrorMessages, ErrorStatus } from "../common";
 import { InvestorError } from "./index";
 
+/**
+ * Контроллер для обработки HTTP-запросов связанных с инвесторами
+ */
 export class InvestorController {
   private readonly investorService = new InvestorService();
 
-  private handleError(error: unknown, res: Response): void {
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      this.sendErrorResponse(res, ErrorStatus.InternalError, InvestorErrorMessages.INVESTOR_ERROR_DATABASE_FAILED);
-      return;
-    }
-
-    if (error instanceof InvestorError) {
-      this.sendErrorResponse(res, error.statusCode, error.message);
-      return;
-    }
-    this.sendErrorResponse(res, ErrorStatus.InternalError, InvestorErrorMessages.INVESTOR_ERROR_UNKNOWN);
-  }
-
-  private sendErrorResponse(res: Response, code: ErrorStatus, message: string): void {
-    console.error(message);
-
-    res.status(code).json({
-      error: {
-        code,
-        message,
-        timestamp: new Date().toISOString(),
-      },
-    });
-  }
-
-  async getInvestor(req: Request, res: Response): Promise<void> {
+  /**
+   * Получение информации об инвесторе
+   */
+  getInvestor = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const investor = await this.investorService.getInvestor(req.params.cognitoId);
-      if (!investor) {
-        throw new InvestorError(ErrorStatus.NotFound, InvestorErrorMessages.INVESTOR_NOT_FOUND);
-      }
       res.json(investor);
     } catch (error) {
-      this.handleError(error, res);
+      next(error);
     }
-  }
+  };
 
-  async createInvestor(req: Request, res: Response): Promise<void> {
+  /**
+   * Создание нового инвестора
+   */
+  createInvestor = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const investor = await this.investorService.createInvestor(req.body);
       res.status(201).json(investor);
     } catch (error) {
-      this.handleError(error, res);
+      next(error);
     }
-  }
+  };
 
-  async updateInvestor(req: Request, res: Response): Promise<void> {
+  /**
+   * Обновление данных инвестора
+   */
+  updateInvestor = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const investor = await this.investorService.updateInvestor(req.params.cognitoId, req.body);
       res.json(investor);
     } catch (error) {
-      this.handleError(error, res);
+      next(error);
     }
-  }
+  };
 
-  async getCurrentResidences(req: Request, res: Response): Promise<void> {
+  /**
+   * Получение текущих объектов недвижимости инвестора
+   */
+  getCurrentResidences = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const properties = await this.investorService.getCurrentResidences(req.params.cognitoId);
       res.json(properties);
     } catch (error) {
-      this.handleError(error, res);
+      next(error);
     }
-  }
+  };
 
-  async addFavoriteProperty(req: Request, res: Response): Promise<void> {
+  /**
+   * Добавление объекта в избранное
+   */
+  addFavoriteProperty = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const propertyId = Number(req.params.propertyId);
       if (isNaN(propertyId)) {
-        throw new InvestorError(ErrorStatus.BadRequest, InvestorErrorMessages.INVALID_PROPERTY_ID);
+        throw InvestorError.invalidPropertyId();
       }
-
       const result = await this.investorService.addFavoriteProperty(req.params.cognitoId, propertyId);
       res.json(result);
     } catch (error) {
-      this.handleError(error, res);
+      next(error);
     }
-  }
+  };
 
-  async removeFavoriteProperty(req: Request, res: Response): Promise<void> {
+  /**
+   * Удаление объекта из избранного
+   */
+  removeFavoriteProperty = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const propertyId = Number(req.params.propertyId);
       if (isNaN(propertyId)) {
-        throw new InvestorError(ErrorStatus.BadRequest, InvestorErrorMessages.INVALID_PROPERTY_ID);
+        throw InvestorError.invalidPropertyId();
       }
-
       const result = await this.investorService.removeFavoriteProperty(req.params.cognitoId, propertyId);
       res.json(result);
     } catch (error) {
-      this.handleError(error, res);
+      next(error);
     }
-  }
+  };
 }
 
 export const investorController = new InvestorController();

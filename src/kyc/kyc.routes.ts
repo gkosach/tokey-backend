@@ -1,28 +1,59 @@
 import express from "express";
-import { KycService } from "./kyc.service";
-import { CreateKycSessionDto, KycError } from "./index";
-import { KycErrorMessages } from "../common";
+import { kycController } from "./kyc.controller";
 
+/**
+ * @swagger
+ * tags:
+ *   name: KYC
+ *   description: Процесс верификации пользователей
+ */
 const router = express.Router();
-const kycService = new KycService();
 
-router.post("/init", async (req, res) => {
-  try {
-    const dto: CreateKycSessionDto = req.body;
-    const result = await kycService.createSession(dto.userId, dto.userType);
-    res.json(result);
-  } catch (error) {
-    if (error instanceof KycError) {
-      res.status(error.statusCode).json({
-        error: error.message,
-        code: error.statusCode,
-      });
-    } else {
-      res.status(500).json({
-        error: KycErrorMessages.KYC_GENERIC_ERROR,
-      });
-    }
-  }
-});
+/**
+ * @swagger
+ * /kyc/init:
+ *   post:
+ *     summary: Инициализация KYC-сессии
+ *     tags: [KYC]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateKycSessionDto'
+ *     responses:
+ *       200:
+ *         description: Ссылка на верификацию
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 verificationUrl:
+ *                   type: string
+ *       500:
+ *         description: Ошибка создания сессии
+ */
+router.post("/init", kycController.createSession);
+
+/**
+ * @swagger
+ * /kyc/webhook:
+ *   post:
+ *     summary: Обработка вебхука от Persona
+ *     tags: [KYC]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: OK
+ *       500:
+ *         description: Ошибка обработки вебхука
+ */
+router.post("/webhook", kycController.handleWebhook);
 
 export default router;

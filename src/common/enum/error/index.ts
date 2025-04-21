@@ -1,5 +1,4 @@
 export * from "./error-status.enum";
-export * from "./apllication-error.enum";
 export * from "./common-error.enum";
 export * from "./investor-error.enum";
 export * from "./kyc-error.enum";

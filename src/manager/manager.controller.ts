@@ -1,67 +1,87 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { ManagerService } from "./manager.service";
-import { Prisma } from "@prisma/client";
-import { ManagerErrorMessages, ErrorStatus } from "../common";
-import { ManagerError } from "./index";
-import { CreateManagerDto, UpdateManagerDto } from "./contract/dto/manager.dto";
+import { CreateManagerDto, UpdateManagerDto, ManagerError } from "./index";
 
+/**
+ * Контроллер для обработки запросов связанных с менеджерами
+ */
 export class ManagerController {
   private readonly managerService = new ManagerService();
 
-  private handleError(error: unknown, res: Response): void {
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      this.sendErrorResponse(res, ErrorStatus.InternalError, ManagerErrorMessages.MANAGER_ERROR_DATABASE_FAILED);
-      return;
-    }
-
-    this.sendErrorResponse(res, ErrorStatus.InternalError, ManagerErrorMessages.MANAGER_ERROR_UNKNOWN);
-  }
-
-  private sendErrorResponse(res: Response, code: ErrorStatus, message: string): void {
-    res.status(code).json({
-      error: {
-        code,
-        message,
-        timestamp: new Date().toISOString(),
-      },
-    });
-  }
-
-  async getManager(req: Request, res: Response): Promise<void> {
+  /**
+   * Получение информации о менеджере
+   * @route GET /managers/{cognitoId}
+   * @returns Объект менеджера
+   */
+  getManager = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const manager = await this.managerService.getManager(req.params.cognitoId);
-      if (!manager) {
-        throw new ManagerError(ErrorStatus.NotFound, ManagerErrorMessages.MANAGER_NOT_FOUND);
+      const { cognitoId } = req.params;
+      if (!cognitoId) {
+        throw ManagerError.invalidId();
       }
+
+      const manager = await this.managerService.getManager(cognitoId);
+      if (!manager) {
+        throw ManagerError.notFound();
+      }
+
       res.json(manager);
     } catch (error) {
-      this.handleError(error, res);
+      next(error);
     }
-  }
+  };
 
-  async createManager(req: Request, res: Response): Promise<void> {
+  /**
+   * Создание нового менеджера
+   * @route POST /managers
+   */
+  createManager = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const dto: CreateManagerDto = req.body;
+
+      if (!dto.cognitoId || !dto.email) {
+        throw ManagerError.invalidData();
+      }
+
       const manager = await this.managerService.createManager(dto);
       res.status(201).json(manager);
     } catch (error) {
-      this.handleError(error, res);
+      next(error);
     }
-  }
+  };
 
-  async updateManager(req: Request, res: Response): Promise<void> {
+  /**
+   * Обновление данных менеджера
+   * @route PUT /managers/{cognitoId}
+   */
+  updateManager = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const { cognitoId } = req.params;
       const dto: UpdateManagerDto = req.body;
-      const manager = await this.managerService.updateManager(req.params.cognitoId, dto);
+
+      if (!cognitoId) {
+        throw ManagerError.invalidId();
+      }
+
+      const manager = await this.managerService.updateManager(cognitoId, dto);
       res.json(manager);
     } catch (error) {
-      this.handleError(error, res);
+      next(error);
     }
-  }
+  };
 
-  async getManagerProperties(req: Request, res: Response): Promise<void> {
+  /**
+   * Получение объектов недвижимости менеджера
+   * @route GET /managers/{cognitoId}/properties
+   */
+  getManagerProperties = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const properties = await this.managerService.getManagerProperties(req.params.cognitoId);
+      const { cognitoId } = req.params;
+      if (!cognitoId) {
+        throw ManagerError.invalidId();
+      }
+
+      const properties = await this.managerService.getManagerProperties(cognitoId);
       res.json(
         properties.map((p) => ({
           ...p,
@@ -74,9 +94,9 @@ export class ManagerController {
         })),
       );
     } catch (error) {
-      this.handleError(error, res);
+      next(error);
     }
-  }
+  };
 }
 
 export const managerController = new ManagerController();

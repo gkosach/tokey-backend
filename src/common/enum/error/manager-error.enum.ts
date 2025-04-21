@@ -1,18 +1,16 @@
 export enum ManagerErrorMessages {
-  /**
-   * Ошибка работы с базой данных
-   */
-  MANAGER_ERROR_DATABASE_FAILED = "MANAGER_ERROR_DATABASE_FAILED",
-  /**
-   * Менеджер не найден
-   */
-  MANAGER_NOT_FOUND = "MANAGER_NOT_FOUND",
-  /**
-   * Неизвестная ошибка
-   */
-  MANAGER_ERROR_UNKNOWN = "MANAGER_ERROR_UNKNOWN",
-  /**
-   * Некорректные входные данные
-   */
-  MANAGER_ERROR_INVALID_INPUT = "MANAGER_ERROR_INVALID_INPUT",
+  /** Ошибка при работе с базой данных */
+  DATABASE_ERROR = "Database operation failed",
+
+  /** Менеджер не найден */
+  NOT_FOUND = "Manager not found",
+
+  /** Некорректные входные данные */
+  INVALID_DATA = "Invalid input data",
+
+  /** Некорректный идентификатор менеджера */
+  INVALID_ID = "Invalid manager ID",
+
+  /** Неизвестная ошибка */
+  UNKNOWN_ERROR = "Unknown error occurred",
 }

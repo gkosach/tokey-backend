@@ -1,51 +1,34 @@
+/**
+ * Коды и сообщения об ошибках KYC процесса
+ */
 export enum KycErrorMessages {
-  /**
-   * Необходима KYC верификация
-   */
-  KYC_VERIFICATION_REQUIRED = "KYC_VERIFICATION_REQUIRED",
+  /** Необходима KYC верификация */
+  VERIFICATION_REQUIRED = "KYC verification required",
 
-  /**
-   * Ошибка создания сессии верификации
-   */
-  KYC_SESSION_CREATION_FAILED = "KYC_SESSION_CREATION_FAILED",
+  /** Ошибка создания сессии верификации */
+  SESSION_CREATION_FAILED = "KYC session creation failed",
 
-  /**
-   * Не удалось обработать вебхук от провайдера
-   */
-  KYC_WEBHOOK_PROCESSING_FAILED = "KYC_WEBHOOK_PROCESSING_FAILED",
+  /** Не удалось обработать вебхук от провайдера */
+  WEBHOOK_PROCESSING_FAILED = "Failed to process KYC webhook",
 
-  /**
-   * Сессия верификации не найдена
-   */
-  KYC_SESSION_NOT_FOUND = "KYC_SESSION_NOT_FOUND",
+  /** Сессия верификации не найдена */
+  SESSION_NOT_FOUND = "KYC session not found",
 
-  /**
-   * Неверная подпись вебхука
-   */
-  KYC_INVALID_WEBHOOK_SIGNATURE = "KYC_INVALID_WEBHOOK_SIGNATURE",
+  /** Неверная подпись вебхука */
+  INVALID_WEBHOOK_SIGNATURE = "Invalid KYC webhook signature",
 
-  /**
-   * Пользователь уже верифицирован
-   */
-  KYC_ALREADY_VERIFIED = "KYC_ALREADY_VERIFIED",
+  /** Пользователь уже верифицирован */
+  ALREADY_VERIFIED = "User already verified",
 
-  /**
-   * Истек срок действия сессии верификации
-   */
-  KYC_SESSION_EXPIRED = "KYC_SESSION_EXPIRED",
+  /** Истек срок действия сессии верификации */
+  SESSION_EXPIRED = "KYC session expired",
 
-  /**
-   * Неподдерживаемая страна для верификации
-   */
-  KYC_UNSUPPORTED_COUNTRY = "KYC_UNSUPPORTED_COUNTRY",
+  /** Неподдерживаемая страна для верификации */
+  UNSUPPORTED_COUNTRY = "Country not supported for KYC",
 
-  /**
-   * Ошибка проверки документов
-   */
-  KYC_DOCUMENT_VERIFICATION_FAILED = "KYC_DOCUMENT_VERIFICATION_FAILED",
+  /** Ошибка проверки документов */
+  DOCUMENT_VERIFICATION_FAILED = "KYC document verification failed",
 
-  /**
-   * Непредвиденная ошибка KYC
-   */
-  KYC_GENERIC_ERROR = "KYC_GENERIC_ERROR",
+  /** Непредвиденная ошибка KYC */
+  GENERIC_ERROR = "Unexpected KYC error",
 }

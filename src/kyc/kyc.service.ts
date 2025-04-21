@@ -1,14 +1,18 @@
 import axios from "axios";
-import { KycError } from "./index";
-import { prisma, ErrorStatus, KycErrorMessages, PERSONA_BASE_URI } from "../common";
+import { prisma, PERSONA_BASE_URI } from "../common";
 import { KYCStatus } from "@prisma/client";
+import { KycError } from "./contract/error/kyc.error";
 
+/**
+ * Сервис для работы с KYC процессом
+ */
 export class KycService {
   /**
    * Создает сессию верификации в Persona и обновляет статус пользователя
    * @param userId - Cognito ID пользователя
-   * @param userType - Тип пользователя (инвестор/менеджер)
-   * @returns URL для перенаправления на верификацию
+   * @param userType - Тип пользователя (investor | manager)
+   * @returns URL для верификации
+   * @throws {KycError} SESSION_CREATION_FAILED
    */
   async createSession(userId: string, userType: "investor" | "manager") {
     try {
@@ -43,14 +47,15 @@ export class KycService {
       }
 
       return { verificationUrl: response.data.data.attributes.verificationUrl };
-    } catch (error: any) {
-      throw new KycError(ErrorStatus.InternalError, KycErrorMessages.KYC_SESSION_CREATION_FAILED, error.message);
+    } catch {
+      throw KycError.sessionCreationFailed();
     }
   }
 
   /**
    * Обрабатывает вебхук от Persona и обновляет статус верификации
    * @param payload - Данные от Persona
+   * @throws {KycError} SESSION_NOT_FOUND | WEBHOOK_PROCESSING_FAILED
    */
   async handleWebhook(payload: any) {
     try {
@@ -68,16 +73,15 @@ export class KycService {
         kycApprovedAt: status === "completed" ? new Date() : null,
       };
 
-      // Обновление данных в соответствующей таблице
       if (investor) {
         await prisma.investor.update({ where: { id: investor.id }, data: updateData });
       } else if (manager) {
         await prisma.manager.update({ where: { id: manager.id }, data: updateData });
       } else {
-        throw new KycError(ErrorStatus.NotFound, KycErrorMessages.KYC_SESSION_NOT_FOUND);
+        throw KycError.sessionNotFound();
       }
-    } catch (error: any) {
-      throw new KycError(ErrorStatus.InternalError, KycErrorMessages.KYC_WEBHOOK_PROCESSING_FAILED, error.message);
+    } catch {
+      throw KycError.webhookProcessingFailed();
     }
   }
 }

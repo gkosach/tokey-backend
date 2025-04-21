@@ -1,9 +1,11 @@
-import { IsEnum, IsString } from "class-validator";
-
+/**
+ * DTO для создания KYC-сессии.
+ * Используется в теле запроса на /kyc/init.
+ */
 export class CreateKycSessionDto {
-  @IsString()
+  /** Cognito ID пользователя */
   userId!: string;
 
-  @IsEnum(["investor", "manager"], { message: "userType must be investor or manager" })
+  /** Тип пользователя: "investor" или "manager" */
   userType!: "investor" | "manager";
 }

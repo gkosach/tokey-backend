@@ -7,7 +7,7 @@ export const kycGuard = (userType: "investor" | "manager") => {
     try {
       // Проверка наличия пользователя в запросе
       if (!req.user) {
-        throw new KycError(ErrorStatus.Unauthorized, KycErrorMessages.KYC_VERIFICATION_REQUIRED);
+        throw new KycError(ErrorStatus.Unauthorized, KycErrorMessages.VERIFICATION_REQUIRED);
       }
 
       const userId = req.user.id;
@@ -22,7 +22,7 @@ export const kycGuard = (userType: "investor" | "manager") => {
             });
 
       if (!user || user.kycStatus !== "Approved") {
-        throw new KycError(ErrorStatus.Forbidden, KycErrorMessages.KYC_VERIFICATION_REQUIRED);
+        throw new KycError(ErrorStatus.Forbidden, KycErrorMessages.VERIFICATION_REQUIRED);
       }
 
       next();

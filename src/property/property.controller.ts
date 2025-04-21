@@ -1,90 +1,50 @@
-import { Prisma } from "@prisma/client";
-import { Request, Response } from "express";
-import { ErrorStatus, PropertyErrorMessages } from "../common";
+import { NextFunction, Request, Response } from "express";
 import { PropertyError } from "./index";
 import { PropertyService } from "./property.service";
 import { UpdateModerationStatusDto } from "./contract/dto/property-moderation.dto";
 
 export class PropertyController {
   private propertyService = new PropertyService();
-
   /**
-   * Универсальный обработчик ошибок для операций с недвижимостью
-   * @param error Объект ошибки
-   * @param res Объект ответа Express
+   * Получение объекта недвижимости по ID
    */
-  private handleError(error: unknown, res: Response): void {
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      return this.sendErrorResponse(
-        res,
-        ErrorStatus.InternalError,
-        PropertyErrorMessages.PROPERTY_ERROR_DATABASE_FAILED,
-      );
-    }
-
-    console.error("Critical error:", error);
-    this.sendErrorResponse(res, ErrorStatus.InternalError, PropertyErrorMessages.PROPERTY_ERROR_INVALID_RESPONSE);
-  }
-
-  /**
-   * Формирует унифицированный ответ об ошибке
-   * @param res Объект ответа Express
-   * @param code HTTP-статус код ошибки
-   * @param message Текст ошибки
-   */
-
-  private sendErrorResponse(res: Response, code: ErrorStatus, message: PropertyErrorMessages): void {
-    res.status(code).json({
-      error: {
-        code,
-        message,
-        timestamp: new Date().toISOString(),
-      },
-    });
-  }
-
-  /**
-   * Получает объект недвижимости по ID
-   * @param req Запрос с параметром ID в URL
-   * @param res Ответ с данными объекта или ошибкой
-   */
-  async getProperty(req: Request, res: Response): Promise<void> {
+  getProperty = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const propertyId = Number(req.params.id);
-      if (isNaN(propertyId)) {
-        throw new PropertyError(ErrorStatus.BadRequest, PropertyErrorMessages.PROPERTY_ERROR_INVALID_ID);
+      if (isNaN(propertyId) || propertyId <= 0) {
+        throw PropertyError.invalidId();
       }
       const property = await this.propertyService.getProperty(propertyId.toString());
+
       if (!property) {
-        throw new PropertyError(ErrorStatus.NotFound, PropertyErrorMessages.PROPERTY_ERROR_INVALID_RESPONSE);
+        throw PropertyError.notFound();
       }
+
       res.json(property);
     } catch (error) {
-      this.handleError(error, res);
-    }
-  }
-
-  /**
-   * Возвращает список объектов недвижимости с фильтрацией
-   * @param req Запрос с параметрами фильтрации
-   * @param res Ответ с отфильтрованным списком или ошибкой
-   */
-  getProperties = async (req: Request, res: Response) => {
-    try {
-      const result = await this.propertyService.getProperties({
-        page: Number(req.query.page),
-        type: req.query.type as any,
-      });
-      res.json(result);
-    } catch (error) {
-      this.handleError(error, res); // this корректно ссылается на экземпляр
+      next(error);
     }
   };
 
   /**
-   * Создает новый объект недвижимости с прикрепленными фотографиями
+   * Получение списка объектов с фильтрацией
    */
-  async createProperty(req: Request, res: Response): Promise<void> {
+  getProperties = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await this.propertyService.getProperties({
+        page: Number(req.query.page || 1),
+        type: req.query.type as any,
+      });
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Создание нового объекта недвижимости
+   */
+  createProperty = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const result = await this.propertyService.createProperty(req.body, req.files as Express.Multer.File[]);
       res.status(201).json({
@@ -95,28 +55,34 @@ export class PropertyController {
         },
       });
     } catch (error) {
-      this.handleError(error, res);
+      next(error);
     }
-  }
+  };
 
-  async listForModeration(req: Request, res: Response) {
+  /**
+   * Получение объектов для модерации
+   */
+  listForModeration = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const result = await this.propertyService.getPropertiesForModeration();
       res.json(result);
     } catch (error) {
-      this.handleError(error, res);
+      next(error);
     }
-  }
+  };
 
-  async updateModerationStatus(req: Request, res: Response) {
+  /**
+   * Обновление статуса модерации
+   */
+  updateModerationStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const dto: UpdateModerationStatusDto = req.body;
       const result = await this.propertyService.updateModerationStatus(Number(req.params.id), dto);
       res.json(result);
     } catch (error) {
-      this.handleError(error, res);
+      next(error);
     }
-  }
+  };
 }
 
 export const propertyController = new PropertyController();

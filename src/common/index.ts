@@ -18,7 +18,7 @@ export * from "./enum";
 /**
  * utils
  */
-export * from "./utils/base-error";
+export * from "./error/base.error";
 export * from "./utils/geocoder";
 
 /**
