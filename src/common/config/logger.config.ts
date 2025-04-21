@@ -8,7 +8,7 @@ const logFormat = printf(({ level, message, timestamp }) => {
 });
 
 // Конфигурация логгера
-const logger: Logger = createLogger({
+const loggerConfig: Logger = createLogger({
   level: process.env.NODE_ENV === "production" ? "info" : "debug",
   format: combine(colorize(), timestamp({ format: "YYYY-MM-DD HH:mm:ss" }), logFormat),
   transports: [
@@ -21,7 +21,7 @@ const logger: Logger = createLogger({
 
 // Для продакшна добавим файловое логирование
 if (process.env.NODE_ENV === "production") {
-  logger.add(
+  loggerConfig.add(
     new transports.File({
       filename: "logs/app.log",
       format: format.combine(format.uncolorize(), format.json()),
@@ -29,4 +29,4 @@ if (process.env.NODE_ENV === "production") {
   );
 }
 
-export default logger;
+export default loggerConfig;

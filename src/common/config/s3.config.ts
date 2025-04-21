@@ -9,7 +9,7 @@ const validateAWSEnv = () => {
 
 validateAWSEnv();
 
-export const s3 = new S3Client({
+export const s3Config = new S3Client({
   region: process.env.AWS_REGION,
   credentials: fromEnv(),
 });

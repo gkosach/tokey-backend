@@ -16,11 +16,11 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient };
  * Экспортируемый экземпляр PrismaClient.
  * Используйте этот объект для всех операций с базой данных.
  */
-export const prisma = globalForPrisma.prisma || new PrismaClient();
+export const prismaConfig = globalForPrisma.prisma || new PrismaClient();
 
 /**
  * В development режиме сохраняем инстанс в globalThis
  */
 if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+  globalForPrisma.prisma = prismaConfig;
 }

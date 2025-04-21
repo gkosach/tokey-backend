@@ -10,30 +10,30 @@ Prisma Cheatsheet
 Сброс базы и миграций
 
 ```bash
-npx prisma migrate reset
-rm -rf prisma/migrations
-npx prisma migrate dev --name init
-npx prisma migrate deploy
+npx prismaConfig migrate reset
+rm -rf prismaConfig/migrations
+npx prismaConfig migrate dev --name init
+npx prismaConfig migrate deploy
 ```
 
 Создать новую миграцию
 
 ```bash
-npx prisma migrate dev --name <название>
+npx prismaConfig migrate dev --name <название>
 
 ```
 
 Применить все миграции
 
 ```bash
-npx prisma migrate dev
+npx prismaConfig migrate dev
 
 ```
 
 Сгенерировать Prisma Client
 
 ```npm
-npm run prisma:generate
+npm run prismaConfig:generate
 
 ```
 

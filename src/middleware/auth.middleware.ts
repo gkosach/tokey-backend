@@ -1,10 +1,32 @@
 import { NextFunction, Request, Response } from "express";
+import jwksClient from "jwks-rsa";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import "express";
+import dotenv from "dotenv";
+dotenv.config();
+
+console.log("[ENV] AWS_REGION:", process.env.AWS_REGION);
+console.log("[ENV] COGNITO_USER_POOL_ID:", process.env.COGNITO_USER_POOL_ID);
 
 /**
- * Расширение интерфейса Request для хранения пользователя.
+ * Проверка и логирование переменных окружения
  */
+if (!process.env.AWS_REGION || !process.env.COGNITO_USER_POOL_ID) {
+  throw new Error("AWS_REGION и COGNITO_USER_POOL_ID должны быть заданы в .env");
+}
+
+const cognitoConfig = {
+  region: process.env.AWS_REGION,
+  userPoolId: process.env.COGNITO_USER_POOL_ID,
+  jwksUri: `https://cognito-idp.${process.env.AWS_REGION}.amazonaws.com/${process.env.COGNITO_USER_POOL_ID}/.well-known/jwks.json`,
+};
+
+const client = jwksClient({
+  jwksUri: cognitoConfig.jwksUri,
+  cache: true,
+  rateLimit: true,
+});
+
 declare module "express-serve-static-core" {
   interface Request {
     user?: {
@@ -15,47 +37,69 @@ declare module "express-serve-static-core" {
 }
 
 /**
- * Интерфейс для декодированного JWT-токена.
+ *
+ * @param allowedRoles
  */
-interface DecodedToken extends JwtPayload {
-  sub: string;
-  "custom:role"?: string;
-}
-
-/**
- * Мидлвар для аутентификации и авторизации по JWT.
- * @param allowedRoles - массив ролей, которым разрешён доступ
- * @returns Express middleware
- */
-export const authMiddleware =
-  (allowedRoles: string[]) =>
-  (req: Request, res: Response, next: NextFunction): void => {
-    const token = req.headers.authorization?.split(" ")[1];
-
-    if (!token) {
-      res.status(401).json({ message: "Unauthorized" });
-      return;
-    }
-
+export const authMiddleware = (allowedRoles: string[]) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // Верификация токена с помощью секретного ключа
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
-      const userRole = (decoded["custom:role"] || "").toLowerCase();
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith("Bearer ")) {
+        throw new Error("Authorization header is missing or invalid");
+      }
+
+      const token = authHeader.split(" ")[1];
+      if (!token) throw new Error("Token missing");
+
+      const getKey = (header: any, callback: any) => {
+        client.getSigningKey(header.kid, (err, key) => {
+          if (err) {
+            console.error("[JWKS] Error fetching key:", err);
+            return callback(new Error("Failed to retrieve verification key"));
+          }
+          if (!key) {
+            return callback(new Error("Signing key not found"));
+          }
+          callback(null, key.getPublicKey());
+        });
+      };
+
+      const decoded = await new Promise<JwtPayload>((resolve, reject) => {
+        jwt.verify(token, getKey, { algorithms: ["RS256"] }, (err, decoded) => {
+          if (err) {
+            console.error("[JWT] Verification failed:", err.message);
+            reject(new Error("Invalid or expired token"));
+            return;
+          }
+          resolve(decoded as JwtPayload);
+        });
+      });
+
+      if (!decoded.sub || !decoded["custom:role"]) {
+        throw new Error("Token is missing required claims");
+      }
+
+      const userRole = decoded["custom:role"].toLowerCase();
+      if (!allowedRoles.includes(userRole)) {
+        throw new Error(`Role '${userRole}' is not authorized`);
+      }
 
       req.user = {
         id: decoded.sub,
         role: userRole,
       };
 
-      const hasAccess = allowedRoles.includes(userRole);
-      if (!hasAccess) {
-        res.status(403).json({ message: "Access Denied" });
-        return;
-      }
-
       next();
-    } catch (err) {
-      console.error("Failed to verify token:", err);
-      res.status(400).json({ message: "Invalid token" });
+    } catch (error) {
+      console.error("[Auth Middleware] Error:", error);
+      res.status(401).json({
+        error: "Unauthorized",
+        message: error instanceof Error ? error.message : "Authentication failed",
+        details: {
+          requiredRoles: allowedRoles,
+          jwksEndpoint: cognitoConfig.jwksUri,
+        },
+      });
     }
   };
+};

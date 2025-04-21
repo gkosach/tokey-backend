@@ -7,7 +7,6 @@ import dotenv from "dotenv";
 import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
-
 /**
  * Import Middlewares
  */
@@ -37,6 +36,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors());
 
 /* Логирование входящих запросов */
+// TODO: убрать после дебага
 app.use((req, res, next) => {
   console.log("\n=== Incoming Request ===");
   console.log("Method:", req.method);
@@ -59,6 +59,7 @@ app.use((req, res, next) => {
   const originalSend = res.send;
   res.send = function (body) {
     try {
+      // TODO: убрать после дебага
       console.log("\n=== Outgoing Response ===");
       console.log("Status:", res.statusCode);
       try {

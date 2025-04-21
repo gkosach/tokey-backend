@@ -1,5 +1,5 @@
 import { InvestorError } from "./index";
-import { prisma } from "../common";
+import { prismaConfig } from "../common";
 import { Prisma, Property } from "@prisma/client";
 
 export class InvestorService {
@@ -10,7 +10,7 @@ export class InvestorService {
    */
   async getInvestor(cognitoId: string) {
     try {
-      const investor = await prisma.investor.findUnique({
+      const investor = await prismaConfig.investor.findUnique({
         where: { cognitoId },
         include: { favorites: true, tokens: true },
       });
@@ -44,7 +44,7 @@ export class InvestorService {
         throw InvestorError.invalidData();
       }
 
-      return await prisma.investor.create({
+      return await prismaConfig.investor.create({
         data: {
           ...data,
           preferredMethod: data.cryptoWallet ? "CRYPTO" : "VISA",
@@ -79,7 +79,7 @@ export class InvestorService {
         throw InvestorError.invalidData();
       }
 
-      return await prisma.investor.update({
+      return await prismaConfig.investor.update({
         where: { cognitoId },
         data: {
           ...data,
@@ -103,7 +103,7 @@ export class InvestorService {
    * @returns Массив объектов недвижимости
    */
   async getCurrentResidences(cognitoId: string): Promise<Property[]> {
-    const investor = await prisma.investor.findUnique({
+    const investor = await prismaConfig.investor.findUnique({
       where: { cognitoId },
       select: { id: true },
     });
@@ -112,7 +112,7 @@ export class InvestorService {
       throw InvestorError.notFound();
     }
 
-    return prisma.property.findMany({
+    return prismaConfig.property.findMany({
       where: {
         tokens: {
           some: {
@@ -131,7 +131,7 @@ export class InvestorService {
    * @returns Обновленный объект инвестора
    */
   async addFavoriteProperty(cognitoId: string, propertyId: number) {
-    return prisma.$transaction(async (tx) => {
+    return prismaConfig.$transaction(async (tx) => {
       const investor = await tx.investor.findUnique({
         where: { cognitoId },
         include: { favorites: true },
@@ -160,7 +160,7 @@ export class InvestorService {
    * @returns Обновленный объект инвестора
    */
   async removeFavoriteProperty(cognitoId: string, propertyId: number) {
-    return prisma.investor.update({
+    return prismaConfig.investor.update({
       where: { cognitoId },
       data: {
         favorites: {

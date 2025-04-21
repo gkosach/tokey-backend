@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { Prisma } from "@prisma/client";
 import { BaseError } from "./base.error";
 import { ErrorStatus } from "../enum";
-import logger from "../config/logger";
+import loggerConfig from "../config/logger.config";
 
 export class ErrorHandler {
   /**
@@ -22,11 +22,11 @@ export class ErrorHandler {
       }
 
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        logger.error("Database error - Known Request:", error);
+        loggerConfig.error("Database error - Known Request:", error);
         return ErrorHandler.sendError(res, ErrorStatus.InternalError, "Database operation failed");
       }
       if (error instanceof Prisma.PrismaClientValidationError) {
-        logger.error("Database error - Validation:", error);
+        loggerConfig.error("Database error - Validation:", error);
         return ErrorHandler.sendError(res, ErrorStatus.BadRequest, "Invalid query parameters");
       }
 

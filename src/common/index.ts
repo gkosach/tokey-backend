@@ -1,9 +1,9 @@
 /**
  * configs
  */
-export * from "./config/logger";
-export * from "./config/prisma";
-export * from "./config/s3";
+export * from "./config/logger.config";
+export * from "./config/prisma.config";
+export * from "./config/s3.config";
 
 /**
  * constants
@@ -20,7 +20,3 @@ export * from "./enum";
  */
 export * from "./error/base.error";
 export * from "./utils/geocoder";
-
-/**
- * Types
- */

@@ -1,4 +1,4 @@
-import { prisma } from "../common";
+import { prismaConfig } from "../common";
 import { Prisma } from "@prisma/client";
 import { ManagerError } from "./contract/error/manager.error";
 
@@ -15,7 +15,7 @@ export class ManagerService {
    */
   async getManager(cognitoId: string) {
     try {
-      return await prisma.manager.findUnique({
+      return await prismaConfig.manager.findUnique({
         where: { cognitoId },
         include: { properties: true },
       });
@@ -36,7 +36,7 @@ export class ManagerService {
    */
   async createManager(data: { cognitoId: string; name: string; email: string; phoneNumber: string }) {
     try {
-      return await prisma.manager.create({ data });
+      return await prismaConfig.manager.create({ data });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
@@ -58,7 +58,7 @@ export class ManagerService {
    */
   async updateManager(cognitoId: string, data: { name?: string; email?: string; phoneNumber?: string }) {
     try {
-      return await prisma.manager.update({
+      return await prismaConfig.manager.update({
         where: { cognitoId },
         data,
       });
@@ -81,7 +81,7 @@ export class ManagerService {
    */
   async getManagerProperties(cognitoId: string) {
     try {
-      return await prisma.property.findMany({
+      return await prismaConfig.property.findMany({
         where: { manager: { cognitoId } },
         include: { location: true },
       });

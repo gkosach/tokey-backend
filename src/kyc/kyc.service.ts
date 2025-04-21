@@ -1,5 +1,5 @@
 import axios from "axios";
-import { prisma, PERSONA_BASE_URI } from "../common";
+import { prismaConfig, PERSONA_BASE_URI } from "../common";
 import { KYCStatus } from "@prisma/client";
 import { KycError } from "./contract/error/kyc.error";
 
@@ -41,9 +41,9 @@ export class KycService {
       };
 
       if (userType === "investor") {
-        await prisma.investor.update({ where: { cognitoId: userId }, data: updateData });
+        await prismaConfig.investor.update({ where: { cognitoId: userId }, data: updateData });
       } else {
-        await prisma.manager.update({ where: { cognitoId: userId }, data: updateData });
+        await prismaConfig.manager.update({ where: { cognitoId: userId }, data: updateData });
       }
 
       return { verificationUrl: response.data.data.attributes.verificationUrl };
@@ -64,8 +64,8 @@ export class KycService {
 
       // Поиск пользователя по verificationId
       const [investor, manager] = await Promise.all([
-        prisma.investor.findUnique({ where: { verificationId } }),
-        prisma.manager.findUnique({ where: { verificationId } }),
+        prismaConfig.investor.findUnique({ where: { verificationId } }),
+        prismaConfig.manager.findUnique({ where: { verificationId } }),
       ]);
 
       const updateData = {
@@ -74,9 +74,9 @@ export class KycService {
       };
 
       if (investor) {
-        await prisma.investor.update({ where: { id: investor.id }, data: updateData });
+        await prismaConfig.investor.update({ where: { id: investor.id }, data: updateData });
       } else if (manager) {
-        await prisma.manager.update({ where: { id: manager.id }, data: updateData });
+        await prismaConfig.manager.update({ where: { id: manager.id }, data: updateData });
       } else {
         throw KycError.sessionNotFound();
       }

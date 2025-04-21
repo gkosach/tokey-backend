@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { KycError } from "../kyc";
-import { prisma, ErrorStatus, KycErrorMessages } from "../common";
+import { prismaConfig, ErrorStatus, KycErrorMessages } from "../common";
 
 export const kycGuard = (userType: "investor" | "manager") => {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -14,10 +14,10 @@ export const kycGuard = (userType: "investor" | "manager") => {
 
       const user =
         userType === "investor"
-          ? await prisma.investor.findUnique({
+          ? await prismaConfig.investor.findUnique({
               where: { cognitoId: userId },
             })
-          : await prisma.manager.findUnique({
+          : await prismaConfig.manager.findUnique({
               where: { cognitoId: userId },
             });
 

@@ -1,9 +1,9 @@
 import { PropertyType } from "@prisma/client";
 import { CreatePropertyDto, PropertyError, UpdateModerationStatusDto } from "./index";
-import { prisma, s3, Geocoder, ErrorStatus, PropertyErrorMessages } from "../common";
+import { prismaConfig, s3Config, Geocoder, ErrorStatus, PropertyErrorMessages } from "../common";
 import { v4 as uuidv4 } from "uuid";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
-import logger from "../common/config/logger";
+import loggerConfig from "../common/config/logger.config";
 
 /**
  * Сервис для работы с объектами недвижимости
@@ -24,7 +24,7 @@ export class PropertyService {
         }),
       ]);
 
-      return prisma.$transaction(async (tx) => {
+      return prismaConfig.$transaction(async (tx) => {
         return tx.property.create({
           data: {
             ...dto,
@@ -47,7 +47,7 @@ export class PropertyService {
         });
       });
     } catch (error) {
-      logger.error("Property creation failed", error);
+      loggerConfig.error("Property creation failed", error);
       throw error;
     }
   }
@@ -60,7 +60,7 @@ export class PropertyService {
   async getProperty(id: string) {
     const propertyId = this.validateId(id);
 
-    const property = await prisma.property.findUnique({
+    const property = await prismaConfig.property.findUnique({
       where: { id: propertyId },
       include: {
         location: true,
@@ -89,7 +89,7 @@ export class PropertyService {
   }) {
     const { page = 1, limit = 10 } = filter;
 
-    return prisma.property.findMany({
+    return prismaConfig.property.findMany({
       skip: (page - 1) * limit,
       take: limit,
       where: {
@@ -114,7 +114,7 @@ export class PropertyService {
       const extension = file.originalname.split(".").pop()?.toLowerCase() || "bin";
       const filename = `${uuidv4()}.${extension}`;
 
-      await s3.send(
+      await s3Config.send(
         new PutObjectCommand({
           Bucket: process.env.S3_BUCKET_NAME,
           Key: filename,
@@ -126,7 +126,7 @@ export class PropertyService {
 
       return `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${filename}`;
     } catch (error) {
-      logger.error("S3 upload failed", error);
+      loggerConfig.error("S3 upload failed", error);
       throw PropertyError.uploadFailed();
     }
   }
@@ -151,7 +151,7 @@ export class PropertyService {
    * @returns Список объектов, ожидающих модерацию
    */
   getPropertiesForModeration() {
-    return prisma.property.findMany({
+    return prismaConfig.property.findMany({
       where: {
         moderationStatus: "Pending",
         manager: { kycStatus: "Approved" },
@@ -170,7 +170,7 @@ export class PropertyService {
    * @returns Обновленный объект недвижимости
    */
   async updateModerationStatus(id: number, dto: UpdateModerationStatusDto) {
-    return prisma.property.update({
+    return prismaConfig.property.update({
       where: { id },
       data: {
         moderationStatus: dto.status,
