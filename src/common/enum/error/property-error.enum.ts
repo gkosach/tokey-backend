@@ -14,9 +14,5 @@ export enum PropertyErrorMessages {
   /** Некорректный адрес объекта */
   INVALID_ADDRESS = "Invalid address format",
 
-  /** Недопустимый тип недвижимости */
-  INVALID_TYPE = "Invalid property type",
-
-  /** Ошибка модерации объекта */
-  MODERATION_FAILED = "Moderation operation failed",
+  DATABASE_ERROR = "Database operation failed",
 }

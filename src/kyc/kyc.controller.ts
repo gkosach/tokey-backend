@@ -1,43 +1,45 @@
-import { Request, Response, NextFunction } from "express";
+import { NextFunction, Request, Response } from "express";
 import { KycService } from "./kyc.service";
-import { CreateKycSessionDto } from "./index";
 
-/**
- * Контроллер для работы с KYC процессом
- */
 export class KycController {
-  private readonly kycService = new KycService();
+  private service = new KycService();
 
-  /**
-   * Инициализация KYC-сессии
-   * @route POST /kyc/init
-   * @param req.body - CreateKycSessionDto
-   * @returns Ссылка на верификацию
-   */
-  createSession = async (req: Request, res: Response, next: NextFunction) => {
+  async getKycStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const dto: CreateKycSessionDto = req.body;
-      const result = await this.kycService.createSession(dto.userId, dto.userType);
-      res.json(result);
+      const userId = req.user!.id;
+      const status = await this.service.getKycStatus(userId);
+      res.json({ status });
     } catch (error) {
       next(error);
     }
-  };
+  }
 
-  /**
-   * Обработка вебхука от Persona
-   * @route POST /kyc/webhook
-   * @param req.body - Payload от Persona
-   * @returns 200 OK или ошибка
-   */
-  handleWebhook = async (req: Request, res: Response, next: NextFunction) => {
+  async startVerification(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      await this.kycService.handleWebhook(req.body);
-      res.status(200).json({ status: "ok" });
+      const userId = req.user!.id;
+      const verificationUrl = await this.service.initiateVerification(userId);
+      res.json({ verificationUrl });
     } catch (error) {
       next(error);
     }
-  };
+  }
+
+  async handleWebhook(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {
+        data: {
+          id: verificationId,
+          attributes: { status },
+        },
+      } = req.body;
+
+      await this.service.handleWebhook(verificationId, status === "approved" ? "approved" : "declined");
+
+      res.sendStatus(200);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const kycController = new KycController();

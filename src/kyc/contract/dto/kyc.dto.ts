@@ -5,7 +5,4 @@
 export class CreateKycSessionDto {
   /** Cognito ID пользователя */
   userId!: string;
-
-  /** Тип пользователя: "investor" или "manager" */
-  userType!: "investor" | "manager";
 }

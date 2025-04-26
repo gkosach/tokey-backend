@@ -5,34 +5,29 @@ import path from "path";
 const prisma = new PrismaClient();
 const dataDir = path.join(__dirname, "seedData");
 
-// Функция для преобразования kebab-case в PascalCase
-function toPascalCase(str: string) {
-  return str
-    .split("-")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join("");
-}
-
 async function seed() {
-  const seedOrder = [
-    "location.json",
-    "manager.json",
-    "investor.json",
-    "property.json",
-    "payment-history.json", // Преобразуется в PaymentHistory
-  ];
+  // Очистка данных в правильном порядке
+  await prisma.$transaction([
+    prisma.stakingRecord.deleteMany(),
+    prisma.transaction.deleteMany(),
+    prisma.property.deleteMany(),
+    prisma.wallet.deleteMany(),
+    prisma.user.deleteMany(),
+  ]);
 
-  for (const file of seedOrder) {
-    const baseName = file.replace(".json", "");
-    const modelName = toPascalCase(baseName); // payment-history → PaymentHistory
-    const data = JSON.parse(fs.readFileSync(path.join(dataDir, file), "utf-8"));
+  const seedOrder = ["user", "wallet", "property", "transaction", "stakingRecord"] as const;
 
-    // @ts-ignore
-    await prisma[modelName].createMany({ data });
-    console.log(`Seeded ${modelName}`);
+  for (const model of seedOrder) {
+    const data = JSON.parse(fs.readFileSync(path.join(dataDir, `${model}.json`), "utf-8"));
+
+    await (prisma[model] as any).createMany({ data });
+    console.log(`✅ Seeded ${model}`);
   }
 }
 
 seed()
-  .catch(console.error)
+  .catch((e) => {
+    console.error("Seed failed:", e);
+    process.exit(1);
+  })
   .finally(() => prisma.$disconnect());

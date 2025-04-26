@@ -1,10 +1,6 @@
-import { ErrorStatus, PropertyErrorMessages, BaseError } from "../../../common";
+import { BaseError, ErrorStatus, PropertyErrorMessages } from "../../../common";
 
 export class PropertyError extends BaseError<PropertyErrorMessages> {
-  constructor(code: ErrorStatus, message: PropertyErrorMessages) {
-    super(code, message);
-  }
-
   static invalidId(): PropertyError {
     return new this(ErrorStatus.BadRequest, PropertyErrorMessages.INVALID_ID);
   }
@@ -13,15 +9,11 @@ export class PropertyError extends BaseError<PropertyErrorMessages> {
     return new this(ErrorStatus.NotFound, PropertyErrorMessages.NOT_FOUND);
   }
 
-  static invalidAddress(): PropertyError {
-    return new this(ErrorStatus.BadRequest, PropertyErrorMessages.INVALID_ADDRESS);
-  }
-
   static uploadFailed(): PropertyError {
     return new this(ErrorStatus.InternalError, PropertyErrorMessages.UPLOAD_FAILED);
   }
 
-  static invalidType(): PropertyError {
-    return new this(ErrorStatus.BadRequest, PropertyErrorMessages.INVALID_TYPE);
+  static databaseError(): PropertyError {
+    return new this(ErrorStatus.InternalError, PropertyErrorMessages.DATABASE_ERROR);
   }
 }

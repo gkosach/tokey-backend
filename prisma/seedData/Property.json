@@ -1,0 +1,32 @@
+[
+  {
+    "id": "a1b2c3d4-d5e6-7890-abcd-ef1234567890",
+    "title": "Luxury Palm Villa",
+    "solanaMint": "So1aNaMintAddress00000000000000000000000001",
+    "ownerId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "metadata": {
+      "type": "villa",
+      "roi": 7.5,
+      "docsIpfs": "QmVillaDocsHash",
+      "photos": ["ipfs://photo1", "ipfs://photo2"]
+    },
+    "moderationStatus": "PENDING",
+    "moderationComment": null,
+    "tokenizationDate": null
+  },
+  {
+    "id": "b2c3d4e5-f678-890a-bcde-f1234567890a",
+    "title": "Downtown Apartment",
+    "solanaMint": "So1aNaMintAddress00000000000000000000000002",
+    "ownerId": "b2c3d4e5-f678-90ab-cdef-1234567890ab",
+    "metadata": {
+      "type": "apartment",
+      "roi": 5.0,
+      "docsIpfs": "QmApartmentDocsHash",
+      "photos": ["ipfs://aptphoto1"]
+    },
+    "moderationStatus": "APPROVED",
+    "moderationComment": "Проверено: все документы в порядке",
+    "tokenizationDate": "2024-03-15T12:00:00Z"
+  }
+]

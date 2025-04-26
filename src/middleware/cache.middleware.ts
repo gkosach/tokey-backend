@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { NextFunction, Request, Response } from "express";
 
 // TODO:  добавитль Redis если нужно
 const cache = new Map<string, { data: any; expires: number }>();

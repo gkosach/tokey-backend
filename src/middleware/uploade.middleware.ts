@@ -1,6 +1,6 @@
-import { MAXIMUM_MB_TO_UPLOAD, MAXIMUM_PHOTOS_PER_PROPERTY } from "../common/constants";
-import multer from "multer";
 import express from "express";
+import multer from "multer";
+import { MAXIMUM_MB_TO_UPLOAD, MAXIMUM_PHOTOS_PER_PROPERTY } from "../common/constants";
 
 const upload = multer({
   storage: multer.memoryStorage(),

@@ -1,86 +1,66 @@
-/**
- * Import libs
- */
 import bodyParser from "body-parser";
 import cors from "cors";
 import dotenv from "dotenv";
-import express from "express";
+import express, { NextFunction, Request, Response } from "express";
 import helmet from "helmet";
 import morgan from "morgan";
-/**
- * Import Middlewares
- */
-import { authMiddleware } from "./middleware/auth.middleware";
-
-/**
- * Import Routes
- */
-import investorRoutes from "./investor/investor.routes";
-import managerRoutes from "./manager/manager.routes";
-import propertyRoutes from "./property/property.routes";
-
-/**
- * Import utils
- */
 import { ErrorHandler } from "./common/error/error.handler";
+import { authMiddleware } from "./middleware/auth.middleware"; // Новый модуль кошельков
+import propertyRoutes from "./property/property.routes";
+import userRoutes from "./user/user.routes";
+import walletRoutes from "./wallet/wallet.routes";
 
-/* Конифгурации */
 dotenv.config();
+
 const app = express();
+
+// ========================================
+// 1. Middleware Configuration
+// ========================================
 app.use(express.json());
 app.use(helmet());
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
-app.use(morgan("common"));
+app.use(morgan("dev")); // Упрощенный формат логов
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors());
 
-/* Логирование входящих запросов */
-// TODO: убрать после дебага
-app.use((req, res, next) => {
-  console.log("\n=== Incoming Request ===");
-  console.log("Method:", req.method);
-  console.log("Path:  ", req.path);
-  console.log("Body:  ", JSON.stringify(req.body, null, 2));
-  console.log("-----------------------");
-  next();
+// ========================================
+// 2. Логирование
+// ========================================
+if (process.env.NODE_ENV === "development") {
+  app.use((req: Request, res: Response, next: NextFunction): void => {
+    console.log("\n=== Request ===");
+    console.log(`${req.method} ${req.path}`);
+    console.log("Headers:", req.headers);
+    console.log("Body:", req.body);
+    next();
+  });
+}
+
+// ========================================
+// 3. Роуты
+// ========================================
+app.get("/", (req: Request, res: Response): void => {
+  res.send("Real Estate Tokenization API");
 });
 
-/* Роуты */
-app.get("/", (req, res) => {
-  res.send("This is home route");
-});
+// Основные модули
 app.use("/properties", propertyRoutes);
-app.use("/investors", authMiddleware(["investor"]), investorRoutes);
-app.use("/managers", authMiddleware(["manager"]), managerRoutes);
+app.use("/users", authMiddleware(), userRoutes);
+app.use("/wallets", authMiddleware(), walletRoutes);
 
-/* Логирование исходящих ответов */
-app.use((req, res, next) => {
-  const originalSend = res.send;
-  res.send = function (body) {
-    try {
-      // TODO: убрать после дебага
-      console.log("\n=== Outgoing Response ===");
-      console.log("Status:", res.statusCode);
-      try {
-        console.log("Body:  ", JSON.stringify(JSON.parse(body), null, 2));
-      } catch {
-        console.log("Body:  ", body);
-      }
-      console.log("==========================\n");
-    } catch (e) {
-      console.log("Failed to log outgoing response:", e);
-    }
-    return originalSend.call(this, body);
-  };
-  next();
-});
-
-/* Глобальный обработчик ошибок */
+// ========================================
+// 4. Финализаторы
+// ========================================
+// Глобальный обработчик ошибок
 app.use(ErrorHandler.handle);
 
-/* Сервер */
+// Запуск сервера
 const port = Number(process.env.PORT) || 3002;
-app.listen(port, "0.0.0.0", () => {
-  console.log(`Server running on port ${port}`);
+app.listen(port, "0.0.0.0", (): void => {
+  console.log(`Server started on port ${port}`);
+  console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
 });
+
+export default app;

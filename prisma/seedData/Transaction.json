@@ -1,0 +1,20 @@
+[
+  {
+    "id": "a1a2b3c4-d5e6-7890-abcd-ef1234567890",
+    "txHash": "5NfTxHashExample0000000000000000000000000001",
+    "amount": "1000000",
+    "fromWallet": "4Nd1mY6v7X9z8Q2a3b4c5d6e7f8g9h0j1k2l3m4n5o6p",
+    "toWallet": "7Gh8j9k0l1m2n3o4p5q6r7s8t9u0v1w2x3y4z5a6b7c8",
+    "propertyId": "a1b2c3d4-d5e6-7890-abcd-ef1234567890",
+    "userId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+  },
+  {
+    "id": "b2b3c4d5-e6f7-890a-bcde-f1234567890a",
+    "txHash": "6NfTxHashExample0000000000000000000000000002",
+    "amount": "500000",
+    "fromWallet": "7Gh8j9k0l1m2n3o4p5q6r7s8t9u0v1w2x3y4z5a6b7c8",
+    "toWallet": "4Nd1mY6v7X9z8Q2a3b4c5d6e7f8g9h0j1k2l3m4n5o6p",
+    "propertyId": "b2c3d4e5-f678-890a-bcde-f1234567890a",
+    "userId": "b2c3d4e5-f678-90ab-cdef-1234567890ab"
+  }
+]

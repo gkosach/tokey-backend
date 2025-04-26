@@ -2,39 +2,36 @@
 
 1. !important
    `Dont forget to change datasource db  `
-Add in VPC
-> docker exec -it back-app
-
+   Add in VPC
+   > docker exec -it back-app
 
 Prisma Cheatsheet
 Сброс базы и миграций
 
 ```bash
-npx prismaConfig migrate reset
-rm -rf prismaConfig/migrations
-npx prismaConfig migrate dev --name init
-npx prismaConfig migrate deploy
+npx prisma migrate reset
+y
+rm -rf prisma/migrations
+npx prisma migrate dev --name init
+npx prisma migrate deploy
 ```
 
 Создать новую миграцию
 
 ```bash
-npx prismaConfig migrate dev --name <название>
-
+npx prisma migrate dev --name <название>
 ```
 
 Применить все миграции
 
 ```bash
-npx prismaConfig migrate dev
-
+npx prisma migrate dev
 ```
 
 Сгенерировать Prisma Client
 
 ```npm
-npm run prismaConfig:generate
-
+npm run prisma:generate
 ```
 
 Заполнить базу тестовыми данными

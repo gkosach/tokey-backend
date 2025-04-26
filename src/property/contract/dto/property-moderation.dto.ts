@@ -1,4 +1,6 @@
+import { ModerationStatus } from "../../../../prisma/types/prismaTypes";
+
 export type UpdateModerationStatusDto = {
-  status: "Approved" | "Rejected";
+  status: ModerationStatus;
   comment?: string;
 };

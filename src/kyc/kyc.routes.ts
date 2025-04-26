@@ -1,59 +1,20 @@
 import express from "express";
+import { authMiddleware } from "../middleware/auth.middleware";
+import { personaWebhookMiddleware } from "../middleware/persona-webhook.middleware";
 import { kycController } from "./kyc.controller";
 
-/**
- * @swagger
- * tags:
- *   name: KYC
- *   description: Процесс верификации пользователей
- */
 const router = express.Router();
 
-/**
- * @swagger
- * /kyc/init:
- *   post:
- *     summary: Инициализация KYC-сессии
- *     tags: [KYC]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/CreateKycSessionDto'
- *     responses:
- *       200:
- *         description: Ссылка на верификацию
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 verificationUrl:
- *                   type: string
- *       500:
- *         description: Ошибка создания сессии
- */
-router.post("/init", kycController.createSession);
+router.get("/status", authMiddleware(), (req, res, next) => {
+  return kycController.getKycStatus(req, res, next);
+});
 
-/**
- * @swagger
- * /kyc/webhook:
- *   post:
- *     summary: Обработка вебхука от Persona
- *     tags: [KYC]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *     responses:
- *       200:
- *         description: OK
- *       500:
- *         description: Ошибка обработки вебхука
- */
-router.post("/webhook", kycController.handleWebhook);
+router.post("/start", authMiddleware(), (req, res, next) => {
+  return kycController.startVerification(req, res, next);
+});
+
+router.post("/webhook", personaWebhookMiddleware, (req, res, next) => {
+  return kycController.handleWebhook(req, res, next);
+});
 
 export default router;

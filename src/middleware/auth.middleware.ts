@@ -1,64 +1,75 @@
-import { NextFunction, Request, Response } from "express";
-import jwksClient from "jwks-rsa";
-import jwt, { JwtPayload } from "jsonwebtoken";
-import "express";
 import dotenv from "dotenv";
+import { NextFunction, Request, RequestHandler, Response } from "express";
+import jwt, { JwtPayload } from "jsonwebtoken";
+import jwksClient from "jwks-rsa";
+import { SystemErrorMessages } from "../common";
+
 dotenv.config();
 
+/**
+ * Проверка и настройка окружения
+ * Выводим в консоль ключевые параметры для отладки
+ */
 console.log("[ENV] AWS_REGION:", process.env.AWS_REGION);
 console.log("[ENV] COGNITO_USER_POOL_ID:", process.env.COGNITO_USER_POOL_ID);
 
 /**
- * Проверка и логирование переменных окружения
+ * Валидация обязательных переменных окружения
+ * @throws {Error} Если отсутствуют AWS_REGION или COGNITO_USER_POOL_ID
  */
 if (!process.env.AWS_REGION || !process.env.COGNITO_USER_POOL_ID) {
   throw new Error("AWS_REGION и COGNITO_USER_POOL_ID должны быть заданы в .env");
 }
 
+/**
+ * Конфигурация Cognito
+ */
 const cognitoConfig = {
   region: process.env.AWS_REGION,
   userPoolId: process.env.COGNITO_USER_POOL_ID,
   jwksUri: `https://cognito-idp.${process.env.AWS_REGION}.amazonaws.com/${process.env.COGNITO_USER_POOL_ID}/.well-known/jwks.json`,
 };
 
+/**
+ * Клиент для работы с JWKS (JSON Web Key Set)
+ * Использует кеширование и ограничение запросов
+ */
 const client = jwksClient({
   jwksUri: cognitoConfig.jwksUri,
   cache: true,
   rateLimit: true,
 });
 
+/**
+ * Расширение типов Express для добавления пользователя в объект запроса
+ */
 declare module "express-serve-static-core" {
   interface Request {
     user?: {
       id: string;
-      role: string;
     };
   }
 }
 
 /**
- *
- * @param allowedRoles
+ * Middleware для аутентификации через Cognito JWT
+ * @returns Express middleware функция
  */
-export const authMiddleware = (allowedRoles: string[]) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
+export const authMiddleware = (): RequestHandler => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const authHeader = req.headers.authorization;
       if (!authHeader?.startsWith("Bearer ")) {
-        throw new Error("Authorization header is missing or invalid");
+        throw new Error("Неверный формат заголовка авторизации");
       }
 
       const token = authHeader.split(" ")[1];
-      if (!token) throw new Error("Token missing");
+      if (!token) throw new Error("Отсутствует токен авторизации");
 
-      const getKey = (header: any, callback: any) => {
+      const getKey: jwt.GetPublicKeyOrSecret = (header, callback) => {
         client.getSigningKey(header.kid, (err, key) => {
-          if (err) {
-            console.error("[JWKS] Error fetching key:", err);
-            return callback(new Error("Failed to retrieve verification key"));
-          }
-          if (!key) {
-            return callback(new Error("Signing key not found"));
+          if (err || !key) {
+            return callback(new Error("Ошибка получения ключа подписи"));
           }
           callback(null, key.getPublicKey());
         });
@@ -66,38 +77,25 @@ export const authMiddleware = (allowedRoles: string[]) => {
 
       const decoded = await new Promise<JwtPayload>((resolve, reject) => {
         jwt.verify(token, getKey, { algorithms: ["RS256"] }, (err, decoded) => {
-          if (err) {
-            console.error("[JWT] Verification failed:", err.message);
-            reject(new Error("Invalid or expired token"));
-            return;
-          }
+          if (err) reject(new Error(`Ошибка верификации токена: ${err.message}`));
           resolve(decoded as JwtPayload);
         });
       });
 
-      if (!decoded.sub || !decoded["custom:role"]) {
-        throw new Error("Token is missing required claims");
+      if (!decoded.sub) {
+        throw new Error("Токен не содержит идентификатора пользователя (sub)");
       }
 
-      const userRole = decoded["custom:role"].toLowerCase();
-      if (!allowedRoles.includes(userRole)) {
-        throw new Error(`Role '${userRole}' is not authorized`);
-      }
-
-      req.user = {
-        id: decoded.sub,
-        role: userRole,
-      };
-
+      req.user = { id: decoded.sub };
       next();
     } catch (error) {
-      console.error("[Auth Middleware] Error:", error);
+      console.error("[Auth error]", error);
       res.status(401).json({
-        error: "Unauthorized",
-        message: error instanceof Error ? error.message : "Authentication failed",
-        details: {
-          requiredRoles: allowedRoles,
-          jwksEndpoint: cognitoConfig.jwksUri,
+        error: SystemErrorMessages.INTERNAL_ERROR,
+        message: error instanceof Error ? error.message : "Неизвестная ошибка",
+        docs: {
+          jwks: cognitoConfig.jwksUri,
+          auth_scheme: "Bearer <token>",
         },
       });
     }

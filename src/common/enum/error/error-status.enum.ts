@@ -5,4 +5,5 @@ export enum ErrorStatus {
   NotFound = 404,
   InternalError = 500,
   BadGateway = 502,
+  Conflict = 503,
 }

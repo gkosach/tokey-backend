@@ -1,5 +1,5 @@
 generator client {
-  provider      = "prismaConfig-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
 }
 
@@ -9,135 +9,94 @@ datasource db {
   // url      = env("DATABASE_URL")
 }
 
-enum KYCStatus {
-  NotStarted // Не начата
-  Pending // На проверке
-  Approved // Подтверждён
-  Rejected // Отклонён
-}
-
-// Типы недвижимости
-enum PropertyType {
-  Rooms // Комнаты
-  Apartment // Квартира
-  Villa // Вилла
-  Townhouse // Таунхаус
-}
-
-// Статусы платежей
-enum PaymentStatus {
-  Pending // Ожидает
-  Paid // Оплачен
-  Failed // Неудачный
-}
-
-// Методы оплаты
-enum PaymentMethod {
-  CRYPTO // Криптовалюта
-  VISA // банковаская карта
+// -------- Enums --------
+enum KycStatus {
+  NOT_STARTED @map("not_started") // Верификация не начата
+  PENDING     @map("pending") // На модерации
+  VERIFIED    @map("verified") // Верифицирован
 }
 
 enum ModerationStatus {
-  Pending // На модерации
-  Approved // Одобрено
-  Rejected // Отклонено
+  PENDING  @map("pending") // Ожидает проверки
+  APPROVED @map("approved") // Одобрено
+  REJECTED @map("rejected") // Отклонено
+}
+
+// -------- Models --------
+model User {
+  id                String    @id @default(uuid()) @db.Uuid
+  cognitoId         String    @unique @map("cognito_id")
+  name              String    @db.VarChar(100)
+  email             String    @unique @db.VarChar(255)
+  phoneNumber       String    @unique @map("phone_number") @db.VarChar(20)
+  kycStatus         KycStatus @default(NOT_STARTED) @map("kyc_status")
+  kycVerificationId String?   @map("kyc_verification_id")
+  kycVerifiedAt     DateTime? @map("kyc_verified_at")
+
+  wallets        Wallet[]
+  properties     Property[]
+  transactions   Transaction[]
+  stakingRecords StakingRecord[]
+
+  @@index([email], map: "user_email_idx")
+  @@index([phoneNumber], map: "user_phone_idx")
+}
+
+model Wallet {
+  id          String  @id @default(uuid()) @db.Uuid
+  address     String  @unique @db.VarChar(44) // Solana-адрес
+  whitelisted Boolean @default(false) // Доступ после KYC
+  userId      String  @map("user_id") @db.Uuid
+
+  user         User          @relation(fields: [userId], references: [id])
+  transactions Transaction[]
+
+  @@index([address], map: "wallet_address_idx")
 }
 
 model Property {
-  id                Int              @id @default(autoincrement())
-  name              String           @db.VarChar(255)
-  description       String           @db.Text
-  photoUrls         String[]         @db.Text
-  tokenPrice        Float            @default(0)
-  totalTokens       Int              @default(1000)
-  tokensSold        Int              @default(0)
-  rentalPercent     Float            @default(5)
-  tokenizationDate  DateTime?
-  locationId        Int
-  managerId         Int?
-  propertyType      PropertyType
-  moderationStatus  ModerationStatus @default(Pending)
-  moderationComment String?
+  id                String           @id @default(uuid()) @db.Uuid
+  title             String           @db.VarChar(255) // Название объекта
+  solanaMint        String           @unique @map("mint") // SPL Token Address
+  ownerId           String           @map("owner_id") @db.Uuid
+  metadata          Json // {type: "villa", roi: 5.5, docsIpfs: "Qm...", photos: [...]}
+  moderationStatus  ModerationStatus @default(PENDING) @map("moderation_status")
+  moderationComment String?          @map("moderation_comment")
+  tokenizationDate  DateTime?        @map("tokenization_date")
 
-  location           Location             @relation(fields: [locationId], references: [id])
-  manager            Manager?             @relation(fields: [managerId], references: [id])
-  tokens             PaymentHistory[]
-  investors          Investor[]           @relation("PropertyInvestors")
-  favoritedBy        Investor[]           @relation("FavoriteProperties")
-  FavoriteProperties FavoriteProperties[]
+  owner          User            @relation(fields: [ownerId], references: [id])
+  stakingRecords StakingRecord[]
 
-  @@index([locationId])
-  @@index([managerId])
-  @@index([tokenizationDate])
+  @@index([solanaMint], map: "property_mint_idx")
 }
 
-model FavoriteProperties {
-  investor   Investor @relation(fields: [investorId], references: [id])
-  investorId Int
-  property   Property @relation(fields: [propertyId], references: [id])
-  propertyId Int
+model Transaction {
+  id         String  @id @default(uuid()) @db.Uuid
+  txHash     String? @unique @map("tx_hash") // Хэш транзакции Solana
+  amount     String // Количество токенов (строкой для JS)
+  fromWallet String  @map("from_wallet") @db.VarChar(44) // Solana-адрес отправителя
+  toWallet   String  @map("to_wallet") @db.VarChar(44) // Solana-адрес получателя
+  propertyId String  @map("property_id") @db.Uuid
+  userId     String  @map("user_id") @db.Uuid
 
-  @@id([investorId, propertyId])
-  @@map("_FavoriteProperties")
+  user     User    @relation(fields: [userId], references: [id])
+  Wallet   Wallet? @relation(fields: [walletId], references: [id])
+  walletId String? @db.Uuid
+
+  @@index([txHash], map: "transaction_tx_hash_idx")
+  @@index([propertyId], map: "transaction_property_idx")
 }
 
-model Manager {
-  id             Int       @id @default(autoincrement())
-  cognitoId      String    @unique @db.VarChar(255)
-  name           String    @db.VarChar(100)
-  email          String    @unique @db.VarChar(255)
-  phoneNumber    String    @unique @db.VarChar(20)
-  kycStatus      KYCStatus @default(NotStarted)
-  verificationId String?   @unique
+model StakingRecord {
+  id         String    @id @default(uuid()) @db.Uuid
+  amount     String // Количество токенов (строкой для JS)
+  lastClaim  DateTime? @map("last_claim") // Последний клейм в UTC
+  userId     String    @map("user_id") @db.Uuid
+  propertyId String    @map("property_id") @db.Uuid
 
-  properties Property[]
-
-  @@index([email])
-  @@index([phoneNumber])
-}
-
-model Investor {
-  id                 Int           @id @default(autoincrement())
-  cognitoId          String        @unique @db.VarChar(255)
-  name               String        @db.VarChar(100)
-  email              String        @unique @db.VarChar(255)
-  phoneNumber        String        @unique @db.VarChar(20)
-  cryptoWallet       String?       @db.VarChar(42)
-  bankAccount        String?       @db.VarChar(34)
-  preferredMethod    PaymentMethod @default(CRYPTO)
-  investedProperties Property[]    @relation("PropertyInvestors")
-  kycStatus          KYCStatus     @default(NotStarted)
-  verificationId     String?       @unique
-
-  tokens             PaymentHistory[]
-  favorites          Property[]           @relation("FavoriteProperties")
-  FavoriteProperties FavoriteProperties[]
-}
-
-model PaymentHistory {
-  id            Int           @id @default(autoincrement())
-  quantity      Int
-  purchaseDate  DateTime      @default(now())
-  propertyId    Int
-  investorId    Int
-  paymentMethod PaymentMethod
-  paymentStatus PaymentStatus @default(Pending)
-  txHash        String?
-  amount        Float
-
+  user     User     @relation(fields: [userId], references: [id])
   property Property @relation(fields: [propertyId], references: [id])
-  investor Investor @relation(fields: [investorId], references: [id])
 
-  @@index([propertyId, investorId])
-  @@index([purchaseDate])
-}
-
-model Location {
-  id        Int        @id @default(autoincrement())
-  address   String     @db.VarChar(255)
-  latitude  Float
-  longitude Float
-  Property  Property[]
-
-  @@index([latitude, longitude])
+  @@unique([userId, propertyId], map: "staking_user_property_unq")
+  @@index([propertyId], map: "staking_property_idx")
 }

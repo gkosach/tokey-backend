@@ -1,87 +1,103 @@
+import { KycStatus, User } from "@prisma/client";
 import axios from "axios";
-import { prismaConfig, PERSONA_BASE_URI } from "../common";
-import { KYCStatus } from "@prisma/client";
+import { prisma } from "../common";
 import { KycError } from "./contract/error/kyc.error";
 
 /**
- * Сервис для работы с KYC процессом
+ * Сервис для управления процессом KYC (Know Your Customer)
  */
 export class KycService {
-  /**
-   * Создает сессию верификации в Persona и обновляет статус пользователя
-   * @param userId - Cognito ID пользователя
-   * @param userType - Тип пользователя (investor | manager)
-   * @returns URL для верификации
-   * @throws {KycError} SESSION_CREATION_FAILED
-   */
-  async createSession(userId: string, userType: "investor" | "manager") {
+  private readonly personaApiKey: string;
+  private readonly personaTemplateId: string;
+
+  constructor() {
+    this.personaApiKey = process.env.PERSONA_API_KEY!;
+    this.personaTemplateId = process.env.PERSONA_TEMPLATE_ID!;
+  }
+
+  async getKycStatus(userId: string): Promise<KycStatus> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { kycStatus: true },
+    });
+
+    if (!user) throw KycError.userNotFound();
+    return user.kycStatus;
+  }
+
+  async initiateVerification(userId: string): Promise<string> {
+    return prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({ where: { id: userId } });
+      if (!user) throw KycError.userNotFound();
+
+      if (user.kycStatus !== KycStatus.NOT_STARTED) {
+        throw KycError.verificationInProgress();
+      }
+
+      const verification = await this.createPersonaVerification(user);
+
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          kycStatus: KycStatus.PENDING,
+          kycVerificationId: verification.id,
+        },
+      });
+
+      return verification.url;
+    });
+  }
+
+  async handleWebhook(verificationId: string, status: "approved" | "declined"): Promise<void> {
+    const user = await prisma.user.findFirst({
+      where: { kycVerificationId: verificationId },
+    });
+
+    if (!user) throw KycError.verificationNotFound();
+
+    const newStatus = status === "approved" ? KycStatus.VERIFIED : KycStatus.NOT_STARTED;
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        kycStatus: newStatus,
+        kycVerifiedAt: newStatus === KycStatus.VERIFIED ? new Date() : null,
+      },
+    });
+  }
+
+  private async createPersonaVerification(user: User): Promise<{ id: string; url: string }> {
     try {
       const response = await axios.post(
-        `${PERSONA_BASE_URI}/api/v1/inquiries`,
+        "https://withpersona.com/api/v1/inquiries",
         {
           data: {
             type: "inquiry",
             attributes: {
-              templateId: process.env.PERSONA_TEMPLATE_ID,
-              referenceId: userId,
+              templateId: this.personaTemplateId,
+              referenceId: user.id,
+              user: {
+                name: user.name,
+                email: user.email,
+                phoneNumber: user.phoneNumber,
+              },
             },
           },
         },
         {
           headers: {
             "Persona-Version": "2023-01-01",
-            Authorization: `Bearer ${process.env.PERSONA_API_KEY}`,
+            Authorization: `Bearer ${this.personaApiKey}`,
           },
         },
       );
 
-      const updateData = {
-        kycStatus: KYCStatus.Pending,
-        verificationId: response.data.data.id,
+      return {
+        id: response.data.data.id,
+        url: response.data.data.attributes.verificationUrl,
       };
-
-      if (userType === "investor") {
-        await prismaConfig.investor.update({ where: { cognitoId: userId }, data: updateData });
-      } else {
-        await prismaConfig.manager.update({ where: { cognitoId: userId }, data: updateData });
-      }
-
-      return { verificationUrl: response.data.data.attributes.verificationUrl };
     } catch {
-      throw KycError.sessionCreationFailed();
-    }
-  }
-
-  /**
-   * Обрабатывает вебхук от Persona и обновляет статус верификации
-   * @param payload - Данные от Persona
-   * @throws {KycError} SESSION_NOT_FOUND | WEBHOOK_PROCESSING_FAILED
-   */
-  async handleWebhook(payload: any) {
-    try {
-      const verificationId = payload.data.id;
-      const status = payload.data.attributes.status;
-
-      // Поиск пользователя по verificationId
-      const [investor, manager] = await Promise.all([
-        prismaConfig.investor.findUnique({ where: { verificationId } }),
-        prismaConfig.manager.findUnique({ where: { verificationId } }),
-      ]);
-
-      const updateData = {
-        kycStatus: status === "completed" ? KYCStatus.Approved : KYCStatus.Rejected,
-        kycApprovedAt: status === "completed" ? new Date() : null,
-      };
-
-      if (investor) {
-        await prismaConfig.investor.update({ where: { id: investor.id }, data: updateData });
-      } else if (manager) {
-        await prismaConfig.manager.update({ where: { id: manager.id }, data: updateData });
-      } else {
-        throw KycError.sessionNotFound();
-      }
-    } catch {
-      throw KycError.webhookProcessingFailed();
+      throw KycError.providerError();
     }
   }
 }
