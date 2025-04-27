@@ -11,6 +11,14 @@ export const asyncHandler = (fn: RequestHandler): RequestHandler => {
 
 const router = express.Router();
 
+router.get(
+  "/",
+  authMiddleware(),
+  asyncHandler((req, res, next) => {
+    return propertyController.getAllProperties(req, res, next);
+  }),
+);
+
 router.post("/", authMiddleware(), uploadMiddleware, asyncHandler(propertyController.createProperty));
 router.get("/moderation", authMiddleware(), asyncHandler(propertyController.listForModeration));
 router.patch("/:id/moderation", authMiddleware(), asyncHandler(propertyController.updateModerationStatus));

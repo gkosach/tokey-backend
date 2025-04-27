@@ -24,10 +24,12 @@ export class WalletController {
     try {
       const wallets = await this.service.getWallets(req.user!.id);
       res.json(
-        wallets.map((wallet) => ({
-          ...wallet,
-          userId: req.user!.id,
-        })),
+        wallets.map((wallet) => {
+          return {
+            ...wallet,
+            userId: req.user!.id,
+          };
+        }),
       );
     } catch (error) {
       next(error);

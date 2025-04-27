@@ -10,7 +10,9 @@ import propertyRoutes from "./property/property.routes";
 import userRoutes from "./user/user.routes";
 import walletRoutes from "./wallet/wallet.routes";
 
-dotenv.config();
+const envFile = process.env.NODE_ENV === "development" ? ".development.env" : ".env";
+
+dotenv.config({ path: envFile });
 
 const app = express();
 

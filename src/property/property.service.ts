@@ -48,6 +48,15 @@ export class PropertyService {
     return property;
   }
 
+  async getAllProperties(includeStaking: boolean): Promise<Property[]> {
+    return prisma.property.findMany({
+      include: {
+        stakingRecords: includeStaking,
+        owner: true,
+      },
+    });
+  }
+
   async getPropertiesForModeration(): Promise<Property[]> {
     return prisma.property.findMany({
       where: { moderationStatus: ModerationStatus.PENDING },

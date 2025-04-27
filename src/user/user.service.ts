@@ -29,7 +29,7 @@ export class UserService {
    */
   async getUserByCognitoId(cognitoId: string): Promise<UserWithRelations> {
     try {
-      const user = await prisma.user.findUniqueOrThrow({
+      return await prisma.user.findUniqueOrThrow({
         where: { cognitoId },
         include: {
           wallets: true,
@@ -38,8 +38,6 @@ export class UserService {
           },
         },
       });
-
-      return user;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === "P2025") {
@@ -58,13 +56,36 @@ export class UserService {
    * @returns Обновленный пользователь со статусом KYC PENDING
    */
   async initiateKycVerification(cognitoId: string, _documents: unknown): Promise<User> {
-    // Временная заглушка для интеграции с KYC-провайдером
     return prisma.user.update({
       where: { cognitoId },
       data: {
         kycStatus: KycStatus.PENDING,
       },
     });
+  }
+
+  async updateUserSettings(
+    cognitoId: string,
+    data: Partial<Pick<User, "name" | "email" | "phoneNumber">>,
+  ): Promise<User> {
+    try {
+      return prisma.user.update({
+        where: { cognitoId },
+        data: {
+          name: data.name,
+          email: data.email,
+          phoneNumber: data.phoneNumber,
+        },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === "P2002") {
+          throw UserError.conflict("Email or phone already exists");
+        }
+        throw UserError.databaseError("Update failed");
+      }
+      throw error;
+    }
   }
 
   /**

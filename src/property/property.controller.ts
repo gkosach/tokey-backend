@@ -23,10 +23,11 @@ export class PropertyController {
     }
   }
 
-  async getProperties(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getAllProperties(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await this.propertyService.getPropertiesForModeration();
-      res.json(result);
+      const includeStaking = req.query.include === "stakingRecords";
+      const properties = await this.propertyService.getAllProperties(includeStaking);
+      res.json(properties);
     } catch (error) {
       next(error);
     }

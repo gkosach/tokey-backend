@@ -1,8 +1,8 @@
-import { NextFunction, Request, Response } from "express";
 import { Prisma } from "@prisma/client";
-import { BaseError } from "./base.error";
-import { ErrorStatus } from "../enum";
+import { NextFunction, Request, Response } from "express";
 import loggerConfig from "../config/logger.config";
+import { ErrorStatus } from "../enum";
+import { BaseError } from "./base.error";
 
 export class ErrorHandler {
   /**

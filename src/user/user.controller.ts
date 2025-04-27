@@ -1,9 +1,10 @@
+import { User } from "@prisma/client";
 import { NextFunction, Response } from "express";
 import { AuthRequest } from "../common/types/auth-request.types";
 import { UserService } from "./user.service";
 
 export class UserController {
-  constructor(private readonly userService: UserService = new UserService()) {}
+  constructor(readonly userService: UserService = new UserService()) {}
 
   async getProfile(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -13,14 +14,23 @@ export class UserController {
       res.json({
         ...user,
         kycStatus: user.kycStatus,
-        wallets: user.wallets.map((w) => ({
-          address: w.address,
-          whitelisted: w.whitelisted,
-        })),
+        wallets: user.wallets.map((w) => {
+          return {
+            address: w.address,
+            whitelisted: w.whitelisted,
+          };
+        }),
       });
     } catch (error) {
       next(error);
     }
+  }
+
+  async updateUserSettings(
+    cognitoId: string,
+    data: Partial<Pick<User, "name" | "email" | "phoneNumber">>,
+  ): Promise<User> {
+    return this.userService.updateUserSettings(cognitoId, data);
   }
 
   async initiateKyc(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
