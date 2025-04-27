@@ -8,9 +8,23 @@ export class PropertyController {
     try {
       const id = req.params.id;
       const property = await this.propertyService.getProperty(id);
+
+      if (!property) {
+        res.status(404).json({ error: "Property not found" });
+        return;
+      }
+
       res.json(property);
     } catch (error) {
-      next(error);
+      if (error instanceof Error) {
+        if (error.message.includes("Invalid ID")) {
+          res.status(400).json({ error: "Invalid property ID format" });
+        } else {
+          next(error);
+        }
+      } else {
+        res.status(500).json({ error: "Unexpected error occurred" });
+      }
     }
   }
 
@@ -19,11 +33,15 @@ export class PropertyController {
       const result = await this.propertyService.updateModerationStatus(req.params.id, req.body);
       res.json(result);
     } catch (error) {
-      next(error);
+      if (error instanceof Error) {
+        next(error);
+      } else {
+        res.status(500).json({ error: "Unexpected error occurred" });
+      }
     }
   }
 
-  async getAllProperties(req: Request, res: Response, next: NextFunction) {
+  async getAllProperties(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const includeStaking = req.query.include === "stakingRecords";
       const properties = await this.propertyService.getAllProperties(includeStaking);

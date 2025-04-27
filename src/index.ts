@@ -5,6 +5,7 @@ import express, { NextFunction, Request, Response } from "express";
 import helmet from "helmet";
 import morgan from "morgan";
 import { ErrorHandler } from "./common/error/error.handler";
+import kycRoutes from "./kyc/kyc.routes";
 import { authMiddleware } from "./middleware/auth.middleware"; // Новый модуль кошельков
 import propertyRoutes from "./property/property.routes";
 import userRoutes from "./user/user.routes";
@@ -23,7 +24,13 @@ app.use(express.json());
 app.use(helmet());
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
 app.use(morgan("dev")); // Упрощенный формат логов
-app.use(bodyParser.json());
+app.use(
+  bodyParser.json({
+    verify: (req, _, buf) => {
+      (req as any).rawBody = buf;
+    },
+  }),
+);
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors());
 
@@ -51,6 +58,7 @@ app.get("/", (req: Request, res: Response): void => {
 app.use("/properties", propertyRoutes);
 app.use("/users", authMiddleware(), userRoutes);
 app.use("/wallets", authMiddleware(), walletRoutes);
+app.use("/kyc", kycRoutes);
 
 // ========================================
 // 4. Финализаторы

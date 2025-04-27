@@ -11,9 +11,10 @@ datasource db {
 
 // -------- Enums --------
 enum KycStatus {
-  NOT_STARTED @map("not_started") // Верификация не начата
-  PENDING     @map("pending") // На модерации
-  VERIFIED    @map("verified") // Верифицирован
+  NOT_STARTED @map("not_started")
+  PENDING     @map("pending")
+  VERIFIED    @map("verified")
+  FAILED      @map("failed")
 }
 
 enum ModerationStatus {
