@@ -9,11 +9,10 @@ Prisma Cheatsheet
 Сброс базы и миграций
 
 ```bash
-npx prisma migrate reset
-y
-rm -rf prisma/migrations
-npx prisma migrate dev --name init
-npx prisma migrate deploy
+npx prisma migrate reset --force
+rm -rf prisma/migrations        
+npx prisma migrate dev --name init 
+npx prisma migrate deploy       
 ```
 
 Создать новую миграцию
@@ -30,14 +29,14 @@ npx prisma migrate dev
 
 Сгенерировать Prisma Client
 
-```npm
-npm run prisma:generate
+```bash
+npx prisma generate
 ```
 
 Заполнить базу тестовыми данными
 
-```npm
-npm run seed
+```bash
+npx ts-node prisma/seed.ts
 ```
 
 Сгенерировать дополнительные типы
