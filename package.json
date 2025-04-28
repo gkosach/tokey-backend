@@ -11,7 +11,8 @@
     "lint:fix": "npm run lint -- --fix",
     "seed": "ts-node prisma/seed.ts",
     "prisma:generate": "prisma generate",
-    "postprisma:generate": "mkdir -p prisma/types && cp -r node_modules/.prisma/client/index.d.ts prisma/types/prismaTypes.d.ts"
+    "postprisma:generate": "mkdir -p prisma/types && cp -r node_modules/.prisma/client/index.d.ts prisma/types/prismaTypes.d.ts",
+    "prestart": "npm run build"
   },
   "repository": {
     "type": "git",
@@ -34,6 +35,8 @@
     "@types/express": "^5.0.1",
     "axios": "^1.8.4",
     "body-parser": "^1.20.3",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "helmet": "^8.1.0",
@@ -50,7 +53,6 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@nestjs/cli": "^11.0.5",
     "@types/cors": "^2.8.17",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/morgan": "^1.9.9",
@@ -60,8 +62,6 @@
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^8.28.0",
     "@typescript-eslint/parser": "^8.29.1",
-    "class-transformer": "^0.5.1",
-    "class-validator": "^0.14.1",
     "class-validator-jsonschema": "^5.0.2",
     "dotenv": "^16.4.7",
     "esbuild": "^0.25.2",

@@ -1,4 +1,4 @@
-import { ModerationStatus } from "../../../../prisma/types/prismaTypes";
+import { ModerationStatus } from "@prisma/client";
 
 export type UpdateModerationStatusDto = {
   status: ModerationStatus;
