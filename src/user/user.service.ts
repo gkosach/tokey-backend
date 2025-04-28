@@ -19,6 +19,7 @@ type UserWithRelations = Prisma.UserGetPayload<{
   };
 }>;
 
+
 export class UserService {
   /**
    * Получает пользователя по Cognito ID
@@ -38,16 +39,34 @@ export class UserService {
           },
         },
       });
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === "P2025") {
-          throw UserError.notFound();
-        }
-        throw UserError.databaseError("User lookup failed");
-      }
-      throw error;
+  } catch (error) {
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    if (error.code === "P2025") {
+      return this.createUser(cognitoId);
     }
+    throw UserError.databaseError("User lookup failed");
   }
+  throw error;
+}
+  }
+
+private async createUser(cognitoId: string): Promise<UserWithRelations> {
+  return prisma.user.create({
+    data: {
+      cognitoId,
+      name: "New User",
+      email: `${cognitoId}@temp.com`,
+      phoneNumber: "",
+      kycStatus: KycStatus.NOT_STARTED
+    },
+    include: {
+      wallets: true,
+      stakingRecords: {
+        include: { property: true }
+      }
+    }
+  });
+}
 
   /**
    * Инициирует процесс KYC-верификации
