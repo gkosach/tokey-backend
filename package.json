@@ -11,7 +11,7 @@
     "lint:fix": "npm run lint -- --fix",
     "seed": "ts-node prisma/seed.ts",
     "prisma:generate": "prisma generate",
-    "postprisma:generate": "mkdir -p prisma/types && shx cp -r node_modules/.prisma/client/index.d.ts prisma/types/prismaTypes.d.ts"
+    "postprisma:generate": "mkdir -p prisma/types && cp -r node_modules/.prisma/client/index.d.ts prisma/types/prismaTypes.d.ts"
   },
   "repository": {
     "type": "git",
