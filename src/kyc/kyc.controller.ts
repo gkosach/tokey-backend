@@ -14,13 +14,14 @@ export class KycController {
     }
   }
 
-  async startVerification(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async startVerification(req: Request, res: Response) {
     try {
       const userId = req.user!.id;
-      const verificationUrl = await this.service.initiateVerification(userId);
-      res.json({ verificationUrl });
+      const { inquiryId } = await this.service.initiateVerification(userId);
+      res.json({ inquiryId });
     } catch (error) {
-      next(error);
+      console.error("KYC start error:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
   }
 

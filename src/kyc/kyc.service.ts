@@ -1,5 +1,5 @@
 import { KycStatus, User } from "@prisma/client";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { prisma } from "../common";
 import { KycError } from "./contract/error/kyc.error";
 
@@ -22,12 +22,10 @@ export class KycService {
    * @returns Текущий статус верификации
    */
   async getKycStatus(userId: string): Promise<KycStatus> {
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findUniqueOrThrow({
       where: { cognitoId: userId },
       select: { kycStatus: true },
     });
-
-    if (!user) throw KycError.userNotFound();
     return user.kycStatus;
   }
 
@@ -36,27 +34,73 @@ export class KycService {
    * @param userId - Идентификатор пользователя
    * @returns URL для прохождения верификации
    */
-  async initiateVerification(userId: string): Promise<string> {
+  async initiateVerification(userId: string): Promise<{ inquiryId: string }> {
     return prisma.$transaction(async (tx) => {
-      const user = await tx.user.findUnique({ where: { cognitoId: userId } });
-      if (!user) throw KycError.userNotFound();
+      const user = await prisma.user.findUniqueOrThrow({
+        where: { cognitoId: userId },
+      });
+
+      if (user.kycStatus === KycStatus.PENDING) {
+        return { inquiryId: user.kycVerificationId! };
+      }
 
       if (user.kycStatus !== KycStatus.NOT_STARTED) {
         throw KycError.verificationInProgress();
       }
 
-      const verification = await this.createPersonaVerification(user);
+      const inquiry = await this.createPersonaInquiry(user);
 
       await tx.user.update({
-        where: { id: userId },
+        where: { id: user.id },
         data: {
           kycStatus: KycStatus.PENDING,
-          kycVerificationId: verification.id,
+          kycVerificationId: inquiry.id,
         },
       });
 
-      return verification.url;
+      return { inquiryId: inquiry.id };
     });
+  }
+
+  private async createPersonaInquiry(user: User): Promise<{ id: string }> {
+    try {
+      const response = await axios.post(
+        "https://api.withpersona.com/api/v1/inquiries",
+        {
+          data: {
+            attributes: {
+              "inquiry-template-id": this.personaTemplateId,
+              "reference-id": user.id,
+              fields: {
+                "name-first": user.name.split(" ")[0],
+                "name-last": user.name.split(" ")[1] || "",
+                "email-address": user.email,
+                "phone-number": user.phoneNumber,
+              },
+            },
+          },
+        },
+        {
+          headers: {
+            "Persona-Version": "2023-01-05",
+            Authorization: `Bearer ${this.personaApiKey}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      return { id: response.data.data.id };
+    } catch (error) {
+      // 2. Проверяем тип ошибки
+      if (error instanceof AxiosError) {
+        console.error("Persona API error:", error.response?.data);
+      } else if (error instanceof Error) {
+        console.error("Unexpected error:", error.message);
+      } else {
+        console.error("Unknown error:", error);
+      }
+      throw KycError.providerError();
+    }
   }
 
   /**
@@ -85,46 +129,5 @@ export class KycService {
         data: { whitelisted: newStatus === KycStatus.VERIFIED },
       }),
     ]);
-  }
-
-  /**
-   * Создание запроса верификации в API Persona
-   * @param user - Данные пользователя
-   * @returns Ответ от Persona с ID и URL верификации
-   */
-  private async createPersonaVerification(user: User): Promise<{ id: string; url: string }> {
-    try {
-      const response = await axios.post(
-        "https://withpersona.com/api/v1/inquiries",
-        {
-          data: {
-            type: "inquiry",
-            attributes: {
-              templateId: this.personaTemplateId,
-              referenceId: user.id,
-              user: {
-                name: user.name,
-                email: user.email,
-                phoneNumber: user.phoneNumber,
-              },
-            },
-          },
-        },
-        {
-          headers: {
-            "Persona-Version": "2023-01-01",
-            Authorization: `Bearer ${this.personaApiKey}`,
-          },
-        },
-      );
-
-      return {
-        id: response.data.data.id,
-        url: response.data.data.attributes.verificationUrl,
-      };
-    } catch (error) {
-      console.error("Persona API error:", error);
-      throw KycError.providerError();
-    }
   }
 }

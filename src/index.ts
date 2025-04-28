@@ -33,6 +33,13 @@ app.use(
 );
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:3000"],
+    methods: ["GET", "POST", "PUT"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 
 // ========================================
 // 2. Логирование

@@ -1,12 +1,11 @@
 import { PrismaClient } from "@prisma/client";
-import fs from "fs";
-import path from "path";
+import * as fs from "fs";
+import * as path from "path";
 
 const prisma = new PrismaClient();
 const dataDir = path.join(__dirname, "seedData");
 
 async function seed() {
-  // Очистка данных в правильном порядке
   await prisma.$transaction([
     prisma.stakingRecord.deleteMany(),
     prisma.transaction.deleteMany(),
