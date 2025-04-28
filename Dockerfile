@@ -1,9 +1,8 @@
-# Stage 1: Сборка
-FROM node:20-alpine AS builder
+FROM node:20-alpine
 
 RUN apk update && \
-    apk upgrade && \
-    apk add --no-cache bash git openssh make cmake g++ python3
+	apk upgrade && \
+	apk add --no-cache bash git openssh make cmake g++ python3;
 
 WORKDIR /app
 COPY package*.json ./
@@ -29,3 +28,4 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 
 CMD ["node", "dist/index.js"]
+
