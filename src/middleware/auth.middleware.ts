@@ -1,8 +1,7 @@
 import dotenv from "dotenv";
-import { NextFunction, Request, RequestHandler, Response } from "express";
-import jwt, { JwtPayload } from "jsonwebtoken";
+import { NextFunction, Request, Response } from "express";
+import jwt from "jsonwebtoken";
 import jwksClient from "jwks-rsa";
-import { SystemErrorMessages } from "../common";
 
 dotenv.config();
 
@@ -47,57 +46,28 @@ declare module "express-serve-static-core" {
   interface Request {
     user?: {
       id: string;
+      accessToken: string;
     };
   }
 }
 
-/**
- * Middleware для аутентификации через Cognito JWT
- * @returns Express middleware функция
- */
-export const authMiddleware = (): RequestHandler => {
+export const authMiddleware = (): ((req: Request, res: Response, next: NextFunction) => Promise<void>) => {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
     try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader?.startsWith("Bearer ")) {
-        throw new Error("Неверный формат заголовка авторизации");
-      }
-
-      const token = authHeader.split(" ")[1];
-      if (!token) throw new Error("Отсутствует токен авторизации");
-
-      const getKey: jwt.GetPublicKeyOrSecret = (header, callback) => {
-        client.getSigningKey(header.kid, (err, key) => {
-          if (err || !key) {
-            return callback(new Error("Ошибка получения ключа подписи"));
-          }
-          callback(null, key.getPublicKey());
-        });
+      const decoded = jwt.decode(token, { complete: true });
+      req.user = {
+        id: decoded?.payload.sub as string,
+        accessToken: token,
       };
-
-      const decoded = await new Promise<JwtPayload>((resolve, reject) => {
-        jwt.verify(token, getKey, { algorithms: ["RS256"] }, (err, decoded) => {
-          if (err) reject(new Error(`Ошибка верификации токена: ${err.message}`));
-          resolve(decoded as JwtPayload);
-        });
-      });
-
-      if (!decoded.sub) {
-        throw new Error("Токен не содержит идентификатора пользователя (sub)");
-      }
-
-      req.user = { id: decoded.sub };
       next();
-    } catch (error) {
-      console.error("[Auth error]", error);
-      res.status(401).json({
-        error: SystemErrorMessages.INTERNAL_ERROR,
-        message: error instanceof Error ? error.message : "Неизвестная ошибка",
-        docs: {
-          jwks: cognitoConfig.jwksUri,
-          auth_scheme: "Bearer <token>",
-        },
-      });
+    } catch {
+      res.status(401).json({ error: "Invalid token" });
     }
   };
 };

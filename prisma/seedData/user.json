@@ -1,8 +1,7 @@
 [
   {
-    "id": "a2c3d4e5-f678-90ab-cdef-1234567890ab",
     "cognitoId": "e40824e8-f0d1-7029-07be-f4d76a53efe3",
-    "name": "drdev",
+    "name": "Tralalero",
     "email": "test1test@gmail.com",
     "phoneNumber": "+12345678901",
     "kycStatus": "VERIFIED",
@@ -10,7 +9,6 @@
     "kycVerifiedAt": "2024-03-15T12:00:00Z"
   },
   {
-    "id": "b2c3d4e5-f678-90ab-cdef-1234567890ab",
     "cognitoId": "11a8a4e8-3001-70ea-71e0-b577a78107e0",
     "name": "Maria Sidorova",
     "email": "user2@example.com",

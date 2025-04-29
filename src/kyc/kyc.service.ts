@@ -51,7 +51,7 @@ export class KycService {
       const inquiry = await this.createPersonaInquiry(user);
 
       await tx.user.update({
-        where: { id: user.id },
+        where: { cognitoId: user.cognitoId },
         data: {
           kycStatus: KycStatus.PENDING,
           kycVerificationId: inquiry.id,
@@ -70,7 +70,7 @@ export class KycService {
           data: {
             attributes: {
               "inquiry-template-id": this.personaTemplateId,
-              "reference-id": user.id,
+              "reference-id": user.cognitoId,
               fields: {
                 "name-first": user.name.split(" ")[0],
                 "name-last": user.name.split(" ")[1] || "",
@@ -118,14 +118,14 @@ export class KycService {
 
     await prisma.$transaction([
       prisma.user.update({
-        where: { id: user.id },
+        where: { cognitoId: user.cognitoId },
         data: {
           kycStatus: newStatus,
           kycVerifiedAt: newStatus === KycStatus.VERIFIED ? new Date() : null,
         },
       }),
       prisma.wallet.updateMany({
-        where: { userId: user.id },
+        where: { userId: user.cognitoId },
         data: { whitelisted: newStatus === KycStatus.VERIFIED },
       }),
     ]);

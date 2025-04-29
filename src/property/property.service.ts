@@ -37,11 +37,11 @@ export class PropertyService {
       include: {
         owner: {
           select: {
-            id: true,
+            cognitoId: true,
             name: true,
           },
         },
-      }, // Убрали location
+      },
     });
 
     if (!property) throw PropertyError.notFound();

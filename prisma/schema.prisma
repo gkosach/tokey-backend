@@ -1,12 +1,12 @@
 generator client {
   provider      = "prisma-client-js"
-  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+  binaryTargets = ["native", "darwin-arm64", "linux-musl-arm64-openssl-3.0.x"]
 }
 
 datasource db {
   provider = "postgresql"
-  // url      = "postgresql://dev_user:dev_password@localhost:5432/dev_db"
-  url      = env("DATABASE_URL")
+  url      = "postgresql://dev_user:dev_password@localhost:5432/dev_db"
+  // url      = env("DATABASE_URL")
 }
 
 // -------- Enums --------
@@ -25,8 +25,7 @@ enum ModerationStatus {
 
 // -------- Models --------
 model User {
-  id                String    @id @default(uuid()) @db.Uuid
-  cognitoId         String    @unique @map("cognito_id")
+  cognitoId         String    @id @map("cognito_id") @db.VarChar(36)
   name              String    @db.VarChar(100)
   email             String    @unique @db.VarChar(255)
   phoneNumber       String    @unique @map("phone_number") @db.VarChar(20)
@@ -47,9 +46,9 @@ model Wallet {
   id          String  @id @default(uuid()) @db.Uuid
   address     String  @unique @db.VarChar(44) // Solana-адрес
   whitelisted Boolean @default(false) // Доступ после KYC
-  userId      String  @map("user_id") @db.Uuid
+  userId      String  @map("user_id") @db.VarChar(36)
 
-  user         User          @relation(fields: [userId], references: [id])
+  user         User          @relation(fields: [userId], references: [cognitoId])
   transactions Transaction[]
 
   @@index([address], map: "wallet_address_idx")
@@ -59,13 +58,13 @@ model Property {
   id                String           @id @default(uuid()) @db.Uuid
   title             String           @db.VarChar(255) // Название объекта
   solanaMint        String           @unique @map("mint") // SPL Token Address
-  ownerId           String           @map("owner_id") @db.Uuid
+  ownerId           String           @map("owner_id") @db.VarChar(36)
   metadata          Json // {type: "villa", roi: 5.5, docsIpfs: "Qm...", photos: [...]}
   moderationStatus  ModerationStatus @default(PENDING) @map("moderation_status")
   moderationComment String?          @map("moderation_comment")
   tokenizationDate  DateTime?        @map("tokenization_date")
 
-  owner          User            @relation(fields: [ownerId], references: [id])
+  owner          User            @relation(fields: [ownerId], references: [cognitoId])
   stakingRecords StakingRecord[]
 
   @@index([solanaMint], map: "property_mint_idx")
@@ -78,9 +77,9 @@ model Transaction {
   fromWallet String  @map("from_wallet") @db.VarChar(44) // Solana-адрес отправителя
   toWallet   String  @map("to_wallet") @db.VarChar(44) // Solana-адрес получателя
   propertyId String  @map("property_id") @db.Uuid
-  userId     String  @map("user_id") @db.Uuid
+  userId     String  @map("user_id") @db.VarChar(36)
 
-  user     User    @relation(fields: [userId], references: [id])
+  user     User    @relation(fields: [userId], references: [cognitoId])
   Wallet   Wallet? @relation(fields: [walletId], references: [id])
   walletId String? @db.Uuid
 
@@ -92,10 +91,10 @@ model StakingRecord {
   id         String    @id @default(uuid()) @db.Uuid
   amount     String // Количество токенов (строкой для JS)
   lastClaim  DateTime? @map("last_claim") // Последний клейм в UTC
-  userId     String    @map("user_id") @db.Uuid
+  userId     String    @map("user_id") @db.VarChar(36)
   propertyId String    @map("property_id") @db.Uuid
 
-  user     User     @relation(fields: [userId], references: [id])
+  user     User     @relation(fields: [userId], references: [cognitoId])
   property Property @relation(fields: [propertyId], references: [id])
 
   @@unique([userId, propertyId], map: "staking_user_property_unq")

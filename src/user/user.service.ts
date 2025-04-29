@@ -19,7 +19,6 @@ type UserWithRelations = Prisma.UserGetPayload<{
   };
 }>;
 
-
 export class UserService {
   /**
    * Получает пользователя по Cognito ID
@@ -32,41 +31,40 @@ export class UserService {
     try {
       return await prisma.user.findUniqueOrThrow({
         where: { cognitoId },
-        include: {
-          wallets: true,
-          stakingRecords: {
-            include: { property: true },
-          },
-        },
+        include: { wallets: true, stakingRecords: { include: { property: true } } },
       });
-  } catch (error) {
-  if (error instanceof Prisma.PrismaClientKnownRequestError) {
-    if (error.code === "P2025") {
-      return this.createUser(cognitoId);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+        throw UserError.notFound();
+      }
+      throw UserError.databaseError("User lookup failed");
     }
-    throw UserError.databaseError("User lookup failed");
-  }
-  throw error;
-}
   }
 
-private async createUser(cognitoId: string): Promise<UserWithRelations> {
-  return prisma.user.create({
-    data: {
-      cognitoId,
-      name: "New User",
-      email: `${cognitoId}@temp.com`,
-      phoneNumber: "",
-      kycStatus: KycStatus.NOT_STARTED
-    },
-    include: {
-      wallets: true,
-      stakingRecords: {
-        include: { property: true }
+  async createUser(data: { cognitoId: string; email: string; phoneNumber: string; name?: string }): Promise<User> {
+    try {
+      return await prisma.user.upsert({
+        where: { cognitoId: data.cognitoId },
+        create: {
+          cognitoId: data.cognitoId,
+          email: data.email,
+          phoneNumber: data.phoneNumber,
+          name: data.name || "New User",
+          kycStatus: "NOT_STARTED",
+        },
+        update: {},
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        console.error("[Prisma Error]", error.meta);
+        if (error.code === "P2002") {
+          throw UserError.conflict(`User with cognitoId ${data.cognitoId} already exists`);
+        }
+        throw UserError.databaseError("User creation failed");
       }
+      throw error;
     }
-  });
-}
+  }
 
   /**
    * Инициирует процесс KYC-верификации

@@ -5,30 +5,21 @@ import { userController } from "./user.controller";
 
 const router = express.Router();
 
-router.get("/:cognitoId", authMiddleware(), async (req, res, next) => {
-  try {
-    const user = await userController.userService.getUserByCognitoId(req.params.cognitoId);
-    res.json(user);
-  } catch (error) {
-    next(error);
-  }
+router.post("/", authMiddleware(), express.json(), (req, res, next) => {
+  return userController.createUser(req, res, next);
 });
 
-router.patch("/settings", authMiddleware(), async (req, res, next) => {
-  try {
-    if (!req.user) throw new Error("Unauthorized");
-
-    const updatedUser = await userController.updateUserSettings(req.user.id, req.body);
-
-    res.json(updatedUser);
-  } catch (error) {
-    next(error);
-  }
+router.get("/me", authMiddleware(), (req, res, next) => {
+  return userController.getCurrentUser(req, res, next);
 });
 
 router.get("/profile", authMiddleware(), (req, res, next) => {
   return userController.getProfile(req, res, next);
 });
+router.patch("/settings", authMiddleware(), (req, res, next) => {
+  userController.updateUserSettings(req, res, next);
+});
+
 router.post("/kyc", authMiddleware(), (req, res, next) => {
   return userController.initiateKyc(req, res, next);
 });

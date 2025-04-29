@@ -21,6 +21,8 @@ const app = express();
 // 1. Middleware Configuration
 // ========================================
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 app.use(helmet());
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
 app.use(morgan("dev")); // Упрощенный формат логов
@@ -32,14 +34,15 @@ app.use(
   }),
 );
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(cors());
 app.use(
   cors({
-    origin: ["http://localhost:3000"],
-    methods: ["GET", "POST", "PUT"],
+    origin: ["http://localhost:3000", "https://trytokey.com"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
   }),
 );
+app.options("*", cors());
 
 // ========================================
 // 2. Логирование
