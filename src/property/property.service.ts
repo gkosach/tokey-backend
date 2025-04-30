@@ -38,7 +38,6 @@ export class PropertyService {
         owner: {
           select: {
             cognitoId: true,
-            name: true,
           },
         },
       },

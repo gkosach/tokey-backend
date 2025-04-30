@@ -41,7 +41,7 @@ export class UserService {
     }
   }
 
-  async createUser(data: { cognitoId: string; email: string; phoneNumber: string; name?: string }): Promise<User> {
+  async createUser(data: { cognitoId: string; email: string; phoneNumber: string }): Promise<User> {
     try {
       return await prisma.user.upsert({
         where: { cognitoId: data.cognitoId },
@@ -49,7 +49,6 @@ export class UserService {
           cognitoId: data.cognitoId,
           email: data.email,
           phoneNumber: data.phoneNumber,
-          name: data.name || "New User",
           kycStatus: "NOT_STARTED",
         },
         update: {},
@@ -81,15 +80,11 @@ export class UserService {
     });
   }
 
-  async updateUserSettings(
-    cognitoId: string,
-    data: Partial<Pick<User, "name" | "email" | "phoneNumber">>,
-  ): Promise<User> {
+  async updateUserSettings(cognitoId: string, data: Partial<Pick<User, "email" | "phoneNumber">>): Promise<User> {
     try {
       return prisma.user.update({
         where: { cognitoId },
         data: {
-          name: data.name,
           email: data.email,
           phoneNumber: data.phoneNumber,
         },

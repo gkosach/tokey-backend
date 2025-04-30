@@ -26,7 +26,6 @@ enum ModerationStatus {
 // -------- Models --------
 model User {
   cognitoId         String    @id @map("cognito_id") @db.VarChar(36)
-  name              String    @db.VarChar(100)
   email             String    @unique @db.VarChar(255)
   phoneNumber       String    @unique @map("phone_number") @db.VarChar(20)
   kycStatus         KycStatus @default(NOT_STARTED) @map("kyc_status")

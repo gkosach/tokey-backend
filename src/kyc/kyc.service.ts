@@ -72,8 +72,6 @@ export class KycService {
               "inquiry-template-id": this.personaTemplateId,
               "reference-id": user.cognitoId,
               fields: {
-                "name-first": user.name.split(" ")[0],
-                "name-last": user.name.split(" ")[1] || "",
                 "email-address": user.email,
                 "phone-number": user.phoneNumber,
               },

@@ -33,7 +33,7 @@ export class UserController {
 
   async createUser(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { cognitoId, email, phoneNumber, name } = req.body;
+      const { cognitoId, email, phoneNumber } = req.body;
 
       if (!cognitoId || !email || !phoneNumber) {
         res.status(400).json({ error: "Missing required fields" });
@@ -44,7 +44,6 @@ export class UserController {
         cognitoId,
         email,
         phoneNumber,
-        name: name || "New User",
       });
 
       res.status(201).json(newUser);
