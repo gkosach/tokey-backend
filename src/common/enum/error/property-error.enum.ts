@@ -2,39 +2,17 @@
  * Коды и сообщения об ошибках, связанных с операциями с недвижимостью
  */
 export enum PropertyErrorMessages {
-  /**
-   * Ошибка при обращении к базе данных
-   * @example Не удалось создать запись из-за нарушения уникальности
-   */
-  PROPERTY_ERROR_DATABASE_FAILED = "Ошибка работы с базой данных",
+  /** Некорректный идентификатор объекта */
+  INVALID_ID = "Invalid property ID",
 
-  /**
-   * Некорректные данные в ответе внешнего сервиса
-   * @example Отсутствуют координаты в ответе геокодера
-   */
-  PROPERTY_ERROR_INVALID_RESPONSE = "Некорректный ответ сервиса",
+  /**  Недвижимость не найдена */
+  NOT_FOUND = "Property not found",
 
-  /**
-   * Ошибка преобразования адреса в координаты
-   * @example Неверный формат почтового индекса
-   */
-  PROPERTY_ERROR_GEOCODING_FAILED = "Ошибка геокодирования адреса",
+  /** Ошибка загрузки файлов */
+  UPLOAD_FAILED = "File upload failed",
 
-  /**
-   * Некорректные входные данные
-   * @example Отсутствует обязательное поле 'address'
-   */
-  PROPERTY_ERROR_INVALID_INPUT = "Некорректные входные данные",
+  /** Некорректный адрес объекта */
+  INVALID_ADDRESS = "Invalid address format",
 
-  /**
-   * Ошибка загрузки файлов
-   * @example Превышен максимальный размер файла
-   */
-  PROPERTY_ERROR_FILE_UPLOAD_FAILED = "Ошибка загрузки файлов",
-
-  /**
-   * Ошибка валидации данных
-   * @example Значение цены отрицательное
-   */
-  PROPERTY_ERROR_VALIDATION_FAILED = "Ошибка проверки данных",
+  DATABASE_ERROR = "Database operation failed",
 }

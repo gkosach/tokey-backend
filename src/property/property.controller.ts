@@ -1,114 +1,72 @@
-import { Prisma, PrismaClient } from "@prisma/client";
-import { Request, Response } from "express";
-import { ErrorStatus } from "../common/enum/error/error-status.enum";
-import { PropertyErrorMessages } from "../common/enum/error/property-error.enum";
-import { PropertyError } from "../controllers/contract/error/property.error";
-import { PropertyService } from "./prtoperty.service";
-import { S3Client } from "@aws-sdk/client-s3";
-import { CreatePropertyDto } from "./contract/dto/property.dto";
+import { NextFunction, Request, Response } from "express";
+import { PropertyService } from "./property.service";
 
 export class PropertyController {
-  private readonly propertyService: PropertyService;
+  private propertyService = new PropertyService();
 
-  constructor() {
-    this.propertyService = new PropertyService(new PrismaClient(), new S3Client({}));
-  }
-
-  /**
-   * Универсальный обработчик ошибок для операций с недвижимостью
-   * @param error Объект ошибки
-   * @param res Объект ответа Express
-   */
-  private handleError(error: unknown, res: Response): void {
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      return this.sendErrorResponse(
-        res,
-        ErrorStatus.InternalError,
-        PropertyErrorMessages.PROPERTY_ERROR_DATABASE_FAILED,
-      );
-    }
-
-    if (error instanceof PropertyError) {
-      return this.sendErrorResponse(res, error.statusCode, error.message as PropertyErrorMessages);
-    }
-    console.error("Критическая ошибка:", error);
-    this.sendErrorResponse(res, ErrorStatus.InternalError, PropertyErrorMessages.PROPERTY_ERROR_INVALID_RESPONSE);
-  }
-
-  /**
-   * Формирует унифицированный ответ об ошибке
-   * @param res Объект ответа Express
-   * @param code HTTP-статус код ошибки
-   * @param message Текст ошибки
-   */
-
-  private sendErrorResponse(res: Response, code: ErrorStatus, message: PropertyErrorMessages): void {
-    res.status(code).json({
-      error: {
-        code,
-        message,
-        timestamp: new Date().toISOString(),
-      },
-    });
-  }
-
-  /**
-   * Получает объект недвижимости по ID
-   * @param req Запрос с параметром ID в URL
-   * @param res Ответ с данными объекта или ошибкой
-   */
-  async getProperty(req: Request, res: Response): Promise<Response> {
+  async getProperty(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const property = await this.propertyService.getProperty(req.params.id);
-      return res.json(property);
+      const id = req.params.id;
+      const property = await this.propertyService.getProperty(id);
+
+      if (!property) {
+        res.status(404).json({ error: "Property not found" });
+        return;
+      }
+
+      res.json(property);
     } catch (error) {
-      this.handleError(error, res);
-      return res;
+      if (error instanceof Error) {
+        if (error.message.includes("Invalid ID")) {
+          res.status(400).json({ error: "Invalid property ID format" });
+        } else {
+          next(error);
+        }
+      } else {
+        res.status(500).json({ error: "Unexpected error occurred" });
+      }
     }
   }
 
-  /**
-   * Возвращает список объектов недвижимости с фильтрацией
-   * @param req Запрос с параметрами фильтрации
-   * @param res Ответ с отфильтрованным списком или ошибкой
-   */
-  async getProperties(req: Request, res: Response): Promise<void> {
+  async updateModerationStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const properties = await this.propertyService.getProperties(req.query);
+      const result = await this.propertyService.updateModerationStatus(req.params.id, req.body);
+      res.json(result);
+    } catch (error) {
+      if (error instanceof Error) {
+        next(error);
+      } else {
+        res.status(500).json({ error: "Unexpected error occurred" });
+      }
+    }
+  }
+
+  async getAllProperties(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const includeStaking = req.query.include === "stakingRecords";
+      const properties = await this.propertyService.getAllProperties(includeStaking);
       res.json(properties);
     } catch (error) {
-      this.handleError(error, res);
+      next(error);
     }
   }
 
-  /**
-   * Создает новый объект недвижимости с прикрепленными фотографиями
-   * @param req Запрос с данными объекта и файлами
-   * @param res Ответ с созданным объектом или ошибкой
-   */
-  async createProperty(req: Request, res: Response): Promise<Response> {
+  async createProperty(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const dto = this.prepareDto(req);
-      const result = await this.propertyService.createProperty(dto, req.files as Express.Multer.File[]);
-      return res.status(201).json(result);
+      const result = await this.propertyService.createProperty(req.body, req.files as Express.Multer.File[]);
+      res.status(201).json(result);
     } catch (error) {
-      this.handleError(error, res);
-      return res;
+      next(error);
     }
   }
 
-  /**
-   * Подготавливает DTO из данных запроса
-   * @param req Объект запроса Express
-   * @returns Валидный DTO объект
-   */
-  private prepareDto(req: Request): CreatePropertyDto {
-    return {
-      ...req.body,
-      photoUrls: req.body.photoUrls || [],
-      isPetsAllowed: Boolean(req.body.isPetsAllowed),
-      isParkingIncluded: Boolean(req.body.isParkingIncluded),
-    };
+  async listForModeration(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await this.propertyService.getPropertiesForModeration();
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
   }
 }
 

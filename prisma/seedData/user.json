@@ -1,0 +1,18 @@
+[
+  {
+    "cognitoId": "e40824e8-f0d1-7029-07be-f4d76a53efe3",
+    "email": "test1test@gmail.com",
+    "phoneNumber": "+12345678901",
+    "kycStatus": "VERIFIED",
+    "kycVerificationId": "persona_verification_123",
+    "kycVerifiedAt": "2024-03-15T12:00:00Z"
+  },
+  {
+    "cognitoId": "11a8a4e8-3001-70ea-71e0-b577a78107e0",
+    "email": "user2@example.com",
+    "phoneNumber": "+10987654321",
+    "kycStatus": "PENDING",
+    "kycVerificationId": null,
+    "kycVerifiedAt": null
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "address": "4Nd1mY6v7X9z8Q2a3b4c5d6e7f8g9h0j1k2l3m4n5o6p",
+    "whitelisted": true,
+    "userId": "e40824e8-f0d1-7029-07be-f4d76a53efe3"
+  },
+  {
+    "id": "b1b2c3d4-e5f6-7890-abcd-ef1234567811",
+    "address": "7Gh8j9k0l1m2n3o4p5q6r7s8t9u0v1w2x3y4z5a6b7c8",
+    "whitelisted": false,
+    "userId": "11a8a4e8-3001-70ea-71e0-b577a78107e0"
+  }
+]

@@ -1,0 +1,16 @@
+import express from "express";
+import { authMiddleware } from "../middleware/auth.middleware";
+import { kycGuard } from "../middleware/kyc.middleware";
+import { walletController } from "./wallet.controller";
+
+const router = express.Router();
+
+router.post("/", authMiddleware(), kycGuard(), (req, res, next) => {
+  return walletController.linkWallet(req, res, next);
+});
+
+router.get("/", authMiddleware(), (req, res, next) => {
+  return walletController.getUserWallets(req, res, next);
+});
+
+export default router;
