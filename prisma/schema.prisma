@@ -4,8 +4,8 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://german:prioraKisel124!@postgres-db:5432/sona"
-  //  url      = "postgresql://dev_user:dev_password@localhost:5432/dev_db"
+  // url      = "postgresql://german:prioraKisel124!@postgres-db:5432/sona"
+  url      = "postgresql://dev_user:dev_password@localhost:5432/dev_db"
 }
 
 enum PropertyType {

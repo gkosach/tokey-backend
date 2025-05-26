@@ -14,6 +14,5 @@
 | **Topic**                 | **Link**                                                    |
 | ------------------------- | ----------------------------------------------------------- |
 | Application Configuration | [Конфигурирование приложения](assets/docs/nginx.md)         |
-| AWS EC2 (Not Used)        | [AWS EC2 Instructions](assets/docs/aws-ec2-instructions.md) |
 
 ---
