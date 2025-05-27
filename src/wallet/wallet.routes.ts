@@ -5,11 +5,11 @@ import { walletController } from "./wallet.controller";
 
 const router = express.Router();
 
-router.post("/", authMiddleware(), kycGuard(), (req, res, next) => {
+router.post("/",  kycGuard(), (req, res, next) => {
   return walletController.linkWallet(req, res, next);
 });
 
-router.get("/", authMiddleware(), (req, res, next) => {
+router.get("/",  (req, res, next) => {
   return walletController.getUserWallets(req, res, next);
 });
 

@@ -6,7 +6,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import { ErrorHandler } from "./common/error/error.handler";
 import kycRoutes from "./kyc/kyc.routes";
-import { authMiddleware } from "./middleware/auth.middleware"; // Новый модуль кошельков
+import { authMiddleware } from "./middleware/auth.middleware";
 import propertyRoutes from "./property/property.routes";
 import userRoutes from "./user/user.routes";
 import walletRoutes from "./wallet/wallet.routes";
@@ -17,15 +17,11 @@ dotenv.config({ path: envFile });
 
 const app = express();
 
-// ========================================
-// 1. Middleware Configuration
-// ========================================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 app.use(helmet());
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
-app.use(morgan("dev")); // Упрощенный формат логов
+app.use(morgan("dev"));
 app.use(
   bodyParser.json({
     verify: (req, _, buf) => {
@@ -39,48 +35,40 @@ app.use(
     origin: ["http://localhost:3000", "https://trytokey.com"],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    exposedHeaders: ["Authorization"],
     credentials: true,
   }),
 );
 app.options("*", cors());
 
-// ========================================
-// 2. Логирование
-// ========================================
 if (process.env.NODE_ENV === "development") {
   app.use((req: Request, res: Response, next: NextFunction): void => {
-    console.log("\n=== Request ===");
     console.log(`${req.method} ${req.path}`);
-    console.log("Headers:", req.headers);
     console.log("Body:", req.body);
     next();
   });
 }
 
-// ========================================
-// 3. Роуты
-// ========================================
 app.get("/", (req: Request, res: Response): void => {
   res.send("Real Estate Tokenization API");
 });
 
-// Основные модули
-app.use("/properties", propertyRoutes);
-app.use("/users", authMiddleware(), userRoutes);
+/**
+ * Основные модули
+ */
+app.use("/properties", authMiddleware(), propertyRoutes);
+app.use("/users",  userRoutes);
 app.use("/wallets", authMiddleware(), walletRoutes);
 app.use("/kyc", kycRoutes);
 
-// ========================================
-// 4. Финализаторы
-// ========================================
-// Глобальный обработчик ошибок
 app.use(ErrorHandler.handle);
 
-// Запуск сервера
+/**
+ * Запуск сервера
+ */
 const port = Number(process.env.PORT) || 3002;
 app.listen(port, "0.0.0.0", (): void => {
-  console.log(`Server started on port ${port}`);
-  console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
+  console.log(`Server started on port ${port} | ${process.env.NODE_ENV}`);
 });
 
 export default app;
