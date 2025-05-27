@@ -13,7 +13,6 @@ const router = express.Router();
 
 router.get(
   "/",
-  authMiddleware(),
   asyncHandler((req, res, next) => {
     return propertyController.getAllProperties(req, res, next);
   }),
@@ -21,14 +20,13 @@ router.get(
 
 router.get(
   "/:id",
-  authMiddleware(),
   asyncHandler((req, res, next) => {
     return propertyController.getProperty(req, res, next);
   }),
 );
 
-router.post("/", authMiddleware(), uploadMiddleware, asyncHandler(propertyController.createProperty));
-router.get("/moderation", authMiddleware(), asyncHandler(propertyController.listForModeration));
-router.patch("/:id/moderation", authMiddleware(), asyncHandler(propertyController.updateModerationStatus));
+router.post("/",  uploadMiddleware, asyncHandler(propertyController.createProperty));
+router.get("/moderation",  asyncHandler(propertyController.listForModeration));
+router.patch("/:id/moderation",  asyncHandler(propertyController.updateModerationStatus));
 
 export default router;

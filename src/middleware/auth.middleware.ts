@@ -1,16 +1,9 @@
 import dotenv from "dotenv";
-import { NextFunction, Request, Response } from "express";
+import { NextFunction, Request, RequestHandler, Response } from "express";
 import jwt from "jsonwebtoken";
 import jwksClient from "jwks-rsa";
 
 dotenv.config();
-
-/**
- * Проверка и настройка окружения
- * Выводим в консоль ключевые параметры для отладки
- */
-console.log("[ENV] AWS_REGION:", process.env.AWS_REGION);
-console.log("[ENV] COGNITO_USER_POOL_ID:", process.env.COGNITO_USER_POOL_ID);
 
 /**
  * Валидация обязательных переменных окружения
@@ -51,23 +44,27 @@ declare module "express-serve-static-core" {
   }
 }
 
-export const authMiddleware = (): ((req: Request, res: Response, next: NextFunction) => Promise<void>) => {
-  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
+export const authMiddleware = (): RequestHandler => {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized' });
     }
+
+    const token = authHeader.split(' ')[1];
 
     try {
       const decoded = jwt.decode(token, { complete: true });
-      req.user = {
-        id: decoded?.payload.sub as string,
-        accessToken: token,
-      };
+      if (!decoded?.header.kid) throw new Error("Invalid token");
+
+      const key = await client.getSigningKey(decoded.header.kid);
+      const publicKey = key.getPublicKey();
+
+      jwt.verify(token, publicKey, { algorithms: ['RS256'] });
       next();
-    } catch {
-      res.status(401).json({ error: "Invalid token" });
+    } catch (err) {
+      res.status(401).json({ error: 'Invalid token' });
     }
   };
 };
