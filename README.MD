@@ -1,46 +1,18 @@
-#Docker CheatSheet
+# Prisma Commands Documentation
 
-1. !important
-   `Dont forget to change datasource db  `
-   Add in VPC
-   > docker exec -it back-app
+| **Command**                                                | **Description**                                       |
+| ---------------------------------------------------------- | ----------------------------------------------------- |
+| `npx prisma migrate dev --name removeHighlisghtsAmenities` | Generate a new migration with a specified name.       |
+| `npx prisma migrate dev`                                   | Apply all migrations from the `migrations` folder.    |
+| `npm run prisma:generate`                                  | Regenerate the Prisma client based on schema changes. |
+| `npm run seed`                                             | Seed the database with mock data.                     |
 
-Prisma Cheatsheet
-Сброс базы и миграций
+---
 
-```bash
-npx prisma migrate reset --force
-rm -rf prisma/migrations        
-npx prisma migrate dev --name init 
-npx prisma migrate deploy       
-```   
+## 📚 Additional Documentation Links
 
-Создать новую миграцию
+| **Topic**                 | **Link**                                                    |
+| ------------------------- | ----------------------------------------------------------- |
+| Application Configuration | [Конфигурирование приложения](assets/docs/nginx.md)         |
 
-```bash
-npx prisma migrate dev --name <название>
-```
-
-Применить все миграции
-
-```bash
-npx prisma migrate dev
-```
-
-Сгенерировать Prisma Client
-
-```bash
-npx prisma generate
-```
-
-Заполнить базу тестовыми данными
-
-```bash
-npx ts-node prisma/seed.ts
-```
-
-Сгенерировать дополнительные типы
-
-```npm
-npm run postprisma:generate
-```
+---
