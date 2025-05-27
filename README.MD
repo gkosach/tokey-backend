@@ -8,7 +8,6 @@
 | `npm run seed`                                             | Seed the database with mock data.                     |
 
 ---
-
 ## 📚 Additional Documentation Links
 
 | **Topic**                 | **Link**                                                    |
