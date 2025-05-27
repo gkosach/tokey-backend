@@ -35,7 +35,7 @@ model User {
 
   wallets        Wallet[]
   properties     Property[]
-  transactions   Transaction[]
+  transactions   PaymentTransaction[]
   stakingRecords StakingRecord[]
 
   @@index([email], map: "user_email_idx")
@@ -48,8 +48,8 @@ model Wallet {
   whitelisted Boolean @default(false) // Доступ после KYC
   userId      String  @map("user_id") @db.VarChar(36)
 
-  user         User          @relation(fields: [userId], references: [cognitoId])
-  transactions Transaction[]
+  user         User                 @relation(fields: [userId], references: [cognitoId])
+  transactions PaymentTransaction[]
 
   @@index([address], map: "wallet_address_idx")
 }
@@ -70,7 +70,7 @@ model Property {
   @@index([solanaMint], map: "property_mint_idx")
 }
 
-model Transaction {
+model PaymentTransaction {
   id         String  @id @default(uuid()) @db.Uuid
   txHash     String? @unique @map("tx_hash") // Хэш транзакции Solana
   amount     String // Количество токенов (строкой для JS)

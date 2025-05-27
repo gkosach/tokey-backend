@@ -8,13 +8,13 @@ const dataDir = path.join(__dirname, "seedData");
 async function seed() {
   await prisma.$transaction([
     prisma.stakingRecord.deleteMany(),
-    prisma.transaction.deleteMany(),
+    prisma.paymentTransaction.deleteMany(),
     prisma.property.deleteMany(),
     prisma.wallet.deleteMany(),
     prisma.user.deleteMany(),
   ]);
 
-  const seedOrder = ["user", "wallet", "property", "transaction", "stakingRecord"] as const;
+  const seedOrder = ["user", "wallet", "property", "paymentTransaction", "stakingRecord"] as const;
 
   for (const model of seedOrder) {
     const data = JSON.parse(fs.readFileSync(path.join(dataDir, `${model}.json`), "utf-8"));
