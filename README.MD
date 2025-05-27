@@ -38,7 +38,6 @@ npx prisma generate
 ```bash
 npx ts-node prisma/seed.ts
 ```
-
 Сгенерировать дополнительные типы
 
 ```npm
