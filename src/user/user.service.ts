@@ -48,6 +48,7 @@ export class UserService {
         create: {
           cognitoId: data.cognitoId,
           email: data.email,
+          name: "NAME",
           phoneNumber: data.phoneNumber,
           kycStatus: "NOT_STARTED",
         },

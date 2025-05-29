@@ -1,5 +1,4 @@
 import express, { RequestHandler } from "express";
-import { authMiddleware } from "../middleware/auth.middleware";
 import { uploadMiddleware } from "../middleware/uploade.middleware";
 import { propertyController } from "./property.controller";
 
@@ -25,8 +24,8 @@ router.get(
   }),
 );
 
-router.post("/",  uploadMiddleware, asyncHandler(propertyController.createProperty));
-router.get("/moderation",  asyncHandler(propertyController.listForModeration));
-router.patch("/:id/moderation",  asyncHandler(propertyController.updateModerationStatus));
+router.post("/", uploadMiddleware, asyncHandler(propertyController.createProperty));
+router.get("/moderation", asyncHandler(propertyController.listForModeration));
+router.patch("/:id/moderation", asyncHandler(propertyController.updateModerationStatus));
 
 export default router;

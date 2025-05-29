@@ -56,8 +56,8 @@ app.get("/", (req: Request, res: Response): void => {
 /**
  * Основные модули
  */
-app.use("/properties", authMiddleware(), propertyRoutes);
-app.use("/users",  userRoutes);
+app.use("/properties", propertyRoutes);
+app.use("/users", userRoutes);
 app.use("/wallets", authMiddleware(), walletRoutes);
 app.use("/kyc", kycRoutes);
 
