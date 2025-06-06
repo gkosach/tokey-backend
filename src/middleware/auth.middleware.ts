@@ -44,15 +44,19 @@ declare module "express-serve-static-core" {
   }
 }
 
+/** @romanov.nr
+ * Middleware для аутентификации
+ * @returns {RequestHandler} Middleware для аутентификации
+ */
 export const authMiddleware = (): RequestHandler => {
   return async (req: Request, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
 
-    if (!authHeader?.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    if (!authHeader?.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const token = authHeader.split(' ')[1];
+    const token = authHeader.split(" ")[1];
 
     try {
       const decoded = jwt.decode(token, { complete: true });
@@ -61,10 +65,15 @@ export const authMiddleware = (): RequestHandler => {
       const key = await client.getSigningKey(decoded.header.kid);
       const publicKey = key.getPublicKey();
 
-      jwt.verify(token, publicKey, { algorithms: ['RS256'] });
+      const payload = jwt.verify(token, publicKey, { algorithms: ["RS256"] });
+      req.user = {
+        id: typeof payload.sub === "string" ? payload.sub : "",
+        accessToken: token,
+      };
+
       next();
     } catch (err) {
-      res.status(401).json({ error: 'Invalid token' });
+      res.status(401).json({ error: "Invalid token" });
     }
   };
 };
