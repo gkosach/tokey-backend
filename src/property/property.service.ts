@@ -1,9 +1,9 @@
 import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { ModerationStatus, Property } from "@prisma/client";
 import { v4 as uuidv4 } from "uuid";
 import { prisma, s3Config } from "../common";
 import { CreatePropertyDto } from "./contract/dto/create-property.dto";
 import { PropertyError, UpdateModerationStatusDto } from "./index";
-import { ModerationStatus, Property } from "@prisma/client";
 
 export class PropertyService {
   async createProperty(dto: CreatePropertyDto, files: Express.Multer.File[]): Promise<Property> {
