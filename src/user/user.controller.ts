@@ -34,6 +34,7 @@ export class UserController {
   async createUser(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const { cognitoId, email, phoneNumber } = req.body;
+      console.log("Cognito id: ", cognitoId);
 
       if (!cognitoId || !email || !phoneNumber) {
         res.status(400).json({ error: "Missing required fields" });
@@ -45,6 +46,8 @@ export class UserController {
         email,
         phoneNumber,
       });
+
+      console.log("New user: ", newUser);
 
       res.status(201).json(newUser);
     } catch (error) {
