@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "lint:fix": "npm run lint -- --fix",
     "seed": "ts-node prisma/seed.ts",
-    "prisma:generate": "prisma generate",
+    "prisma:migrate": "npx prisma migrate dev",
+    "prisma:generate": "npx prisma generate",
     "postprisma:generate": "mkdir -p prisma/types && cp -r node_modules/.prisma/client/index.d.ts prisma/types/prismaTypes.d.ts",
     "prestart": "npm run build"
   },

@@ -13,9 +13,27 @@ services:
     command: sh -c "npm ci --include=dev && npm run postprisma:generate && npm run start"
     networks:
       - site
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    container_name: postgres-db
+    image: postgres:latest
+    env_file:
+      - .env.db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - site
     restart: unless-stopped
 
 networks:
   site:
     driver: bridge
     external: true
+
+volumes:
+  postgres_data:

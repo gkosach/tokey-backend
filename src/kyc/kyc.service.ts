@@ -1,7 +1,7 @@
+import { KycStatus, User } from "@prisma/client";
 import axios, { AxiosError } from "axios";
 import { prisma } from "../common";
 import { KycError } from "./contract/error/kyc.error";
-import { KycStatus, User } from "@prisma/client";
 
 /**
  * Сервис для управления процессом верификации пользователей (KYC)

@@ -10,10 +10,10 @@ Prisma Cheatsheet
 
 ```bash
 npx prisma migrate reset --force
-rm -rf prisma/migrations        
-npx prisma migrate dev --name init 
-npx prisma migrate deploy       
-```   
+rm -rf prisma/migrations
+npx prisma migrate dev --name init
+npx prisma migrate deploy
+```
 
 Создать новую миграцию
 
@@ -38,6 +38,7 @@ npx prisma generate
 ```bash
 npx ts-node prisma/seed.ts
 ```
+
 Сгенерировать дополнительные типы
 
 ```npm
