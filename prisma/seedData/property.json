@@ -1,32 +1,89 @@
 [
   {
     "id": "1e7e8e4d-4b4a-4c8b-8e8b-8e8b8e8b8e8b",
-    "title": "Luxury Palm Villa",
-    "solanaMint": "So1aNaMintAddress00000000000000000000000001",
-    "ownerId": "e40824e8-f0d1-7029-07be-f4d76a53efe3",
+    "contractAddress": "0x1234567890123456789012345678901234567890",
+    "developerId": "dev-pik-group",
+    "title": "ЖК Садовые Кварталы",
+    "district": "ЦАО",
+    "totalTokens": 1000000,
+    "availableTokens": 750000,
+    "status": "ACTIVE",
+    "description": "Премиальный жилой комплекс в центре Москвы с развитой инфраструктурой и панорамными видами на город. Комплекс включает в себя современные квартиры, подземный паркинг, фитнес-центр и детские площадки.",
+    "address": "ул. Тверская, 15, Москва, 125009",
+    "roi": 8.5,
+    "price": 250000.0,
     "metadata": {
-      "type": "villa",
-      "roi": 7.5,
-      "docsIpfs": "QmVillaDocsHash",
-      "photos": ["ipfs://photo1", "ipfs://photo2"]
+      "photos": [
+        "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800",
+        "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800",
+        "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800",
+        "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800"
+      ],
+      "videos": ["https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4"],
+      "amenities": ["Фитнес-центр", "Подземный паркинг", "Детская площадка", "Консьерж"],
+      "buildingType": "Многоэтажный жилой комплекс",
+      "yearBuilt": 2023,
+      "floors": 25,
+      "apartments": 180
     },
-    "moderationStatus": "PENDING",
-    "moderationComment": null,
-    "tokenizationDate": null
+    "createdAt": "2024-03-01T09:00:00.000Z"
   },
   {
     "id": "e6ddf9c2-4d2e-4a8c-8e9b-2a3b7b3a9c5d",
-    "title": "Downtown Apartment",
-    "solanaMint": "So1aNaMintAddress00000000000000000000000002",
-    "ownerId": "11a8a4e8-3001-70ea-71e0-b577a78107e0",
+    "contractAddress": "0x0987654321098765432109876543210987654321",
+    "developerId": "dev-lsr-group",
+    "title": "ЖК Северная Долина",
+    "district": "САО",
+    "totalTokens": 500000,
+    "availableTokens": 500000,
+    "status": "COMING_SOON",
+    "description": "Современный жилой комплекс бизнес-класса в экологически чистом районе. Уникальная архитектура, собственная территория с ландшафтным дизайном и близость к природным зонам делают этот проект особенно привлекательным.",
+    "address": "Ленинградское шоссе, 47, Москва, 125212",
+    "roi": 7.2,
+    "price": 180000.0,
     "metadata": {
-      "type": "apartment",
-      "roi": 5.0,
-      "docsIpfs": "QmApartmentDocsHash",
-      "photos": ["ipfs://aptphoto1"]
+      "photos": [
+        "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800",
+        "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800",
+        "https://images.unsplash.com/photo-1600607687644-aac4c3eac7f4?w=800",
+        "https://images.unsplash.com/photo-1600566752355-35792bedcfea?w=800"
+      ],
+      "videos": ["https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_2mb.mp4"],
+      "amenities": ["Ландшафтный парк", "Спортивная площадка", "Кафе", "Коворкинг"],
+      "buildingType": "Жилой комплекс бизнес-класса",
+      "yearBuilt": 2024,
+      "floors": 12,
+      "apartments": 120
     },
-    "moderationStatus": "APPROVED",
-    "moderationComment": "Проверено: все документы в порядке",
-    "tokenizationDate": "2024-03-15T12:00:00Z"
+    "createdAt": "2024-03-05T11:00:00.000Z"
+  },
+  {
+    "id": "f7f8f9fa-5b6c-7d8e-9f0a-1b2c3d4e5f6a",
+    "contractAddress": "0xabcdef1234567890abcdef1234567890abcdef12",
+    "developerId": "dev-capital-group",
+    "title": "ЖК Московские Высоты",
+    "district": "ЮЗАО",
+    "totalTokens": 800000,
+    "availableTokens": 640000,
+    "status": "ACTIVE",
+    "description": "Элитный жилой комплекс с панорамными видами на Москву-реку. Премиальная отделка, собственная набережная и эксклюзивные планировки квартир от 80 до 300 кв.м.",
+    "address": "Ленинский проспект, 95, Москва, 119313",
+    "roi": 9.1,
+    "price": 320000.0,
+    "metadata": {
+      "photos": [
+        "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=800",
+        "https://images.unsplash.com/photo-1600566752229-450a5ba3b5a3?w=800",
+        "https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800",
+        "https://images.unsplash.com/photo-1600607688969-a5bfcd646154?w=800"
+      ],
+      "videos": ["https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_5mb.mp4"],
+      "amenities": ["Собственная набережная", "SPA-центр", "Ресторан", "Винный погреб", "Вертолетная площадка"],
+      "buildingType": "Элитный жилой комплекс",
+      "yearBuilt": 2023,
+      "floors": 35,
+      "apartments": 95
+    },
+    "createdAt": "2024-02-15T14:30:00.000Z"
   }
 ]

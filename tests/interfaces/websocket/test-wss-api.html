@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WSS API Test - Breez Deploy Service</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+      .container {
+        max-width: 1000px;
+        margin: 20px auto;
+        font-family: Arial, sans-serif;
+      }
+      .status {
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 5px;
+        font-weight: bold;
+      }
+      .connected {
+        background: #d4edda;
+        color: #155724;
+      }
+      .disconnected {
+        background: #f8d7da;
+        color: #721c24;
+      }
+      .controls {
+        margin: 20px 0;
+      }
+      .controls button {
+        margin: 5px;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+      }
+      .btn-primary {
+        background: #007bff;
+        color: white;
+      }
+      .btn-success {
+        background: #28a745;
+        color: white;
+      }
+      .btn-warning {
+        background: #ffc107;
+        color: black;
+      }
+      .btn-danger {
+        background: #dc3545;
+        color: white;
+      }
+      .messages {
+        height: 400px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        padding: 10px;
+        background: #f8f9fa;
+      }
+      .message {
+        margin: 3px 0;
+        padding: 5px;
+        border-left: 3px solid #ccc;
+        font-family: monospace;
+        font-size: 12px;
+      }
+      .handshake {
+        border-color: #17a2b8;
+        background: #e7f3ff;
+      }
+      .progress {
+        border-color: #28a745;
+        background: #e8f5e8;
+      }
+      .log {
+        border-color: #6c757d;
+        background: #f1f3f4;
+      }
+      .error {
+        border-color: #dc3545;
+        background: #ffeaea;
+      }
+      .complete {
+        border-color: #28a745;
+        background: #d4edda;
+      }
+      .cancelled {
+        border-color: #ffc107;
+        background: #fff3cd;
+      }
+      .subscription {
+        border-color: #007bff;
+        background: #e7f1ff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>WSS API Test - Breez Deploy Service</h1>
+      <p><strong>URL:</strong> ws://localhost:5001/deployments</p>
+      <p><strong>Token:</strong> eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9</p>
+
+      <div id="status" class="status disconnected">Отключено</div>
+
+      <div class="controls">
+        <h3>Управление соединением:</h3>
+        <button class="btn-primary" onclick="connect()">Подключиться</button>
+        <button class="btn-danger" onclick="disconnect()">Отключиться</button>
+
+        <h3>Подписка на события:</h3>
+        <button class="btn-success" onclick="subscribe()">Подписаться на inst_abc123</button>
+        <button class="btn-warning" onclick="unsubscribe()">Отписаться</button>
+
+        <h3>Демо сценарии (согласно ТЗ):</h3>
+        <button class="btn-success" onclick="demoInstallation()">Успешная установка</button>
+        <button class="btn-danger" onclick="demoError()">Ошибка установки</button>
+        <button class="btn-warning" onclick="demoCancel()">Отмена установки</button>
+
+        <h3>Тестирование подтверждений:</h3>
+        <button class="btn-primary" onclick="sendAck()">Отправить client_ack</button>
+
+        <button class="btn-warning" onclick="clearMessages()">Очистить сообщения</button>
+      </div>
+
+      <div class="messages" id="messages"></div>
+    </div>
+
+    <script>
+      let socket;
+      const currentTaskId = 'inst_abc123';
+
+      function connect() {
+        socket = io('http://localhost:5001/deployments', {
+          query: { token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9' }
+        });
+
+        // Обработчики соединения
+        socket.on('connect', () => {
+          updateStatus('Подключено', true);
+          addMessage('✅ Подключено к серверу', 'subscription');
+        });
+
+        socket.on('disconnect', () => {
+          updateStatus('Отключено', false);
+          addMessage('❌ Отключено от сервера', 'error');
+        });
+
+        // Обработчики событий согласно ТЗ
+        socket.on('handshake', data => {
+          addMessage(`🤝 Handshake: ${JSON.stringify(data, null, 2)}`, 'handshake');
+        });
+
+        socket.on('progress_update', data => {
+          addMessage(`📊 Progress Update: ${data.data.percentComplete}% - ${data.data.message}`, 'progress');
+        });
+
+        socket.on('log_message', data => {
+          addMessage(`📋 Log: [${data.data.level}] ${data.data.text}`, 'log');
+        });
+
+        socket.on('error_occurred', data => {
+          addMessage(`💥 Error: [${data.data.severity}] ${data.data.code} - ${data.data.message}`, 'error');
+        });
+
+        socket.on('installation_complete', data => {
+          addMessage(`✅ Installation Complete: ${JSON.stringify(data.data, null, 2)}`, 'complete');
+        });
+
+        socket.on('installation_cancelled', data => {
+          addMessage(`🚫 Installation Cancelled: ${data.data.reason} - ${data.data.message}`, 'cancelled');
+        });
+
+        socket.on('subscription_confirmed', data => {
+          addMessage(`📝 Subscription Confirmed: ${JSON.stringify(data, null, 2)}`, 'subscription');
+        });
+
+        socket.on('unsubscription_confirmed', data => {
+          addMessage(`📤 Unsubscription Confirmed: ${JSON.stringify(data, null, 2)}`, 'subscription');
+        });
+
+        socket.on('auth_rejected', data => {
+          addMessage(`🚫 Auth Rejected: ${JSON.stringify(data, null, 2)}`, 'error');
+        });
+      }
+
+      function disconnect() {
+        socket?.disconnect();
+      }
+
+      function subscribe() {
+        socket?.emit('subscribe', {
+          type: 'subscribe',
+          timestamp: new Date().toISOString(),
+          taskId: currentTaskId
+        });
+      }
+
+      function unsubscribe() {
+        socket?.emit('unsubscribe', {
+          type: 'unsubscribe',
+          timestamp: new Date().toISOString(),
+          taskId: currentTaskId
+        });
+      }
+
+      function demoInstallation() {
+        socket?.emit('demo_installation', { taskId: currentTaskId });
+      }
+
+      function demoError() {
+        socket?.emit('demo_error', { taskId: currentTaskId });
+      }
+
+      function demoCancel() {
+        socket?.emit('demo_cancel', { taskId: currentTaskId });
+      }
+
+      function sendAck() {
+        socket?.emit('client_ack', {
+          type: 'client_ack',
+          timestamp: new Date().toISOString(),
+          taskId: currentTaskId,
+          messageId: 'msg_' + Date.now()
+        });
+      }
+
+      function clearMessages() {
+        document.getElementById('messages').innerHTML = '';
+      }
+
+      function updateStatus(text, connected) {
+        const status = document.getElementById('status');
+        status.textContent = text;
+        status.className = `status ${connected ? 'connected' : 'disconnected'}`;
+      }
+
+      function addMessage(text, type = 'log') {
+        const div = document.createElement('div');
+        div.className = `message ${type}`;
+        div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${text}`;
+        const messages = document.getElementById('messages');
+        messages.appendChild(div);
+        messages.scrollTop = messages.scrollHeight;
+      }
+    </script>
+  </body>
+</html>

@@ -1,46 +1,93 @@
-#Docker CheatSheet
+# Быстрый старт
 
-1. !important
-   `Dont forget to change datasource db  `
-   Add in VPC
-   > docker exec -it back-app
-
-Prisma Cheatsheet
-Сброс базы и миграций
+### 1. Установка
 
 ```bash
-npx prisma migrate reset --force
-rm -rf prisma/migrations
+npm install
+```
+
+### 2. Настройка окружения
+
+```ssh
+cp .env.example .development.env
+```
+
+Заполните переменные в .development.env
+
+### 3. Запуск с Docker
+
+```bash
+docker compose up -d
+```
+
+### 4. Настройка базы данных
+
+```ssh
+npm run prisma:generate
+npm run prisma:migrate
+npm run seed
+```
+
+Внутри контейнера или локально
+
+```bash
 npx prisma migrate dev --name init
-npx prisma migrate deploy
 ```
-
-Создать новую миграцию
-
-```bash
-npx prisma migrate dev --name <название>
-```
-
-Применить все миграции
-
-```bash
-npx prisma migrate dev
-```
-
-Сгенерировать Prisma Client
 
 ```bash
 npx prisma generate
+npm run seed
 ```
 
-Заполнить базу тестовыми данными
+### 5. Проверка работы
 
 ```bash
-npx ts-node prisma/seed.ts
+curl http://localhost:3002/
 ```
 
-Сгенерировать дополнительные типы
+### 4. Запуск в режиме разработки
 
-```npm
-npm run postprisma:generate
+```ssh
+npm run dev
 ```
+
+## 📋 Команды управления
+
+| Команда                   | Назначение                   |
+| ------------------------- | ---------------------------- |
+| `npm run dev`             | Запуск в development режиме  |
+| `docker compose up -d`    | Запуск с Docker              |
+| `npm run build`           | Сборка production версии     |
+| `npm run start`           | Запуск production версии     |
+| `npm run prisma:generate` | Генерация Prisma Client      |
+| `npm run prisma:migrate`  | Применение миграций          |
+| `npm run seed`            | Заполнение тестовыми данными |
+| `npm run lint`            | Проверка кода ESLint         |
+| `npm run format:prettier` | Форматирование кода          |
+
+## Документация
+
+| Раздел                                          | Описание                         |
+| ----------------------------------------------- | -------------------------------- |
+| [Конфигурация](assets/docs/configuration.md)    | Настройка окружения и переменных |
+| [База данных](assets/docs/database.md)          | Схема БД, миграции и Prisma      |
+| [API Endpoints](assets/docs/api.md)             | REST API эндпоинты               |
+| [Аутентификация](assets/docs/authentication.md) | AWS Cognito и JWT токены         |
+| [KYC интеграция](assets/docs/kyc.md)            | Persona API и верификация        |
+| [HSM интеграция](assets/docs/hsm.md)            | Управление кошельками и ключами  |
+| [Развертывание](assets/docs/deployment.md)      | Docker и production деплой       |
+| [Безопасность](assets/docs/security.md)         | Политики безопасности и GDPR     |
+
+## Требования к окружению
+
+- Node.js 18+
+- PostgreSQL 14+
+- Docker (опционально)
+
+## Лицензия
+
+Proprietary - ToKey Platform
+
+---
+
+Для получения доступа к API обратитесь к команде разработки.

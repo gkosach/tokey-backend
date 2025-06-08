@@ -1,19 +1,45 @@
-import { BaseError, ErrorStatus, KycErrorMessages } from "../../../common";
+export class KycError extends Error {
+  public readonly statusCode: number;
 
-export class KycError extends BaseError<KycErrorMessages> {
-  static userNotFound(): KycError {
-    return new KycError(ErrorStatus.NotFound, KycErrorMessages.USER_NOT_FOUND);
-  }
+  constructor(message: string, statusCode: number = 500) {
+    super(message);
+    this.name = "KycError";
+    this.statusCode = statusCode;
 
-  static verificationInProgress(): KycError {
-    return new KycError(ErrorStatus.Conflict, KycErrorMessages.IN_PROGRESS);
-  }
-
-  static providerError(): KycError {
-    return new KycError(ErrorStatus.InternalError, KycErrorMessages.PROVIDER_ERROR);
+    Object.setPrototypeOf(this, KycError.prototype);
   }
 
   static verificationNotFound(): KycError {
-    return new KycError(ErrorStatus.NotFound, KycErrorMessages.VERIFICATION_NOT_FOUND);
+    return new KycError("Verification not found", 404);
+  }
+
+  static providerError(details?: string): KycError {
+    const message = details ? `KYC provider error: ${details}` : "KYC provider error";
+    return new KycError(message, 500);
+  }
+
+  static alreadyVerified(): KycError {
+    return new KycError("User is already verified", 409);
+  }
+
+  static verificationInProgress(): KycError {
+    return new KycError("Verification is already in progress", 409);
+  }
+
+  static databaseError(details?: string): KycError {
+    const message = details ? `Database operation failed: ${details}` : "Database operation failed";
+    return new KycError(message, 500);
+  }
+
+  static validationError(message: string): KycError {
+    return new KycError(`Validation error: ${message}`, 400);
+  }
+
+  static unauthorized(): KycError {
+    return new KycError("Unauthorized - authentication required", 401);
+  }
+
+  static verificationRequired(): KycError {
+    return new KycError("KYC verification required to access this resource", 403);
   }
 }
