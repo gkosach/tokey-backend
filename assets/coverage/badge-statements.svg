@@ -1,20 +1,20 @@
-<svg width="119.1" height="20" viewBox="0 0 1191 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="statements: 6.08%">
-  <title>statements: 6.08%</title>
-  <linearGradient id="cpaOv" x2="0" y2="100%">
+<svg width="119.1" height="20" viewBox="0 0 1191 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="statements: 5.65%">
+  <title>statements: 5.65%</title>
+  <linearGradient id="pXufn" x2="0" y2="100%">
     <stop offset="0" stop-opacity=".1" stop-color="#EEE"/>
     <stop offset="1" stop-opacity=".1"/>
   </linearGradient>
-  <mask id="hYWkA"><rect width="1191" height="200" rx="30" fill="#FFF"/></mask>
-  <g mask="url(#hYWkA)">
+  <mask id="eNCvb"><rect width="1191" height="200" rx="30" fill="#FFF"/></mask>
+  <g mask="url(#eNCvb)">
     <rect width="721" height="200" fill="#555"/>
     <rect width="470" height="200" fill="#ce0000" x="721"/>
-    <rect width="1191" height="200" fill="url(#cpaOv)"/>
+    <rect width="1191" height="200" fill="url(#pXufn)"/>
   </g>
   <g aria-hidden="true" fill="#fff" text-anchor="start" font-family="Verdana,DejaVu Sans,sans-serif" font-size="110">
     <text x="60" y="148" textLength="621" fill="#000" opacity="0.25">statements</text>
     <text x="50" y="138" textLength="621">statements</text>
-    <text x="776" y="148" textLength="370" fill="#000" opacity="0.25">6.08%</text>
-    <text x="766" y="138" textLength="370">6.08%</text>
+    <text x="776" y="148" textLength="370" fill="#000" opacity="0.25">5.65%</text>
+    <text x="766" y="138" textLength="370">5.65%</text>
   </g>
   
 </svg>
