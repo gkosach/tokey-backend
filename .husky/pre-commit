@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+
+echo "🔍 Code quality check..."
+npm run lint:fix
+npx tsc --noEmit
+echo "✅ Ready to commit"
