@@ -12,7 +12,18 @@ module.exports = {
     node: true,
     jest: true,
   },
-  ignorePatterns: [".eslintrc.js", "dist/", "node_modules/", "coverage/", "prisma/", "tests/", "non-bll-scripts/"],
+  ignorePatterns: [
+    ".eslintrc.js",
+    "dist/",
+    "node_modules/",
+    "coverage/",
+    "prisma/",
+    "tests/",
+    "non-bll-scripts/",
+    "*.js", // ← Игнорируем все JS файлы
+    "jest.config.js",
+    "setup-husky.js",
+  ],
   rules: {
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/explicit-module-boundary-types": "off",

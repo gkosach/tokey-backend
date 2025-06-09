@@ -1,0 +1,21 @@
+#!/usr/bin/env sh
+
+echo "🧪 Running tests..."
+
+npm run test:badges
+
+if [ $? -eq 0 ]; then
+    echo "✅ Tests passed"
+
+    # Обновляем badges если изменились
+    if [ -n "$(git status --porcelain assets/coverage/)" ]; then
+        echo "📊 Updating coverage badges..."
+        git add assets/coverage/
+        git commit --amend --no-edit --no-verify
+    fi
+
+    exit 0
+else
+    echo "❌ Tests failed - push blocked"
+    exit 1
+fi
