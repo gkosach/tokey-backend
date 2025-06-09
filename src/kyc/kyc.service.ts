@@ -30,53 +30,18 @@ export class KycService {
   }
 
   /**
-   * Получение текущего идентификатора сессии верификации
-   * @param verificationId - Идентификатор верификации
-   * @returns Ключ сессии верификации
-   */
-  async getSessionToken(verificationId: string): Promise<{ sessionToken: string }> {
-    try {
-      const response = await axios.post(
-        `https://api.withpersona.com/api/v1/inquiries/${verificationId}/resume`,
-        {},
-        {
-          headers: {
-            "Persona-Version": "2023-01-05",
-            Authorization: `Bearer ${this.personaApiKey}`,
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-        },
-      );
-
-      return { sessionToken: response.data.meta["session-token"] };
-    } catch (error) {
-      if (error instanceof AxiosError) {
-        console.error("Persona API error:", error.response?.data);
-      } else if (error instanceof Error) {
-        console.error("Unexpected error:", error.message);
-      } else {
-        console.error("Unknown error:", error);
-      }
-      throw KycError.providerError();
-    }
-  }
-
-  /**
    * Инициализация процесса верификации через Persona
    * @param userId - Идентификатор пользователя
    * @returns URL для прохождения верификации
    */
-  async initiateVerification(userId: string): Promise<{ inquiryId: string; sessionToken?: string }> {
+  async initiateVerification(userId: string): Promise<{ inquiryId: string }> {
     return prisma.$transaction(async (tx) => {
       const user = await prisma.user.findUniqueOrThrow({
         where: { cognitoId: userId },
       });
 
       if (user.kycStatus === KycStatus.PENDING) {
-        const { sessionToken } = await this.getSessionToken(user.kycVerificationId!);
-
-        return { inquiryId: user.kycVerificationId!, sessionToken };
+        return { inquiryId: user.kycVerificationId! };
       }
 
       if (user.kycStatus !== KycStatus.NOT_STARTED) {
@@ -118,7 +83,6 @@ export class KycService {
             "Persona-Version": "2023-01-05",
             Authorization: `Bearer ${this.personaApiKey}`,
             "Content-Type": "application/json",
-            Accept: "application/json",
           },
         },
       );

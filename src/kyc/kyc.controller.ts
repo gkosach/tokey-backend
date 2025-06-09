@@ -17,8 +17,8 @@ export class KycController {
   async startVerification(req: Request, res: Response) {
     try {
       const userId = req.user!.id;
-      const { inquiryId, sessionToken } = await this.service.initiateVerification(userId);
-      res.json({ inquiryId, sessionToken });
+      const { inquiryId } = await this.service.initiateVerification(userId);
+      res.json({ inquiryId });
     } catch (error) {
       console.error("KYC start error:", error);
       res.status(500).json({ error: "Internal server error" });
