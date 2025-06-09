@@ -2,7 +2,7 @@
  * configs
  */
 export * from "./config/logger.config";
-export * from "./config/prisma";
+export { prisma } from "./config/prisma";
 export * from "./config/s3.config";
 
 /**
