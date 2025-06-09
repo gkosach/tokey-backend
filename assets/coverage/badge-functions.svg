@@ -1,20 +1,20 @@
-<svg width="107.3" height="20" viewBox="0 0 1073 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="functions: 6.61%">
-  <title>functions: 6.61%</title>
-  <linearGradient id="rKYbL" x2="0" y2="100%">
+<svg width="107.3" height="20" viewBox="0 0 1073 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="functions: 6.42%">
+  <title>functions: 6.42%</title>
+  <linearGradient id="rAkOC" x2="0" y2="100%">
     <stop offset="0" stop-opacity=".1" stop-color="#EEE"/>
     <stop offset="1" stop-opacity=".1"/>
   </linearGradient>
-  <mask id="FLgeS"><rect width="1073" height="200" rx="30" fill="#FFF"/></mask>
-  <g mask="url(#FLgeS)">
+  <mask id="BhjtU"><rect width="1073" height="200" rx="30" fill="#FFF"/></mask>
+  <g mask="url(#BhjtU)">
     <rect width="603" height="200" fill="#555"/>
     <rect width="470" height="200" fill="#ce0000" x="603"/>
-    <rect width="1073" height="200" fill="url(#rKYbL)"/>
+    <rect width="1073" height="200" fill="url(#rAkOC)"/>
   </g>
   <g aria-hidden="true" fill="#fff" text-anchor="start" font-family="Verdana,DejaVu Sans,sans-serif" font-size="110">
     <text x="60" y="148" textLength="503" fill="#000" opacity="0.25">functions</text>
     <text x="50" y="138" textLength="503">functions</text>
-    <text x="658" y="148" textLength="370" fill="#000" opacity="0.25">6.61%</text>
-    <text x="648" y="138" textLength="370">6.61%</text>
+    <text x="658" y="148" textLength="370" fill="#000" opacity="0.25">6.42%</text>
+    <text x="648" y="138" textLength="370">6.42%</text>
   </g>
   
 </svg>
