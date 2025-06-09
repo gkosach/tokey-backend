@@ -7,11 +7,54 @@ on:
     branches: [main, testnet, production]
 
 jobs:
+  # Блокируем прямые push
+  block-direct-push:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Block direct push to protected branches
+        run: |
+          echo "❌ Direct push to ${{ github.ref_name }} is not allowed!"
+          echo "Please create a Pull Request instead"
+          exit 1
+
+  # Проверяем правила мерджа
+  check-merge-rules:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check merge direction rules
+        run: |
+          SOURCE="${{ github.head_ref }}"
+          TARGET="${{ github.base_ref }}"
+
+          echo "Checking merge: $SOURCE → $TARGET"
+
+          # Проверяем мердж в main
+          if [[ "$TARGET" == "main" ]]; then
+            if [[ "$SOURCE" != "german" && "$SOURCE" != "nikita" ]]; then
+              echo "❌ Only german or nikita branches can merge to main!"
+              exit 1
+            fi
+          fi
+
+          # Проверяем мердж в testnet/production
+          if [[ "$TARGET" == "testnet" || "$TARGET" == "production" ]]; then
+            if [[ "$SOURCE" != "main" ]]; then
+              echo "❌ Only main branch can merge to $TARGET!"
+              exit 1
+            fi
+          fi
+
+          echo "✅ Merge rules passed"
+
+  # Запускаем тесты
   test:
+    if: github.event_name == 'pull_request'
+    needs: check-merge-rules
     runs-on: ubuntu-latest
     permissions:
       contents: write
-
     steps:
       - uses: actions/checkout@v3
 
@@ -21,24 +64,34 @@ jobs:
           node-version: "20"
           cache: "npm"
 
-      - name: Cache node modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.npm
-            node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
       - name: Install dependencies
         run: npm ci
 
       - name: Run tests with coverage
         run: npm run test:badges
 
+  # Обновляем badges только при push в main (через merge)
+  update-badges:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate coverage badges
+        run: npm run test:badges
+
       - name: Update coverage badges
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
