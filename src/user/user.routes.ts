@@ -19,17 +19,14 @@ router.put("/email", authMiddleware(), (req, res, next) => {
   return userController.updateEmail(req, res, next);
 });
 
-/** Обновление email пользователя */
-router.put("/email", authMiddleware(), (req, res, next) => {
-  return userController.updateEmail(req, res, next);
+/** Получение балансов токенов пользователя */
+router.get("/balances", authMiddleware(), (req, res, next) => {
+  return userController.getTokenBalances(req, res, next);
 });
 
-router.post("/wallets", authMiddleware(), kycGuard(), (req, res, next) => {
-  return userController.linkWallet(req, res, next);
-});
-
-router.get("/staking", authMiddleware(), kycGuard(), (req, res, next) => {
-  return userController.getStakingRecords(req, res, next);
+/** Получение адреса HSM кошелька */
+router.get("/wallet", authMiddleware(), (req, res, next) => {
+  return userController.getWalletAddress(req, res, next);
 });
 
 export default router;
