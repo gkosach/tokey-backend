@@ -58,36 +58,6 @@ export class UserController {
   }
 
   /**
-   * Инициирует процесс KYC-верификации через Persona
-   * @returns Статус 202 Accepted при успешном запуске
-   * @throws {Error} Если пользователь не авторизован
-   */
-  async initiateKyc(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-    try {
-      if (!req.user) throw new Error("Unauthorized");
-
-      const { personaVerificationId } = req.body;
-
-      if (!personaVerificationId) {
-        res.status(400).json({
-          success: false,
-          error: "Missing personaVerificationId",
-        });
-        return;
-      }
-
-      const result = await this.userService.initiateKycVerification(req.user.id, personaVerificationId);
-
-      res.status(202).json({
-        success: true,
-        data: result,
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
    * Обновляет email пользователя
    * @returns Обновленный пользователь
    */

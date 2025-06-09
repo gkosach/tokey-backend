@@ -2,6 +2,8 @@ import { KycStatus, User } from "@prisma/client";
 import axios, { AxiosError } from "axios";
 import { prisma } from "../common";
 import { KycError } from "./contract/error/kyc.error";
+import { KycInquiryResponse } from "./contract/kyc-inquiry-response.type";
+import { KycInquiryStatus } from "./contract/kyc-inquiry-status.enum";
 
 /**
  * Сервис для управления процессом верификации пользователей (KYC)
@@ -134,6 +136,111 @@ export class KycService {
     });
 
     console.log(`KYC ${status} for user ${user.cognitoId}, status updated to ${newStatus}`);
+  }
+
+  async getInquiryData(inquiryId: string): Promise<{ status: KycInquiryStatus }> {
+    try {
+      const response = await axios.post(
+        `https://api.withpersona.com/api/v1/inquiries/${inquiryId}`,
+        {},
+        {
+          headers: {
+            "Persona-Version": "2023-01-05",
+            Authorization: `Bearer ${this.personaApiKey}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+      return {
+        status: response.data.data.attributes.status as KycInquiryStatus,
+      };
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        console.error("Persona API error:", error.response?.data);
+        throw KycError.providerError(`Persona API error: ${error.response?.status}`);
+      } else if (error instanceof Error) {
+        console.error("Unexpected error:", error.message);
+        throw KycError.providerError(`Unexpected error: ${error.message}`);
+      } else {
+        console.error("Unknown error:", error);
+        throw KycError.providerError("Unknown error occurred");
+      }
+    }
+  }
+
+  private async getInquirySessionKey(inquiryId: string): Promise<{ sessionId: string }> {
+    try {
+      const response = await axios.post(
+        `https://api.withpersona.com/api/v1/inquiries/${inquiryId}/resume`,
+        {},
+        {
+          headers: {
+            "Persona-Version": "2023-01-05",
+            Authorization: `Bearer ${this.personaApiKey}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+      return {
+        sessionId: response.data.data.attributes.session_id,
+      };
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        console.error("Persona API error:", error.response?.data);
+        throw KycError.providerError(`Persona API error: ${error.response?.status}`);
+      } else if (error instanceof Error) {
+        console.error("Unexpected error:", error.message);
+        throw KycError.providerError(`Unexpected error: ${error.message}`);
+      } else {
+        console.error("Unknown error:", error);
+        throw KycError.providerError("Unknown error occurred");
+      }
+    }
+  }
+
+  async handleInquiryStatusUpdate(inquiryId: string, userId: string) {
+    const { status } = await this.getInquiryData(inquiryId);
+    return await this.handleInquiryStatus(status, userId);
+  }
+
+  async handleInquiryStatus(inquiryStatus: KycInquiryStatus, userId: string): Promise<KycInquiryResponse> {
+    switch (inquiryStatus) {
+      case KycInquiryStatus.COMPLETED:
+      case KycInquiryStatus.APPROVED:
+        await prisma.user.update({
+          where: { cognitoId: userId },
+          data: {
+            kycStatus: KycStatus.COMPLETED,
+            kycCompletedAt: new Date(),
+          },
+        });
+        return {
+          status: KycInquiryStatus.APPROVED,
+        };
+      case KycInquiryStatus.CREATED:
+      case KycInquiryStatus.PENDING:
+      case KycInquiryStatus.EXPIRED:
+        const { sessionId } = await this.getInquirySessionKey(inquiryStatus);
+        return {
+          status: KycInquiryStatus.PENDING,
+          sessionId,
+        };
+      case KycInquiryStatus.DECLINED:
+      case KycInquiryStatus.FAILED:
+        await prisma.user.update({
+          where: { cognitoId: userId },
+          data: {
+            kycStatus: KycStatus.REJECTED,
+            kycCompletedAt: new Date(),
+          },
+        });
+        return {
+          status: KycInquiryStatus.DECLINED,
+        };
+
+      default:
+        throw KycError.providerError("Unknown inquiry status");
+    }
   }
 
   /**

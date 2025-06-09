@@ -14,11 +14,6 @@ router.get("/profile", authMiddleware(), (req, res, next) => {
   return userController.getProfile(req, res, next);
 });
 
-/** Инициация KYC верификации */
-router.post("/kyc", authMiddleware(), (req, res, next) => {
-  return userController.initiateKyc(req, res, next);
-});
-
 /** Обновление email пользователя */
 router.put("/email", authMiddleware(), (req, res, next) => {
   return userController.updateEmail(req, res, next);

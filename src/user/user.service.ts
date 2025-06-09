@@ -73,22 +73,6 @@ export class UserService {
   }
 
   /**
-   * Инициирует процесс KYC-верификации через Persona
-   * @param cognitoId - Идентификатор пользователя в Cognito
-   * @param personaVerificationId - ID верификации из Persona
-   * @returns Обновленный пользователь со статусом KYC PENDING
-   */
-  async initiateKycVerification(cognitoId: string, personaVerificationId: string): Promise<User> {
-    return prisma.user.update({
-      where: { cognitoId },
-      data: {
-        kycStatus: KycStatus.PENDING,
-        kycProviderId: personaVerificationId,
-      },
-    });
-  }
-
-  /**
    * Завершает KYC верификацию
    * @param cognitoId - Идентификатор пользователя
    * @param status - Результат верификации
