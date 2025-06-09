@@ -20,7 +20,7 @@ module.exports = {
     "prisma/",
     "tests/",
     "non-bll-scripts/",
-    "*.js", // ← Игнорируем все JS файлы
+    "*.js",
     "jest.config.js",
     "setup-husky.js",
   ],

@@ -21,8 +21,8 @@
     "generate-badges": "node non-bll-scripts/generate-badges.js",
     "test:badges": "npm run test && npm run generate-badges",
     "prepare": "husky",
-    "setup": "npm install && husky",
-    "postinstall": "husky || echo 'Husky setup skipped'"
+    "setup-husky": "node setup-husky.js",
+    "postinstall": "husky || true"
   },
   "repository": {
     "type": "git",
