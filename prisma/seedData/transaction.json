@@ -1,0 +1,18 @@
+[
+  {
+    "id": "a1a2b3c4-d5e6-7890-abcd-ef1234567890",
+    "userId": "550e8400-e29b-41d4-a716-446655440001",
+    "propertyId": "1e7e8e4d-4b4a-4c8b-8e8b-8e8b8e8b8e8b",
+    "tokensAmount": 1000000,
+    "txHash": "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+    "createdAt": "2024-03-16T15:30:00.000Z"
+  },
+  {
+    "id": "b2b3c4d5-e6f7-890a-bcde-f1234567890a",
+    "userId": "550e8400-e29b-41d4-a716-446655440002",
+    "propertyId": "e6ddf9c2-4d2e-4a8c-8e9b-2a3b7b3a9c5d",
+    "tokensAmount": 500000,
+    "txHash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+    "createdAt": "2024-03-18T10:15:00.000Z"
+  }
+]

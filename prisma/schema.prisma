@@ -5,98 +5,78 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://dev_user:dev_password@localhost:5432/dev_db"
-  // url      = env("DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
 
-// -------- Enums --------
 enum KycStatus {
-  NOT_STARTED @map("not_started")
-  PENDING     @map("pending")
-  VERIFIED    @map("verified")
-  FAILED      @map("failed")
+  PENDING   @map("pending")
+  COMPLETED @map("completed")
+  REJECTED  @map("rejected")
 }
 
-enum ModerationStatus {
-  PENDING  @map("pending") // Ожидает проверки
-  APPROVED @map("approved") // Одобрено
-  REJECTED @map("rejected") // Отклонено
+enum PropertyStatus {
+  COMING_SOON @map("coming_soon")
+  ACTIVE      @map("active")
+  SOLD_OUT    @map("sold_out")
+  COMPLETED   @map("completed")
 }
 
-// -------- Models --------
 model User {
-  cognitoId         String    @id @map("cognito_id") @db.VarChar(36)
-  name              String    @db.VarChar(100)
-  email             String    @unique @db.VarChar(255)
-  phoneNumber       String    @unique @map("phone_number") @db.VarChar(20)
-  kycStatus         KycStatus @default(NOT_STARTED) @map("kyc_status")
-  kycVerificationId String?   @map("kyc_verification_id")
-  kycVerifiedAt     DateTime? @map("kyc_verified_at")
+  id             String    @id @default(uuid())
+  cognitoId      String    @unique @map("cognito_id")
+  email          String    @unique
+  walletAddress  String    @unique @map("wallet_address")
+  kycStatus      KycStatus @default(PENDING) @map("kyc_status")
+  kycProviderId  String?   @map("kyc_provider_id")
+  kycCompletedAt DateTime? @map("kyc_completed_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
 
-  wallets        Wallet[]
-  properties     Property[]
-  transactions   PaymentTransaction[]
-  stakingRecords StakingRecord[]
+  transactions Transaction[]
 
-  @@index([email], map: "user_email_idx")
-  @@index([phoneNumber], map: "user_phone_idx")
-}
-
-model Wallet {
-  id          String  @id @default(uuid()) @db.Uuid
-  address     String  @unique @db.VarChar(44) // Solana-адрес
-  whitelisted Boolean @default(false) // Доступ после KYC
-  userId      String  @map("user_id") @db.VarChar(36)
-
-  user         User                 @relation(fields: [userId], references: [cognitoId])
-  transactions PaymentTransaction[]
-
-  @@index([address], map: "wallet_address_idx")
+  @@index([cognitoId], map: "idx_user_cognito")
+  @@index([walletAddress], map: "idx_user_wallet")
+  @@index([kycStatus], map: "idx_user_kyc_status")
+  @@map("users")
 }
 
 model Property {
-  id                String           @id @default(uuid()) @db.Uuid
-  title             String           @db.VarChar(255) // Название объекта
-  solanaMint        String           @unique @map("mint") // SPL Token Address
-  ownerId           String           @map("owner_id") @db.VarChar(36)
-  metadata          Json // {type: "villa", roi: 5.5, docsIpfs: "Qm...", photos: [...]}
-  moderationStatus  ModerationStatus @default(PENDING) @map("moderation_status")
-  moderationComment String?          @map("moderation_comment")
-  tokenizationDate  DateTime?        @map("tokenization_date")
+  id              String         @id @default(uuid())
+  contractAddress String         @unique @map("contract_address")
+  developerId     String         @map("developer_id")
+  title           String         @db.VarChar(255)
+  district        String         @db.VarChar(10)
+  totalTokens     Int            @map("total_tokens")
+  availableTokens Int            @map("available_tokens")
+  status          PropertyStatus @default(COMING_SOON)
+  createdAt       DateTime       @default(now()) @map("created_at")
 
-  owner          User            @relation(fields: [ownerId], references: [cognitoId])
-  stakingRecords StakingRecord[]
+  description String? @db.Text
+  address     String? @db.VarChar(500)
+  roi         Float?
+  price       Float?
+  metadata    Json?
 
-  @@index([solanaMint], map: "property_mint_idx")
+  transactions Transaction[]
+
+  @@index([developerId, district], map: "idx_property_dev_district")
+  @@index([status], map: "idx_property_status")
+  @@index([availableTokens], map: "idx_property_available")
+  @@map("properties")
 }
 
-model PaymentTransaction {
-  id         String  @id @default(uuid()) @db.Uuid
-  txHash     String? @unique @map("tx_hash") // Хэш транзакции Solana
-  amount     String // Количество токенов (строкой для JS)
-  fromWallet String  @map("from_wallet") @db.VarChar(44) // Solana-адрес отправителя
-  toWallet   String  @map("to_wallet") @db.VarChar(44) // Solana-адрес получателя
-  propertyId String  @map("property_id") @db.Uuid
-  userId     String  @map("user_id") @db.VarChar(36)
+model Transaction {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  propertyId   String   @map("property_id")
+  tokensAmount Int      @map("tokens_amount")
+  txHash       String   @unique @map("tx_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
 
-  user     User    @relation(fields: [userId], references: [cognitoId])
-  Wallet   Wallet? @relation(fields: [walletId], references: [id])
-  walletId String? @db.Uuid
+  user     User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Restrict)
 
-  @@index([txHash], map: "transaction_tx_hash_idx")
-  @@index([propertyId], map: "transaction_property_idx")
-}
-
-model StakingRecord {
-  id         String    @id @default(uuid()) @db.Uuid
-  amount     String // Количество токенов (строкой для JS)
-  lastClaim  DateTime? @map("last_claim") // Последний клейм в UTC
-  userId     String    @map("user_id") @db.VarChar(36)
-  propertyId String    @map("property_id") @db.Uuid
-
-  user     User     @relation(fields: [userId], references: [cognitoId])
-  property Property @relation(fields: [propertyId], references: [id])
-
-  @@unique([userId, propertyId], map: "staking_user_property_unq")
-  @@index([propertyId], map: "staking_property_idx")
+  @@index([userId, propertyId], map: "idx_transaction_user_property")
+  @@index([txHash], map: "idx_transaction_hash")
+  @@index([createdAt], map: "idx_transaction_created")
+  @@map("transactions")
 }

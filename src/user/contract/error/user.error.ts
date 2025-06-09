@@ -1,28 +1,36 @@
-import { UserErrorMessages } from "../../../common";
-
 export class UserError extends Error {
-  constructor(
-    public readonly statusCode: number,
-    message: string,
-    public readonly errorCode?: string,
-  ) {
+  public readonly statusCode: number;
+
+  constructor(message: string, statusCode: number = 500) {
     super(message);
-    Object.setPrototypeOf(this, new.target.prototype);
+    this.name = "UserError";
+    this.statusCode = statusCode;
+
+    Object.setPrototypeOf(this, UserError.prototype);
   }
 
   static notFound(): UserError {
-    return new UserError(404, "User not found", UserErrorMessages.NOT_FOUND);
+    return new UserError("User not found", 404);
   }
 
-  static databaseError(message: string): UserError {
-    return new UserError(500, message, UserErrorMessages.DATABASE_ERROR);
+  static databaseError(details?: string): UserError {
+    const message = details ? `Database operation failed: ${details}` : "Database operation failed";
+    return new UserError(message, 500);
   }
 
   static validationError(message: string): UserError {
-    return new UserError(400, message, UserErrorMessages.VALIDATION_FAILED);
+    return new UserError(`Validation error: ${message}`, 400);
   }
 
   static conflict(message: string): UserError {
-    return new UserError(409, message, UserErrorMessages.INVALID_ID);
+    return new UserError(message, 409);
+  }
+
+  static unauthorized(): UserError {
+    return new UserError("Unauthorized", 401);
+  }
+
+  static forbidden(): UserError {
+    return new UserError("Access forbidden", 403);
   }
 }
