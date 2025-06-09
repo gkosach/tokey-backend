@@ -39,8 +39,6 @@ lerna-debug.log*
 .env.local
 .env.*.local
 !.example.env
-/package-lock.json
-/yarn.lock
 
 # Temporary
 report
