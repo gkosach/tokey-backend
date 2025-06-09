@@ -1,7 +1,7 @@
 import { ErrorStatus } from "../enum";
 
 export abstract class BaseError<TMessage extends string = string> extends Error {
-  constructor(
+  protected constructor(
     public readonly statusCode: ErrorStatus,
     public readonly message: TMessage,
   ) {

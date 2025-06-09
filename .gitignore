@@ -1,6 +1,7 @@
 # compiled output
 /dist
 /node_modules
+
 # Logs
 logs
 *.log
@@ -10,12 +11,10 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
-# OS
-.DS_Store
-
-# Tests
+# Tests - игнорируем coverage, НО НЕ badges
 /coverage
 /.nyc_output
+!assets/coverage/*.svg
 
 # IDEs and editors
 /.idea
@@ -33,12 +32,13 @@ lerna-debug.log*
 !.vscode/launch.json
 !.vscode/extensions.json
 
-#storage-configs
+# Storage configs
 .env
-!.example.env
 .development.env
-/package-lock.json
-/yarn.lock
+.production.env
+.env.local
+.env.*.local
+!.example.env
 
 # Temporary
 report
@@ -46,18 +46,18 @@ junit.xml
 test-report.xml
 .commit
 
-# /lib/
+# Build
+dist/
+build/
 
-client/.next/
-
+# OS
+.DS_Store
 Thumbs.db
 
-.vscode/
+# Prisma
+prisma/migrations/dev.db*
+!/.development.env
+!/.env
 
-node_modules/
-client/dist/
-server/dist/
-client/.env
-.next/
-
-.idea
+# Husky
+.husky/_

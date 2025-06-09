@@ -20,7 +20,7 @@ export class KycService {
 
   /**
    * Получение текущего статуса KYC пользователя
-   * @param userId - Идентификатор пользователя
+   * @param userId - Идентификатор пользователя (cognitoId)
    * @returns Текущий статус верификации
    */
   async getKycStatus(userId: string): Promise<KycStatus> {
@@ -33,30 +33,34 @@ export class KycService {
 
   /**
    * Инициализация процесса верификации через Persona
-   * @param userId - Идентификатор пользователя
-   * @returns URL для прохождения верификации
+   * @param userId - Идентификатор пользователя (cognitoId)
+   * @returns ID верификации для прохождения KYC
    */
   async initiateVerification(userId: string): Promise<{ inquiryId: string }> {
     return prisma.$transaction(async (tx) => {
-      const user = await prisma.user.findUniqueOrThrow({
+      const user = await tx.user.findUniqueOrThrow({
         where: { cognitoId: userId },
       });
 
-      if (user.kycStatus === KycStatus.PENDING) {
-        return { inquiryId: user.kycVerificationId! };
+      // Если уже есть активная верификация
+      if (user.kycStatus === KycStatus.PENDING && user.kycProviderId) {
+        return { inquiryId: user.kycProviderId };
       }
 
-      if (user.kycStatus !== KycStatus.NOT_STARTED) {
-        throw KycError.verificationInProgress();
+      // Если KYC уже завершен
+      if (user.kycStatus === KycStatus.COMPLETED) {
+        throw KycError.alreadyVerified();
       }
 
+      // Создаем новую верификацию в Persona
       const inquiry = await this.createPersonaInquiry(user);
 
+      // Обновляем статус пользователя
       await tx.user.update({
         where: { cognitoId: user.cognitoId },
         data: {
           kycStatus: KycStatus.PENDING,
-          kycVerificationId: inquiry.id,
+          kycProviderId: inquiry.id,
         },
       });
 
@@ -64,6 +68,9 @@ export class KycService {
     });
   }
 
+  /**
+   * Создание запроса на верификацию в Persona
+   */
   private async createPersonaInquiry(user: User): Promise<{ id: string }> {
     try {
       const response = await axios.post(
@@ -75,7 +82,7 @@ export class KycService {
               "reference-id": user.cognitoId,
               fields: {
                 "email-address": user.email,
-                "phone-number": user.phoneNumber,
+                // Убрали phone-number так как его нет в новой схеме
               },
             },
           },
@@ -91,15 +98,16 @@ export class KycService {
 
       return { id: response.data.data.id };
     } catch (error) {
-      // 2. Проверяем тип ошибки
       if (error instanceof AxiosError) {
         console.error("Persona API error:", error.response?.data);
+        throw KycError.providerError(`Persona API error: ${error.response?.status}`);
       } else if (error instanceof Error) {
         console.error("Unexpected error:", error.message);
+        throw KycError.providerError(`Unexpected error: ${error.message}`);
       } else {
         console.error("Unknown error:", error);
+        throw KycError.providerError("Unknown error occurred");
       }
-      throw KycError.providerError();
     }
   }
 
@@ -110,11 +118,13 @@ export class KycService {
    */
   async handleWebhook(verificationId: string, status: "approved" | "declined"): Promise<void> {
     const user = await prisma.user.findFirst({
-      where: { kycVerificationId: verificationId },
+      where: { kycProviderId: verificationId }, // Исправлено поле
     });
+
     if (!user) throw KycError.verificationNotFound();
 
-    const newStatus = status === "approved" ? KycStatus.VERIFIED : KycStatus.FAILED; // Используем FAILED вместо NOT_STARTED
+    // Используем правильные статусы из новой схемы
+    const newStatus = status === "approved" ? KycStatus.COMPLETED : KycStatus.REJECTED;
 
     // Убрали обновление wallet так как модели Wallet больше нет
     await prisma.user.update({

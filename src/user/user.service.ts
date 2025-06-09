@@ -1,17 +1,11 @@
-import { KycStatus, Prisma, StakingRecord, User, Wallet } from "@prisma/client";
+import { KycStatus, Prisma, User } from "@prisma/client";
 import { prisma } from "../common";
 import { UserError } from "./contract/error/user.error";
 
-function verifySolanaSignature(address: string, signature: string): boolean {
-  console.log(`[verifySolanaSignature]: ${address} ${signature}`);
-  // TODO: Реализовать настоящую проверку подписи
-  return true;
-}
-
-type UserWithRelations = Prisma.UserGetPayload<{
+/** Тип пользователя с транзакциями для детальной информации */
+type UserWithTransactions = Prisma.UserGetPayload<{
   include: {
-    wallets: true;
-    stakingRecords: {
+    transactions: {
       include: {
         property: true;
       };
@@ -23,15 +17,20 @@ export class UserService {
   /**
    * Получает пользователя по Cognito ID
    * @param cognitoId - Уникальный идентификатор пользователя в Cognito
-   * @returns Пользователь с привязанными кошельками и записями стейкинга
+   * @returns Пользователь с транзакциями
    * @throws {UserError} NOT_FOUND - Если пользователь не найден
    * @throws {UserError} DATABASE_ERROR - При ошибках базы данных
    */
-  async getUserByCognitoId(cognitoId: string): Promise<UserWithRelations> {
+  async getUserByCognitoId(cognitoId: string): Promise<UserWithTransactions> {
     try {
       return await prisma.user.findUniqueOrThrow({
         where: { cognitoId },
-        include: { wallets: true, stakingRecords: { include: { property: true } } },
+        include: {
+          transactions: {
+            include: { property: true },
+            orderBy: { createdAt: "desc" },
+          },
+        },
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
@@ -41,16 +40,23 @@ export class UserService {
     }
   }
 
-  async createUser(data: { cognitoId: string; email: string; phoneNumber: string }): Promise<User> {
+  /**
+   * Создает нового пользователя с автоматически генерируемым HSM кошельком
+   * @param data - Данные пользователя из Cognito
+   * @returns Созданный пользователь
+   */
+  async createUser(data: { cognitoId: string; email: string }): Promise<User> {
     try {
+      // TODO: Интеграция с HSM для генерации walletAddress
+      const walletAddress = await this.generateHSMWallet();
+
       return await prisma.user.upsert({
         where: { cognitoId: data.cognitoId },
         create: {
           cognitoId: data.cognitoId,
           email: data.email,
-          name: "NAME",
-          phoneNumber: data.phoneNumber,
-          kycStatus: "NOT_STARTED",
+          walletAddress,
+          kycStatus: KycStatus.PENDING,
         },
         update: {},
       });
@@ -58,27 +64,12 @@ export class UserService {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         console.error("[Prisma Error]", error.meta);
         if (error.code === "P2002") {
-          throw UserError.conflict(`User with cognitoId ${data.cognitoId} already exists`);
+          throw UserError.conflict(`User with email ${data.email} already exists`);
         }
         throw UserError.databaseError("User creation failed");
       }
       throw error;
     }
-  }
-
-  /**
-   * Инициирует процесс KYC-верификации
-   * @param cognitoId - Идентификатор пользователя в Cognito
-   * @param _documents - Документы для верификации (не используется)
-   * @returns Обновленный пользователь со статусом KYC PENDING
-   */
-  async initiateKycVerification(cognitoId: string, _documents: unknown): Promise<User> {
-    return prisma.user.update({
-      where: { cognitoId },
-      data: {
-        kycStatus: KycStatus.PENDING,
-      },
-    });
   }
 
   /**
@@ -124,84 +115,49 @@ export class UserService {
   }
 
   /**
-   * Обновляет настройки пользователя
-   * @param cognitoId - Идентификатор пользователя
-   * @param data - Новые данные пользователя
-   * @returns Обновленный пользователь
-   * @throws {UserError} CONFLICT - При конфликте данных
-   * @throws {UserError} DATABASE_ERROR - При ошибках базы данных
-   */
-  async updateUserSettings(cognitoId: string, data: Partial<Pick<User, "email" | "phoneNumber">>): Promise<User> {
-    try {
-      return prisma.user.update({
-        where: { cognitoId },
-        data: {
-          email: data.email,
-          phoneNumber: data.phoneNumber,
-        },
-      });
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === "P2002") {
-          throw UserError.conflict("Email or phone already exists");
-        }
-        throw UserError.databaseError("Update failed");
-      }
-      throw error;
-    }
-  }
-
-  /**
-   * Привязывает кошелек Solana к пользователю
+   * Получает баланс токенов пользователя по объектам недвижимости
    * @param userId - Идентификатор пользователя
-   * @param address - Адрес кошелька
-   * @param signature - Подпись для верификации
-   * @returns Созданный кошелек
-   * @throws {UserError} VALIDATION_ERROR - При неверной подписи
-   * @throws {UserError} CONFLICT - При дубликате кошелька
+   * @returns Агрегированные балансы по объектам
    */
-  async linkSolanaWallet(userId: string, address: string, signature: string): Promise<Wallet> {
-    if (!verifySolanaSignature(address, signature)) {
-      throw UserError.validationError("Invalid wallet signature");
-    }
-
-    try {
-      return prisma.wallet.create({
-        data: {
-          address,
-          userId,
-          whitelisted: false,
-        },
-      });
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === "P2002") {
-          throw UserError.conflict("Wallet already linked");
-        }
-        throw UserError.databaseError("Wallet linking failed");
-      }
-      throw error;
-    }
-  }
-
-  /**
-   * Получает записи стейкинга пользователя
-   * @param userId - Идентификатор пользователя
-   * @returns Массив записей стейкинга с информацией о недвижимости
-   */
-  async getStakingRecords(userId: string): Promise<StakingRecord[]> {
-    return prisma.stakingRecord.findMany({
+  async getUserTokenBalances(userId: string) {
+    const transactions = await prisma.transaction.findMany({
       where: { userId },
       include: {
         property: {
           select: {
             id: true,
             title: true,
-            solanaMint: true,
-            metadata: true,
+            contractAddress: true,
           },
         },
       },
     });
+
+    // Группируем вручную для избежания проблем с groupBy
+    const balanceMap = new Map<string, { property: any; totalTokens: number }>();
+
+    transactions.forEach((tx) => {
+      const existing = balanceMap.get(tx.propertyId);
+      if (existing) {
+        existing.totalTokens += tx.tokensAmount;
+      } else {
+        balanceMap.set(tx.propertyId, {
+          property: tx.property,
+          totalTokens: tx.tokensAmount,
+        });
+      }
+    });
+
+    return Array.from(balanceMap.values());
+  }
+
+  /**
+   * Временная заглушка для генерации HSM кошелька (Polygon адрес)
+   * TODO: Заменить на реальную интеграцию с HSM
+   */
+  private async generateHSMWallet(): Promise<string> {
+    // Временная генерация Polygon/Ethereum адреса для разработки
+    const randomHex = Math.random().toString(16).substring(2, 42);
+    return `0x${randomHex.padStart(40, "0")}`;
   }
 }

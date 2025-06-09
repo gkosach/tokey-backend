@@ -6,8 +6,8 @@ export class UserController {
   constructor(readonly userService: UserService = new UserService()) {}
 
   /**
-   * Получает профиль пользователя по Cognito ID
-   * @returns Пользователя с привязанными кошельками и записями стейкинга
+   * Получает профиль текущего пользователя
+   * @returns Пользователь с транзакциями и балансами токенов
    * @throws {Error} Если пользователь не авторизован
    */
   async getProfile(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
@@ -15,72 +15,63 @@ export class UserController {
       if (!req.user) throw new Error("Unauthorized");
 
       const user = await this.userService.getUserByCognitoId(req.user.id);
-      res.json(user);
+      res.json({
+        success: true,
+        data: user,
+      });
     } catch (error) {
       next(error);
     }
   }
 
-  async getCurrentUser(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-    try {
-      if (!req.user) throw new Error("Unauthorized");
-      const user = await this.userService.getUserByCognitoId(req.user.id);
-      res.json(user);
-    } catch (error) {
-      next(error);
-    }
-  }
-
+  /**
+   * Создает нового пользователя с автоматическим HSM кошельком
+   * @returns Созданный пользователь со статусом 201 Created
+   */
   async createUser(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { cognitoId, email, phoneNumber } = req.body;
-      console.log("Cognito id: ", cognitoId);
+      const { cognitoId, email } = req.body;
+      console.log("Creating user with Cognito ID:", cognitoId);
 
-      if (!cognitoId || !email || !phoneNumber) {
-        res.status(400).json({ error: "Missing required fields" });
+      if (!cognitoId || !email) {
+        res.status(400).json({
+          success: false,
+          error: "Missing required fields: cognitoId, email",
+        });
         return;
       }
 
       const newUser = await this.userService.createUser({
         cognitoId,
         email,
-        phoneNumber,
       });
 
-      console.log("New user: ", newUser);
+      console.log("New user created with HSM wallet:", newUser.walletAddress);
 
-      res.status(201).json(newUser);
+      res.status(201).json({
+        success: true,
+        data: newUser,
+      });
     } catch (error) {
       next(error);
     }
   }
 
   /**
-   * Обновляет настройки пользователя
-   * @returns Обновленного пользователя
-   */
-  async updateUserSettings(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-    try {
-      if (!req.user) throw new Error("Unauthorized");
-
-      const updatedUser = await this.userService.updateUserSettings(req.user.id, req.body);
-      res.json(updatedUser);
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * Инициирует процесс KYC-верификации
-   * @returns Статус 202 Accepted при успешном запуске
+   * Получает балансы токенов пользователя по объектам недвижимости
+   * @returns Балансы токенов с информацией о недвижимости
    * @throws {Error} Если пользователь не авторизован
    */
-  async initiateKyc(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  async getTokenBalances(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) throw new Error("Unauthorized");
 
-      const result = await this.userService.initiateKycVerification(req.user.id, req.body.documents);
-      res.status(202).json(result);
+      const balances = await this.userService.getUserTokenBalances(req.user.id);
+
+      res.json({
+        success: true,
+        data: balances,
+      });
     } catch (error) {
       next(error);
     }
@@ -102,32 +93,22 @@ export class UserController {
   }
 
   /**
-   * Привязывает Solana-кошелек к пользователю
-   * @returns Созданный кошелек со статусом 201 Created
-   * @throws {Error} При ошибках валидации или конфликтах
+   * Получает адрес HSM кошелька пользователя
+   * @returns Адрес кошелька пользователя
    */
-  async linkWallet(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  async getWalletAddress(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) throw new Error("Unauthorized");
 
-      const wallet = await this.userService.linkSolanaWallet(req.user.id, req.body.address, req.body.signature);
-      res.status(201).json(wallet);
-    } catch (error) {
-      next(error);
-    }
-  }
+      const user = await this.userService.getUserByCognitoId(req.user.id);
 
-  /**
-   * Получает записи стейкинга пользователя
-   * @returns Массив записей стейкинга с информацией о недвижимости
-   * @throws {Error} Если пользователь не авторизован
-   */
-  async getStakingRecords(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-    try {
-      if (!req.user) throw new Error("Unauthorized");
-
-      const records = await this.userService.getStakingRecords(req.user.id);
-      res.json(records);
+      res.json({
+        success: true,
+        data: {
+          walletAddress: user.walletAddress,
+          kycStatus: user.kycStatus,
+        },
+      });
     } catch (error) {
       next(error);
     }
