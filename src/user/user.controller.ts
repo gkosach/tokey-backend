@@ -87,6 +87,21 @@ export class UserController {
   }
 
   /**
+   * Обновляет email пользователя
+   * @returns Обновленный пользователь
+   */
+  async updateEmail(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) throw new Error("Unauthorized");
+
+      const updatedUser = await this.userService.updateUserEmail(req.user.id, req.body.email);
+      res.json(updatedUser);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Привязывает Solana-кошелек к пользователю
    * @returns Созданный кошелек со статусом 201 Created
    * @throws {Error} При ошибках валидации или конфликтах

@@ -81,6 +81,56 @@ export class UserService {
     });
   }
 
+  /**
+   * Завершает KYC верификацию
+   * @param cognitoId - Идентификатор пользователя
+   * @param status - Результат верификации
+   * @returns Обновленный пользователь
+   */
+  async completeKycVerification(
+    cognitoId: string,
+    status: typeof KycStatus.COMPLETED | typeof KycStatus.REJECTED,
+  ): Promise<User> {
+    return prisma.user.update({
+      where: { cognitoId },
+      data: {
+        kycStatus: status,
+        kycCompletedAt: status === KycStatus.COMPLETED ? new Date() : null,
+      },
+    });
+  }
+
+  /**
+   * Обновляет email пользователя
+   * @param cognitoId - Идентификатор пользователя
+   * @param email - Новый email
+   * @returns Обновленный пользователь
+   */
+  async updateUserEmail(cognitoId: string, email: string): Promise<User> {
+    try {
+      return prisma.user.update({
+        where: { cognitoId },
+        data: { email },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === "P2002") {
+          throw UserError.conflict("Email already exists");
+        }
+        throw UserError.databaseError("Email update failed");
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Обновляет настройки пользователя
+   * @param cognitoId - Идентификатор пользователя
+   * @param data - Новые данные пользователя
+   * @returns Обновленный пользователь
+   * @throws {UserError} CONFLICT - При конфликте данных
+   * @throws {UserError} DATABASE_ERROR - При ошибках базы данных
+   */
   async updateUserSettings(cognitoId: string, data: Partial<Pick<User, "email" | "phoneNumber">>): Promise<User> {
     try {
       return prisma.user.update({

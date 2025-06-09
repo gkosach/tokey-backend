@@ -1,31 +1,55 @@
-import { NextFunction, Request, Response } from "express";
+import { NextFunction, Response } from "express";
+import { AuthRequest } from "../common/types/auth-request.types";
 import { KycService } from "./kyc.service";
 
 export class KycController {
-  private service = new KycService();
+  constructor(readonly kycService: KycService = new KycService()) {}
 
-  async getKycStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+  /**
+   * Получает текущий статус KYC пользователя
+   * @returns Статус KYC верификации
+   * @throws {Error} Если пользователь не авторизован
+   */
+  async getKycStatus(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = req.user!.id;
-      const status = await this.service.getKycStatus(userId);
-      res.json({ status });
+      if (!req.user) throw new Error("Unauthorized");
+
+      const status = await this.kycService.getKycStatus(req.user.id);
+
+      res.json({
+        success: true,
+        data: { status },
+      });
     } catch (error) {
       next(error);
     }
   }
 
-  async startVerification(req: Request, res: Response) {
+  /**
+   * Инициирует процесс KYC верификации
+   * @returns ID верификации для прохождения KYC
+   * @throws {Error} Если пользователь не авторизован
+   */
+  async startVerification(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = req.user!.id;
-      const { inquiryId } = await this.service.initiateVerification(userId);
-      res.json({ inquiryId });
+      if (!req.user) throw new Error("Unauthorized");
+
+      const { inquiryId } = await this.kycService.initiateVerification(req.user.id);
+
+      res.status(202).json({
+        success: true,
+        data: { inquiryId },
+      });
     } catch (error) {
-      console.error("KYC start error:", error);
-      res.status(500).json({ error: "Internal server error" });
+      next(error);
     }
   }
 
-  async handleWebhook(req: Request, res: Response, next: NextFunction): Promise<void> {
+  /**
+   * Обрабатывает вебхук от KYC провайдера
+   * @returns Статус 200 при успешной обработке
+   */
+  async handleWebhook(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const {
         data: {
@@ -34,9 +58,58 @@ export class KycController {
         },
       } = req.body;
 
-      await this.service.handleWebhook(verificationId, status === "approved" ? "approved" : "declined");
+      await this.kycService.handleWebhook(verificationId, status === "approved" ? "approved" : "declined");
 
-      res.sendStatus(200);
+      res.json({
+        success: true,
+        message: "Webhook processed successfully",
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Обновляет статус KYC пользователя
+   * @returns Статус обновления KYC
+   * @throws {Error} Если пользователь не авторизован
+   */
+  async updateKycStatus(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) throw new Error("Unauthorized");
+
+      const { inquiryId } = req.body;
+      if (!inquiryId) {
+        this.startVerification(req, res, next);
+        return;
+      }
+
+      const response = await this.kycService.handleInquiryStatusUpdate(inquiryId, req.user.id);
+
+      res.json({
+        success: true,
+        data: response,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Получает детальную информацию о KYC пользователя
+   * @returns Детальная информация о KYC
+   * @throws {Error} Если пользователь не авторизован
+   */
+  async getKycDetails(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) throw new Error("Unauthorized");
+
+      const details = await this.kycService.getKycDetails(req.user.id);
+
+      res.json({
+        success: true,
+        data: details,
+      });
     } catch (error) {
       next(error);
     }
