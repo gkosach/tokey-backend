@@ -1,4 +1,9 @@
-# Быстрый старт
+# TyKey Backend
+
+[![Coverage](./assets/coverage/badge-lines.svg)](./coverage/lcov-report/index.html)
+[![Statements](./assets/coverage/badge-statements.svg)](./coverage/lcov-report/index.html)
+[![Branches](./assets/coverage/badge-branches.svg)](./coverage/lcov-report/index.html)
+[![Functions](./assets/coverage/badge-functions.svg)](./coverage/lcov-report/index.html)
 
 ### 1. Установка
 
@@ -77,6 +82,7 @@ npm run dev
 | [HSM интеграция](assets/docs/hsm.md)            | Управление кошельками и ключами  |
 | [Развертывание](assets/docs/deployment.md)      | Docker и production деплой       |
 | [Безопасность](assets/docs/security.md)         | Политики безопасности и GDPR     |
+| [CI/CD Process](assets/docs/cicd.md)            | Git hooks и автоматизация        |
 
 ## Требования к окружению
 
