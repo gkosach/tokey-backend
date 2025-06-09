@@ -1,57 +1,35 @@
-# CI/CD Documentation
+# CI/CD Process
 
-## Overview
+## Git Flow & Branch Protection
 
-Автоматизированная система контроля качества кода и тестирования для TyKey Backend проекта с использованием Husky Git hooks и автоматической генерацией coverage badges.
+### Branch Structure
 
-## 🎯 Coverage Badges
+- `german`, `nikita` - developer working branches
+- `main` - stable branch for releases
+- `testnet` - testing environment
+- `production` - production environment
 
-### Автоматическая генерация
+### Protected Branches
 
-- Coverage badges генерируются автоматически после прохождения тестов
-- Сохраняются в `assets/coverage/` и отображаются в README
-- Отражают покрытие: lines, statements, branches, functions
-- Используют хакерский стиль с анимированными лоадерами
+- **main**: Only PR merges allowed from german/nikita
+- **testnet**: Only PR merges allowed from main
+- **production**: Only PR merges allowed from main
 
-### Структура badges
+## Automated Testing
 
-```text
-assets/coverage/
-├── badge-coverage.svg # Общее покрытие (lines)
-├── badge-statements.svg # Покрытие statements
-├── badge-branches.svg # Покрытие branches
-└── badge-functions.svg # Покрытие functions
-```
+### GitHub Actions
 
-### Команды
+Tests run automatically on:
 
-```bash
-npm run test:badges # Тесты + генерация badges
-npm run generate-badges # Только генерация badges
+- Pull requests to `main`, `testnet`, `production`
+- Direct pushes to `main`, `testnet`, `production`
 
-```
+### Coverage Badges
 
-## 🔒 Git Hooks с Husky
+- Auto-generated after tests on `main` branch
+- Stored in `assets/coverage/`
+- Updated automatically in commits
 
-### Pre-commit Hook
+## Developer Workflow
 
-**Запускается при каждом коммите**
-
-- ✅ ESLint проверка кода
-- ✅ TypeScript компиляция
-- ❌ Блокирует коммит при ошибках
-
-### Pre-push Hook
-
-**Запускается при каждом push**
-
-- ✅ Полный набор тестов с coverage
-- ✅ Автоматическая генерация badges
-- ✅ Автоматическое добавление обновленных badges в коммит
-- ❌ Блокирует push если тесты не прошли
-
-## Workflow
-
-1. Пишешь код → `git commit` → проверки качества
-2. `git push` → тесты + обновление badges
-3. Если тесты не прошли → push заблокирован
+### 1. Feature Development
