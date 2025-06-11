@@ -120,7 +120,7 @@ describe("UserService", () => {
         },
       ];
 
-      prisma.transaction.findMany.mockResolvedValue(mockTransactions);
+      prisma.tokenTransaction.findMany.mockResolvedValue(mockTransactions);
 
       const result = await userService.getUserTokenBalances("user-123");
 
@@ -136,7 +136,7 @@ describe("UserService", () => {
     });
 
     it("возвращает пустой массив при отсутствии транзакций", async () => {
-      prisma.transaction.findMany.mockResolvedValue([]);
+      prisma.tokenTransaction.findMany.mockResolvedValue([]);
 
       const result = await userService.getUserTokenBalances("user-123");
 
