@@ -22,61 +22,75 @@ enum PropertyStatus {
 }
 
 model User {
-  id             String    @id @default(uuid())
-  cognitoId      String    @unique @map("cognito_id")
-  email          String    @unique
-  walletAddress  String    @unique @map("wallet_address")
+  id             String    @id @default(uuid()) @db.Uuid
+  cognitoId      String    @unique @map("cognito_id") @db.VarChar(128)
+  email          String    @unique @db.VarChar(255)
+  walletAddress  String    @unique @map("wallet_address") @db.VarChar(42)
+  referralLink   String?   @unique @map("referral_link") @db.VarChar(50)
   kycStatus      KycStatus @default(PENDING) @map("kyc_status")
-  kycProviderId  String?   @map("kyc_provider_id")
-  kycCompletedAt DateTime? @map("kyc_completed_at")
-  createdAt      DateTime  @default(now()) @map("created_at")
+  kycProviderId  String?   @map("kyc_provider_id") @db.VarChar(100)
+  kycCompletedAt DateTime? @map("kyc_completed_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  transactions Transaction[]
+  transactions TokenTransaction[]
+  wallet       Wallet?
 
-  @@index([cognitoId], map: "idx_user_cognito")
-  @@index([walletAddress], map: "idx_user_wallet")
   @@index([kycStatus], map: "idx_user_kyc_status")
+  @@index([kycStatus, createdAt], map: "idx_user_kyc_created")
   @@map("users")
 }
 
+model Wallet {
+  userId              String   @id @map("user_id") @db.Uuid
+  publicKey           String   @map("public_key")
+  encryptedPrivateKey String   @map("encrypted_private_key")
+  keyDerivationPath   String   @map("key_derivation_path")
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([publicKey], map: "idx_wallet_public_key")
+  @@map("wallets")
+}
+
 model Property {
-  id              String         @id @default(uuid())
-  contractAddress String         @unique @map("contract_address")
-  developerId     String         @map("developer_id")
+  id              String         @id @default(uuid()) @db.Uuid
+  contractAddress String         @unique @map("contract_address") @db.VarChar(42)
+  developerId     String         @map("developer_id") @db.Uuid
   title           String         @db.VarChar(255)
-  district        String         @db.VarChar(10)
+  district        String         @db.VarChar(20)
   totalTokens     Int            @map("total_tokens")
   availableTokens Int            @map("available_tokens")
   status          PropertyStatus @default(COMING_SOON)
-  createdAt       DateTime       @default(now()) @map("created_at")
+  price           Float?         @db.Real
+  roi             Float?         @db.Real
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
 
   description String? @db.Text
   address     String? @db.VarChar(500)
-  roi         Float?
-  price       Float?
   metadata    Json?
 
-  transactions Transaction[]
+  transactions TokenTransaction[]
 
-  @@index([developerId, district], map: "idx_property_dev_district")
   @@index([status], map: "idx_property_status")
-  @@index([availableTokens], map: "idx_property_available")
+  @@index([status, district], map: "idx_property_status_district")
+  @@index([status, price], map: "idx_property_status_price")
   @@map("properties")
 }
 
-model Transaction {
-  id           String   @id @default(uuid())
-  userId       String   @map("user_id")
-  propertyId   String   @map("property_id")
+model TokenTransaction {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  propertyId   String   @map("property_id") @db.Uuid
   tokensAmount Int      @map("tokens_amount")
-  txHash       String   @unique @map("tx_hash")
-  createdAt    DateTime @default(now()) @map("created_at")
+  txHash       String   @unique @map("tx_hash") @db.VarChar(66)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Restrict)
   property Property @relation(fields: [propertyId], references: [id], onDelete: Restrict)
 
-  @@index([userId, propertyId], map: "idx_transaction_user_property")
-  @@index([txHash], map: "idx_transaction_hash")
-  @@index([createdAt], map: "idx_transaction_created")
+  @@index([userId, createdAt], map: "idx_transaction_user_time")
+  @@index([propertyId, createdAt], map: "idx_transaction_property_time")
+  @@index([userId, propertyId, createdAt], map: "idx_transaction_user_prop_time")
   @@map("transactions")
 }

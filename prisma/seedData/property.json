@@ -2,14 +2,14 @@
   {
     "id": "1e7e8e4d-4b4a-4c8b-8e8b-8e8b8e8b8e8b",
     "contractAddress": "0x1234567890123456789012345678901234567890",
-    "developerId": "dev-pik-group",
-    "title": "ЖК Садовые Кварталы",
-    "district": "ЦАО",
+    "developerId": "550e8400-e29b-41d4-a716-446655440004",
+    "title": "Maple Heights Condominiums",
+    "district": "Downtown",
     "totalTokens": 1000000,
     "availableTokens": 750000,
     "status": "ACTIVE",
-    "description": "Премиальный жилой комплекс в центре Москвы с развитой инфраструктурой и панорамными видами на город. Комплекс включает в себя современные квартиры, подземный паркинг, фитнес-центр и детские площадки.",
-    "address": "ул. Тверская, 15, Москва, 125009",
+    "description": "Premium residential complex in downtown Toronto with modern amenities and stunning city views. Features luxury apartments, underground parking, fitness center, and rooftop terrace.",
+    "address": "123 Bay Street, Toronto, ON M5J 2R8",
     "roi": 8.5,
     "price": 250000.0,
     "metadata": {
@@ -20,8 +20,8 @@
         "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800"
       ],
       "videos": ["https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4"],
-      "amenities": ["Фитнес-центр", "Подземный паркинг", "Детская площадка", "Консьерж"],
-      "buildingType": "Многоэтажный жилой комплекс",
+      "amenities": ["Fitness Center", "Underground Parking", "Rooftop Terrace", "Concierge"],
+      "buildingType": "High-rise Residential Complex",
       "yearBuilt": 2023,
       "floors": 25,
       "apartments": 180
@@ -31,14 +31,14 @@
   {
     "id": "e6ddf9c2-4d2e-4a8c-8e9b-2a3b7b3a9c5d",
     "contractAddress": "0x0987654321098765432109876543210987654321",
-    "developerId": "dev-lsr-group",
-    "title": "ЖК Северная Долина",
-    "district": "САО",
+    "developerId": "550e8400-e29b-41d4-a716-446655440005",
+    "title": "Lakefront Gardens",
+    "district": "Waterfront",
     "totalTokens": 500000,
     "availableTokens": 500000,
     "status": "COMING_SOON",
-    "description": "Современный жилой комплекс бизнес-класса в экологически чистом районе. Уникальная архитектура, собственная территория с ландшафтным дизайном и близость к природным зонам делают этот проект особенно привлекательным.",
-    "address": "Ленинградское шоссе, 47, Москва, 125212",
+    "description": "Modern business-class residential complex in an eco-friendly area. Unique architecture with landscaped grounds and proximity to Lake Ontario make this project particularly attractive.",
+    "address": "456 Queens Quay West, Toronto, ON M5V 3A8",
     "roi": 7.2,
     "price": 180000.0,
     "metadata": {
@@ -49,8 +49,8 @@
         "https://images.unsplash.com/photo-1600566752355-35792bedcfea?w=800"
       ],
       "videos": ["https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_2mb.mp4"],
-      "amenities": ["Ландшафтный парк", "Спортивная площадка", "Кафе", "Коворкинг"],
-      "buildingType": "Жилой комплекс бизнес-класса",
+      "amenities": ["Landscaped Park", "Sports Court", "Café", "Co-working Space"],
+      "buildingType": "Business-class Residential Complex",
       "yearBuilt": 2024,
       "floors": 12,
       "apartments": 120
@@ -58,16 +58,16 @@
     "createdAt": "2024-03-05T11:00:00.000Z"
   },
   {
-    "id": "f7f8f9fa-5b6c-7d8e-9f0a-1b2c3d4e5f6a",
+    "id": "f7f8f9fa-5b6c-4e8b-9f0a-1b2c3d4e5f6a",
     "contractAddress": "0xabcdef1234567890abcdef1234567890abcdef12",
-    "developerId": "dev-capital-group",
-    "title": "ЖК Московские Высоты",
-    "district": "ЮЗАО",
+    "developerId": "550e8400-e29b-41d4-a716-446655440006",
+    "title": "CN Tower Residences",
+    "district": "Financial",
     "totalTokens": 800000,
     "availableTokens": 640000,
     "status": "ACTIVE",
-    "description": "Элитный жилой комплекс с панорамными видами на Москву-реку. Премиальная отделка, собственная набережная и эксклюзивные планировки квартир от 80 до 300 кв.м.",
-    "address": "Ленинский проспект, 95, Москва, 119313",
+    "description": "Elite residential complex with panoramic views of Lake Ontario and CN Tower. Premium finishes, private waterfront access, and exclusive apartment layouts from 800 to 3000 sq ft.",
+    "address": "789 Front Street West, Toronto, ON M5V 1B5",
     "roi": 9.1,
     "price": 320000.0,
     "metadata": {
@@ -78,8 +78,8 @@
         "https://images.unsplash.com/photo-1600607688969-a5bfcd646154?w=800"
       ],
       "videos": ["https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_5mb.mp4"],
-      "amenities": ["Собственная набережная", "SPA-центр", "Ресторан", "Винный погреб", "Вертолетная площадка"],
-      "buildingType": "Элитный жилой комплекс",
+      "amenities": ["Private Waterfront", "Spa Center", "Restaurant", "Wine Cellar", "Helipad"],
+      "buildingType": "Elite Residential Complex",
       "yearBuilt": 2023,
       "floors": 35,
       "apartments": 95

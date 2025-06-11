@@ -120,7 +120,7 @@ export class UserService {
    * @returns Агрегированные балансы по объектам
    */
   async getUserTokenBalances(userId: string) {
-    const transactions = await prisma.transaction.findMany({
+    const transactions = await prisma.tokenTransaction.findMany({
       where: { userId },
       include: {
         property: {

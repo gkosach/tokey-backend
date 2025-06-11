@@ -4,6 +4,7 @@
     "cognitoId": "e40824e8-f0d1-7029-07be-f4d76a53efe3",
     "email": "test1test@gmail.com",
     "walletAddress": "0x742d35Cc6634C0532925a3b8D4C0C8b3C2e1e1e1",
+    "referralLink": "REF001-TEST1",
     "kycStatus": "COMPLETED",
     "kycProviderId": "persona_verification_123",
     "kycCompletedAt": "2024-03-15T12:00:00.000Z",
@@ -14,9 +15,21 @@
     "cognitoId": "11a8a4e8-3001-70ea-71e0-b577a78107e0",
     "email": "user2@example.com",
     "walletAddress": "0x742d35Cc6634C0532925a3b8D4C0C8b3C2e1e2e2",
+    "referralLink": "REF002-USER2",
     "kycStatus": "PENDING",
     "kycProviderId": null,
     "kycCompletedAt": null,
     "createdAt": "2024-03-12T14:30:00.000Z"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440003",
+    "cognitoId": "22b9b5f9-4002-81fb-82f1-c688b89218f1",
+    "email": "developer@tokey.com",
+    "walletAddress": "0x742d35Cc6634C0532925a3b8D4C0C8b3C2e1e3e3",
+    "referralLink": "REF003-DEV",
+    "kycStatus": "COMPLETED",
+    "kycProviderId": "persona_verification_456",
+    "kycCompletedAt": "2024-03-08T09:00:00.000Z",
+    "createdAt": "2024-03-08T08:00:00.000Z"
   }
 ]

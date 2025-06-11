@@ -218,7 +218,7 @@ export class PropertyService {
 
     const [property, transactions] = await Promise.all([
       this.getProperty(id),
-      prisma.transaction.findMany({
+      prisma.tokenTransaction.findMany({
         where: { propertyId: id },
         select: {
           tokensAmount: true,
@@ -228,7 +228,7 @@ export class PropertyService {
     ]);
 
     const totalSold = transactions.reduce((sum, tx) => sum + tx.tokensAmount, 0);
-    const totalInvestors = await prisma.transaction.groupBy({
+    const totalInvestors = await prisma.tokenTransaction.groupBy({
       by: ["userId"],
       where: { propertyId: id },
       _count: { userId: true },

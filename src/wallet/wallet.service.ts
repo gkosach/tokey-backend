@@ -68,7 +68,7 @@ export class WalletService {
       throw WalletError.notFound();
     }
 
-    const transactions = await prisma.transaction.findMany({
+    const transactions = await prisma.tokenTransaction.findMany({
       where: { userId: user.id },
       include: {
         property: {
@@ -152,7 +152,7 @@ export class WalletService {
     // Создаем транзакцию и обновляем доступные токены
     return prisma.$transaction(async (tx) => {
       // Создаем транзакцию
-      const transaction = await tx.transaction.create({
+      const transaction = await tx.tokenTransaction.create({
         data: {
           userId: user.id,
           propertyId,
@@ -201,7 +201,7 @@ export class WalletService {
     }
 
     const [transactions, total] = await Promise.all([
-      prisma.transaction.findMany({
+      prisma.tokenTransaction.findMany({
         where: { userId: user.id },
         include: {
           property: {
@@ -216,7 +216,7 @@ export class WalletService {
         take: limit,
         skip: offset,
       }),
-      prisma.transaction.count({
+      prisma.tokenTransaction.count({
         where: { userId: user.id },
       }),
     ]);
@@ -244,14 +244,14 @@ export class WalletService {
     }
 
     const [totalTransactions, totalTokens, uniqueProperties] = await Promise.all([
-      prisma.transaction.count({
+      prisma.tokenTransaction.count({
         where: { userId: user.id },
       }),
-      prisma.transaction.aggregate({
+      prisma.tokenTransaction.aggregate({
         where: { userId: user.id },
         _sum: { tokensAmount: true },
       }),
-      prisma.transaction.groupBy({
+      prisma.tokenTransaction.groupBy({
         by: ["propertyId"],
         where: { userId: user.id },
         _count: { propertyId: true },

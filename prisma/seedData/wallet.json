@@ -1,0 +1,23 @@
+[
+  {
+    "userId": "550e8400-e29b-41d4-a716-446655440001",
+    "publicKey": "0x04a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd5b8dec5235a0fa8722476c7709c02559e3aa73aa03918ba2d492eea75abea235",
+    "encryptedPrivateKey": "AES256:8f7a2b1c9d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c",
+    "keyDerivationPath": "m/44'/60'/0'/0/0",
+    "createdAt": "2024-03-10T10:00:00.000Z"
+  },
+  {
+    "userId": "550e8400-e29b-41d4-a716-446655440002",
+    "publicKey": "0x04b45ca00f33c901d4e47c3b4d4c46a47eb17337f52d793fd93c7b67ac2d61c6ce6c9fef3346a0fb9833587c8e2e3d70e4bb84aa14a918ca3d593eea86bfb346",
+    "encryptedPrivateKey": "AES256:9g8b3c2d0e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3d",
+    "keyDerivationPath": "m/44'/60'/0'/0/0",
+    "createdAt": "2024-03-12T14:30:00.000Z"
+  },
+  {
+    "userId": "550e8400-e29b-41d4-a716-446655440003",
+    "publicKey": "0x04c56db11f44da12e5f8d4c5e5d57b58fc28448g63e804ge04d8c78bd3e72d7dfd7d0gfg4457b1gc0a944698d9f3f4e81f5cc95bb25b029db4e694ffb97cgd457",
+    "encryptedPrivateKey": "AES256:0h9c4d3e1f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3e",
+    "keyDerivationPath": "m/44'/60'/0'/0/0",
+    "createdAt": "2024-03-08T08:00:00.000Z"
+  }
+]
