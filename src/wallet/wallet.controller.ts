@@ -6,7 +6,7 @@ import { WalletService } from "./wallet.service";
 export class WalletController {
   constructor(
     readonly walletService: WalletService = new WalletService(),
-    readonly tokenController: TokenController = new TokenController(), // ✅ Добавить
+    readonly tokenController: TokenController = new TokenController(),
   ) {}
 
   /**
@@ -29,6 +29,7 @@ export class WalletController {
   async getTransactionHistory(req: AuthRequest, res: Response): Promise<void> {
     return this.tokenController.getTransactionHistory(req, res);
   }
+
   /**
    * Получает информацию о кошельке
    */
@@ -58,7 +59,7 @@ export class WalletController {
   }
 
   /**
-   * Создает кошелек для пользователя (новый метод)
+   * Создает кошелек для пользователя
    */
   async createWallet(req: AuthRequest, res: Response): Promise<void> {
     if (!req.user) throw new Error("Unauthorized");

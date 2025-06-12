@@ -16,7 +16,7 @@ async function runTestsWithBadges() {
 
     // 3. Генерируем бейджи
     console.log("\n\x1b[33m🎨 Generating coverage badges...\x1b[0m");
-    execSync("node scripts/generateBadges.js", { stdio: "inherit" });
+    execSync("node non-bll-scripts/generate-badges.js", { stdio: "inherit" });
 
     console.log("\n\x1b[32m✅ All operations completed successfully!\x1b[0m");
   } catch (error) {

@@ -25,7 +25,6 @@ function validateData(modelName: string, data: any[]): void {
         }
         break;
       case "wallet":
-        // Wallet теперь использует userId как PK, не id
         if (!isValidUUID(item.userId)) {
           throw new Error(`Invalid UUID in wallet.userId: ${item.userId}`);
         }
@@ -60,12 +59,10 @@ async function seed() {
   console.log("🌱 Начинаем заполнение базы данных...");
 
   try {
-    // Проверяем, есть ли уже данные
     const userCount = await prisma.user.count();
     if (userCount > 0) {
       console.log("📊 База данных уже содержит данные, очищаем...");
 
-      // Очищаем в правильном порядке (учитывая foreign keys)
       await prisma.tokenTransaction.deleteMany();
       await prisma.property.deleteMany();
       await prisma.wallet.deleteMany();
@@ -74,7 +71,6 @@ async function seed() {
       console.log("🗑️ Очистили существующие данные");
     }
 
-    // Заполняем данные в правильном порядке
     const seedOrder = ["user", "wallet", "property", "token-transaction"] as const;
 
     for (const modelName of seedOrder) {
@@ -87,7 +83,6 @@ async function seed() {
 
       const data = JSON.parse(fs.readFileSync(filePath, "utf-8"));
 
-      // ВАЛИДАЦИЯ ДАННЫХ
       try {
         validateData(modelName, data);
         console.log(`✅ Валидация ${modelName} прошла успешно`);

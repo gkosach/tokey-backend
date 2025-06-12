@@ -155,7 +155,7 @@ export class TokenService {
           tokensAmount,
           txHash,
           fromAddress: "0x0000000000000000000000000000000000000000",
-          toAddress: user.wallet!.polygonAddress,
+          toAddress: user.wallet!.walletAddress,
           paymentAmount: paymentData.amount,
           paymentCurrency: paymentData.currency,
           transactionType: "PURCHASE",

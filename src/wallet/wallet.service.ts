@@ -6,21 +6,15 @@ export class WalletService {
    * Создает кошелек через Tatum KMS
    */
   async createWalletForUser(userId: string): Promise<string> {
-    // TODO: Из документации: generatemanagedwallet возвращает signatureId и xpub
     const tatumWallet = await this.generateTatumWallet();
 
     await prisma.wallet.create({
       data: {
         userId,
         tatumWalletId: tatumWallet.signatureId,
-        polygonAddress: tatumWallet.address,
+        walletAddress: tatumWallet.address,
         status: "active",
       },
-    });
-
-    await prisma.user.update({
-      where: { id: userId },
-      data: { walletAddress: tatumWallet.address },
     });
 
     return tatumWallet.address;
@@ -40,7 +34,7 @@ export class WalletService {
     }
 
     return {
-      polygonAddress: user.wallet.polygonAddress,
+      walletAddress: user.wallet.walletAddress, // ✅ ИСПРАВЛЕНО: используем walletAddress
       tatumWalletId: user.wallet.tatumWalletId,
       status: user.wallet.status,
       isEnabled: user.kycStatus === KycStatus.COMPLETED,
@@ -65,6 +59,7 @@ export class WalletService {
       hasWallet: !!user.wallet,
       isEnabled: user.kycStatus === KycStatus.COMPLETED,
       kycStatus: user.kycStatus,
+      walletAddress: user.wallet?.walletAddress || null,
     };
   }
 

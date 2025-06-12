@@ -25,7 +25,6 @@ model User {
   id             String    @id @default(uuid()) @db.Uuid
   cognitoId      String    @unique @map("cognito_id") @db.VarChar(128)
   email          String    @unique @db.VarChar(255)
-  walletAddress  String?   @unique @map("wallet_address") @db.VarChar(42)
   referralLink   String?   @unique @map("referral_link") @db.VarChar(50)
   kycStatus      KycStatus @default(PENDING) @map("kyc_status")
   kycProviderId  String?   @map("kyc_provider_id") @db.VarChar(100)
@@ -36,21 +35,20 @@ model User {
   wallet       Wallet?
 
   @@index([kycStatus], map: "idx_user_kyc_status")
-  @@index([walletAddress], map: "idx_user_wallet_address")
   @@map("users")
 }
 
 model Wallet {
-  userId         String   @id @map("user_id") @db.Uuid
-  tatumWalletId  String   @unique @map("tatum_wallet_id") @db.VarChar(100)
-  polygonAddress String   @unique @map("polygon_address") @db.VarChar(42)
-  status         String   @default("active") @map("status") @db.VarChar(20)
-  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  userId        String   @id @map("user_id") @db.Uuid
+  tatumWalletId String   @unique @map("tatum_wallet_id") @db.VarChar(100)
+  walletAddress String   @unique @map("wallet_address") @db.VarChar(42)
+  status        String   @default("active") @map("status") @db.VarChar(20)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([tatumWalletId], map: "idx_wallet_tatum_id")
-  @@index([polygonAddress], map: "idx_wallet_polygon_address")
+  @@index([walletAddress], map: "idx_wallet_wallet_address")
   @@map("wallets")
 }
 
