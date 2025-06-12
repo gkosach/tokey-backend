@@ -21,7 +21,6 @@ describe("UserService - Critical Tests", () => {
       const mockCreatedUser = {
         id: "user-456",
         ...userData,
-        walletAddress: null, // КРИТИЧНО: должен быть null до создания кошелька
         kycStatus: KycStatus.PENDING, // КРИТИЧНО: должен быть PENDING по умолчанию
         referralLink: null,
         kycProviderId: null,
@@ -37,11 +36,10 @@ describe("UserService - Critical Tests", () => {
         data: {
           cognitoId: "new-123",
           email: "new@tokey.com",
-          kycStatus: KycStatus.PENDING, // КРИТИЧНО: проверяем default статус
+          kycStatus: KycStatus.PENDING,
         },
       });
       expect(result.kycStatus).toBe(KycStatus.PENDING);
-      expect(result.walletAddress).toBeNull(); // КРИТИЧНО: кошелек создается отдельно
     });
 
     it("🔴 КРИТИЧНО: обрабатывает дублирование пользователей", async () => {
@@ -66,15 +64,13 @@ describe("UserService - Critical Tests", () => {
   // Влияние: Все операции с пользователями перестанут работать
   describe("getUserByCognitoId", () => {
     it("🔴 КРИТИЧНО: возвращает пользователя с кошельком", async () => {
-      // Этот метод используется в: WalletService, TokenService, KycService
       const mockUser = {
         id: "user-123",
         cognitoId: "cognito-123",
         email: "test@tokey.com",
         kycStatus: KycStatus.COMPLETED,
         wallet: {
-          // КРИТИЧНО: должен включать wallet для других модулей
-          polygonAddress: "0x123...",
+          walletAddress: "0x123...",
           tatumWalletId: "tatum_123",
           status: "active",
         },
