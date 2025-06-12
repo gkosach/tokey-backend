@@ -14,7 +14,6 @@ describe("KycService - Critical Tests", () => {
     kycService = new KycService();
     jest.clearAllMocks();
 
-    // Инициализация axios мока
     const axiosMock = createAxiosMock();
     mockedAxios = axiosMock.mockedAxios;
     apiErrors = axiosMock.apiErrors;
@@ -27,7 +26,6 @@ describe("KycService - Critical Tests", () => {
     it("🔴 КРИТИЧНО: правильно обрабатывает ошибки Persona API", async () => {
       const mockUser = mockUsers.kycPending;
 
-      // ✅ ИСПРАВЛЕНО: Используем MockTransactionClient вместо Prisma.TransactionClient
       prisma.$transaction.mockImplementation(
         createTransactionMock({
           user: {
@@ -36,7 +34,6 @@ describe("KycService - Critical Tests", () => {
         }),
       );
 
-      // Используем готовую ошибку из мока
       mockedAxios.post.mockRejectedValue(apiErrors.persona400);
 
       await expect(kycService.initiateVerification("cognito-123")).rejects.toThrow(

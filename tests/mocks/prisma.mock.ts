@@ -90,7 +90,6 @@ export const mockUsers = {
     email: "test@tokey.com",
     kycStatus: KycStatus.PENDING,
     kycProviderId: null,
-    walletAddress: null,
     createdAt: new Date(),
   },
   kycCompleted: {
@@ -100,8 +99,7 @@ export const mockUsers = {
     kycStatus: KycStatus.COMPLETED,
     kycProviderId: "persona_123",
     wallet: {
-      polygonAddress: "0x123...",
-      tatumWalletId: "tatum_123",
+      walletAddress: "0x123...",
       status: "active",
     },
   },

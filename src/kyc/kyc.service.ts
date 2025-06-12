@@ -238,7 +238,6 @@ export class KycService {
         kycStatus: true,
         kycProviderId: true,
         kycCompletedAt: true,
-        walletAddress: true,
       },
     });
 
@@ -247,7 +246,6 @@ export class KycService {
       verificationId: user.kycProviderId,
       completedAt: user.kycCompletedAt,
       walletEnabled: user.kycStatus === KycStatus.COMPLETED,
-      walletAddress: user.walletAddress,
     };
   }
 

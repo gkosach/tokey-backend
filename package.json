@@ -8,6 +8,7 @@
     "prestart": "npm run build",
     "start": "node dist/main.js",
     "format:prettier": "prettier . --write",
+    "seed": "ts-node prisma/seed.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "jest --coverage",
