@@ -12,6 +12,7 @@
     "lint:fix": "eslint . --fix",
     "test": "jest --coverage",
     "test:unit": "jest tests/unit",
+    "test:badges": "npm run test && npm run generate:badges",
     "test:full": "node non-bll-scripts/test-with-badges.js",
     "generate:badges": "node non-bll-scripts/generate-badges.js",
     "prepare": "husky || true",
