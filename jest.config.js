@@ -11,14 +11,7 @@ module.exports = {
     "^.+\\.ts$": [
       "ts-jest",
       {
-        tsconfig: {
-          module: "commonjs",
-          target: "es2020",
-          esModuleInterop: true,
-          allowSyntheticDefaultImports: true,
-          experimentalDecorators: true,
-          emitDecoratorMetadata: true,
-        },
+        tsconfig: "./tsconfig.test.json",
       },
     ],
   },
@@ -29,7 +22,16 @@ module.exports = {
     "^src/(.*)$": "<rootDir>/src/$1",
   },
 
-  collectCoverageFrom: ["src/**/*.ts", "!src/**/*.spec.ts", "!src/**/*.test.ts", "!src/**/index.ts", "!src/index.ts"],
+  collectCoverageFrom: [
+    "src/**/*.ts",
+    "!src/**/*.spec.ts",
+    "!src/**/*.test.ts",
+    "!src/**/index.ts",
+    "!src/index.ts",
+    "!src/**/*.d.ts",
+    "!src/**/types/**",
+    "!src/**/interfaces/**",
+  ],
 
   coverageDirectory: "coverage",
   coverageReporters: ["text", "lcov", "json-summary", "html"],
@@ -44,6 +46,10 @@ module.exports = {
   },
 
   modulePathIgnorePatterns: ["<rootDir>/dist/"],
-  setupFiles: ["<rootDir>/tests/setup/jest-setup.ts"],
-  testRegex: "(/__tests__/.*|(\\.|/)(test|spec))\\.ts$",
+  setupFilesAfterEnv: ["<rootDir>/tests/setup/jest-setup.ts"],
+  testMatch: ["<rootDir>/tests/**/*.test.ts", "<rootDir>/tests/**/*.spec.ts"],
+  resetMocks: true,
+  restoreMocks: true,
+  maxWorkers: 1,
+  transformIgnorePatterns: ["node_modules/(?!(axios|@tatum)/)"],
 };

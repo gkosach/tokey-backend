@@ -1,9 +1,7 @@
 import { KycStatus, User } from "@prisma/client";
 import axios, { AxiosError } from "axios";
-import { prisma } from "../common";
-import { KycError } from "./contract/error/kyc.error";
-import { KycInquiryResponse } from "./contract/kyc-inquiry-response.type";
-import { KycInquiryStatus } from "./contract/kyc-inquiry-status.enum";
+import { KycError, prisma } from "../common";
+import { KycInquiryResponse, KycInquiryStatus } from "./index";
 
 /**
  * Сервис для управления процессом верификации пользователей (KYC)
@@ -13,7 +11,6 @@ export class KycService {
   private readonly personaTemplateId: string;
 
   constructor() {
-    // Инициализация ключей Persona из переменных окружения
     this.personaApiKey = process.env.PERSONA_API_KEY!;
     this.personaTemplateId = process.env.PERSONA_TEMPLATE_ID!;
   }
@@ -41,21 +38,15 @@ export class KycService {
       const user = await tx.user.findUniqueOrThrow({
         where: { cognitoId: userId },
       });
-
-      // Если уже есть активная верификация
       if (user.kycStatus === KycStatus.PENDING && user.kycProviderId) {
         return { inquiryId: user.kycProviderId };
       }
 
-      // Если KYC уже завершен
       if (user.kycStatus === KycStatus.COMPLETED) {
         throw KycError.alreadyVerified();
       }
-
-      // Создаем новую верификацию в Persona
       const inquiry = await this.createPersonaInquiry(user);
 
-      // Обновляем статус пользователя
       await tx.user.update({
         where: { cognitoId: user.cognitoId },
         data: {
@@ -82,7 +73,6 @@ export class KycService {
               "reference-id": user.cognitoId,
               fields: {
                 "email-address": user.email,
-                // Убрали phone-number так как его нет в новой схеме
               },
             },
           },
@@ -97,17 +87,13 @@ export class KycService {
       );
 
       return { id: response.data.data.id };
-    } catch (error) {
-      if (error instanceof AxiosError) {
-        console.error("Persona API error:", error.response?.data);
-        throw KycError.providerError(`Persona API error: ${error.response?.status}`);
-      } else if (error instanceof Error) {
-        console.error("Unexpected error:", error.message);
-        throw KycError.providerError(`Unexpected error: ${error.message}`);
-      } else {
-        console.error("Unknown error:", error);
-        throw KycError.providerError("Unknown error occurred");
+    } catch (error: any) {
+      const status = error?.response?.status ?? "unknown";
+      const details = error?.response?.data?.error ?? error?.message ?? "";
+      if (error?.response) {
+        throw KycError.providerError(`Persona API error: ${status} - ${details}`);
       }
+      throw KycError.providerError("Unknown Persona API error");
     }
   }
 
@@ -118,15 +104,12 @@ export class KycService {
    */
   async handleWebhook(verificationId: string, status: "approved" | "declined"): Promise<void> {
     const user = await prisma.user.findFirst({
-      where: { kycProviderId: verificationId }, // Исправлено поле
+      where: { kycProviderId: verificationId },
     });
 
     if (!user) throw KycError.verificationNotFound();
-
-    // Используем правильные статусы из новой схемы
     const newStatus = status === "approved" ? KycStatus.COMPLETED : KycStatus.REJECTED;
 
-    // Убрали обновление wallet так как модели Wallet больше нет
     await prisma.user.update({
       where: { cognitoId: user.cognitoId },
       data: {
@@ -255,7 +238,7 @@ export class KycService {
         kycStatus: true,
         kycProviderId: true,
         kycCompletedAt: true,
-        walletAddress: true, // Добавляем адрес кошелька
+        walletAddress: true,
       },
     });
 

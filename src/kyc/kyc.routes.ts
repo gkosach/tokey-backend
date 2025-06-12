@@ -3,6 +3,11 @@ import { authMiddleware } from "../middleware/auth.middleware";
 import { personaWebhookMiddleware } from "../middleware/persona-webhook.middleware";
 import { kycController } from "./kyc.controller";
 
+/**
+ * Определяют URL paths и HTTP методы
+ * Подключают middleware (auth, validation)
+ * Делегируют обработку контроллерам
+ */
 const router = express.Router();
 
 router.get("/status", authMiddleware(), (req, res, next) => {

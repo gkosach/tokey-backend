@@ -1,6 +1,6 @@
-# TyKey Backend
+# ToKey Backend
 
-[![Coverage](./assets/coverage/badge-lines.svg)](./coverage/lcov-report/index.html)
+[![Coverage](./assets/coverage/badge-coverage.svg)](./coverage/lcov-report/index.html)
 [![Statements](./assets/coverage/badge-statements.svg)](./coverage/lcov-report/index.html)
 [![Branches](./assets/coverage/badge-branches.svg)](./coverage/lcov-report/index.html)
 [![Functions](./assets/coverage/badge-functions.svg)](./coverage/lcov-report/index.html)
@@ -23,8 +23,28 @@ cp .env.example .development.env
 
 ### 3. Запуск с Docker
 
+#### Локальная разработка
+
 ```bash
-docker compose up -d
+# 1. Поднять Docker с локальной БД (dev_user/dev_password/dev_db)
+docker-compose --env-file .development.env up -d
+```
+
+```bash
+# 2. Миграции локально
+dotenv -e .development.env -- npx prisma migrate dev --name wallet
+```
+
+```bash
+# 3. Заполнение данными
+dotenv -e .development.env -- npm run seed
+```
+
+#### Продакшен
+
+```bash
+# Поднять Docker с продакшен БД (german/prioraKisel124!/sona)
+docker-compose up -d
 ```
 
 ### 4. Настройка базы данных
@@ -74,17 +94,18 @@ npm run dev
 
 ## Документация
 
-| Раздел                                          | Описание                         |
-| ----------------------------------------------- | -------------------------------- |
-| [Конфигурация](assets/docs/configuration.md)    | Настройка окружения и переменных |
-| [База данных](assets/docs/database.md)          | Схема БД, миграции и Prisma      |
-| [API Endpoints](assets/docs/api.md)             | REST API эндпоинты               |
-| [Аутентификация](assets/docs/authentication.md) | AWS Cognito и JWT токены         |
-| [KYC интеграция](assets/docs/kyc.md)            | Persona API и верификация        |
-| [HSM интеграция](assets/docs/hsm.md)            | Управление кошельками и ключами  |
-| [Развертывание](assets/docs/deployment.md)      | Docker и production деплой       |
-| [Безопасность](assets/docs/security.md)         | Политики безопасности и GDPR     |
-| [CI/CD Process](assets/docs/cicd.md)            | Git hooks и автоматизация        |
+| Раздел                                                    | Описание                                   |
+| --------------------------------------------------------- | ------------------------------------------ |
+| [Конфигурация](assets/docs/configuration.md)              | Настройка окружения и переменных           |
+| [Модульная архитектура](assets/docs/development-guide.md) | Гайд по архитектуре и поддержке приложения |
+| [База данных & Prisma](assets/docs/prisma.md)             | Скрипты миграциq к Prisma                  |
+| [API Endpoints](assets/docs/api.md)                       | REST API эндпоинты                         |
+| [Аутентификация](assets/docs/authentication.md)           | AWS Cognito и JWT токены                   |
+| [KYC интеграция](assets/docs/kyc.md)                      | Persona API и верификация                  |
+| [HSM интеграция](assets/docs/hsm.md)                      | Управление кошельками и ключами            |
+| [Развертывание](assets/docs/deployment.md)                | Docker и production деплой                 |
+| [Безопасность](assets/docs/security.md)                   | Политики безопасности и GDPR               |
+| [CI/CD Process](assets/docs/cicd.md)                      | Git hooks и автоматизация                  |
 
 ## Требования к окружению
 

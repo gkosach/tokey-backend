@@ -1,142 +1,74 @@
-import { NextFunction, Request, Response } from "express";
+import { Response } from "express";
+import { AuthRequest } from "../common";
+import { TokenController } from "../token/token.controller";
 import { WalletService } from "./wallet.service";
 
 export class WalletController {
-  private service = new WalletService();
+  constructor(
+    readonly walletService: WalletService = new WalletService(),
+    readonly tokenController: TokenController = new TokenController(), // ✅ Добавить
+  ) {}
 
   /**
-   * Получает информацию о HSM кошельке пользователя
-   * @returns Информация о кошельке и его статусе
+   * Получает балансы токенов (делегируем в TokenController)
    */
-  async getWalletInfo(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      if (!req.user) throw new Error("Unauthorized");
-
-      const walletInfo = await this.service.getWalletInfo(req.user.id);
-
-      res.json({
-        success: true,
-        data: walletInfo,
-      });
-    } catch (error) {
-      next(error);
-    }
+  async getTokenBalances(req: AuthRequest, res: Response): Promise<void> {
+    return this.tokenController.getTokenBalances(req, res);
   }
 
   /**
-   * Получает балансы токенов по всем объектам недвижимости
-   * @returns Балансы токенов пользователя
+   * Покупка токенов (делегируем в TokenController)
    */
-  async getTokenBalances(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      if (!req.user) throw new Error("Unauthorized");
-
-      const balances = await this.service.getTokenBalances(req.user.id);
-
-      res.json({
-        success: true,
-        data: balances,
-      });
-    } catch (error) {
-      next(error);
-    }
+  async purchaseTokens(req: AuthRequest, res: Response): Promise<void> {
+    return this.tokenController.purchaseTokens(req, res);
   }
 
   /**
-   * Покупает токены недвижимости
-   * @returns Информация о созданной транзакции
+   * История транзакций (делегируем в TokenController)
    */
-  async purchaseTokens(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      if (!req.user) throw new Error("Unauthorized");
+  async getTransactionHistory(req: AuthRequest, res: Response): Promise<void> {
+    return this.tokenController.getTransactionHistory(req, res);
+  }
+  /**
+   * Получает информацию о кошельке
+   */
+  async getWalletInfo(req: AuthRequest, res: Response): Promise<void> {
+    if (!req.user) throw new Error("Unauthorized");
 
-      const { propertyId, tokensAmount, txHash } = req.body;
+    const wallet = await this.walletService.getWalletByUserId(req.user.id);
 
-      if (!propertyId || !tokensAmount || !txHash) {
-        res.status(400).json({
-          success: false,
-          error: "Missing required fields: propertyId, tokensAmount, txHash",
-        });
-        return;
-      }
-
-      const transaction = await this.service.purchaseTokens(req.user.id, propertyId, tokensAmount, txHash);
-
-      res.status(201).json({
-        success: true,
-        data: transaction,
-      });
-    } catch (error) {
-      next(error);
-    }
+    res.json({
+      success: true,
+      data: wallet,
+    });
   }
 
   /**
-   * Получает историю транзакций пользователя
-   * @returns История транзакций с пагинацией
+   * Проверка статуса кошелька
    */
-  async getTransactionHistory(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      if (!req.user) throw new Error("Unauthorized");
+  async checkWalletStatus(req: AuthRequest, res: Response): Promise<void> {
+    if (!req.user) throw new Error("Unauthorized");
 
-      const { limit, offset } = req.query;
+    const status = await this.walletService.checkWalletStatus(req.user.id);
 
-      const history = await this.service.getTransactionHistory(
-        req.user.id,
-        limit ? parseInt(limit as string) : 20,
-        offset ? parseInt(offset as string) : 0,
-      );
-
-      res.json({
-        success: true,
-        data: history,
-      });
-    } catch (error) {
-      next(error);
-    }
+    res.json({
+      success: true,
+      data: status,
+    });
   }
 
   /**
-   * Получает статистику кошелька пользователя
-   * @returns Общая статистика по кошельку
+   * Создает кошелек для пользователя (новый метод)
    */
-  async getWalletStats(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      if (!req.user) throw new Error("Unauthorized");
+  async createWallet(req: AuthRequest, res: Response): Promise<void> {
+    if (!req.user) throw new Error("Unauthorized");
 
-      const stats = await this.service.getWalletStats(req.user.id);
+    const walletAddress = await this.walletService.createWalletForUser(req.user.id);
 
-      res.json({
-        success: true,
-        data: stats,
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * Проверяет статус кошелька (доступен ли для операций)
-   * @returns Статус доступности кошелька
-   */
-  async checkWalletStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      if (!req.user) throw new Error("Unauthorized");
-
-      const isEnabled = await this.service.isWalletEnabled(req.user.id);
-
-      res.json({
-        success: true,
-        data: {
-          isEnabled,
-          message: isEnabled
-            ? "Wallet is enabled and ready for operations"
-            : "Wallet requires KYC completion to be enabled",
-        },
-      });
-    } catch (error) {
-      next(error);
-    }
+    res.status(201).json({
+      success: true,
+      data: { walletAddress },
+    });
   }
 }
 
