@@ -25,7 +25,7 @@ model User {
   id             String    @id @default(uuid()) @db.Uuid
   cognitoId      String    @unique @map("cognito_id") @db.VarChar(128)
   email          String    @unique @db.VarChar(255)
-  walletAddress  String    @unique @map("wallet_address") @db.VarChar(42)
+  walletAddress  String?   @unique @map("wallet_address") @db.VarChar(42)
   referralLink   String?   @unique @map("referral_link") @db.VarChar(50)
   kycStatus      KycStatus @default(PENDING) @map("kyc_status")
   kycProviderId  String?   @map("kyc_provider_id") @db.VarChar(100)
@@ -36,20 +36,21 @@ model User {
   wallet       Wallet?
 
   @@index([kycStatus], map: "idx_user_kyc_status")
-  @@index([kycStatus, createdAt], map: "idx_user_kyc_created")
+  @@index([walletAddress], map: "idx_user_wallet_address")
   @@map("users")
 }
 
 model Wallet {
-  userId              String   @id @map("user_id") @db.Uuid
-  publicKey           String   @map("public_key")
-  encryptedPrivateKey String   @map("encrypted_private_key")
-  keyDerivationPath   String   @map("key_derivation_path")
-  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  userId         String   @id @map("user_id") @db.Uuid
+  tatumWalletId  String   @unique @map("tatum_wallet_id") @db.VarChar(100)
+  polygonAddress String   @unique @map("polygon_address") @db.VarChar(42)
+  status         String   @default("active") @map("status") @db.VarChar(20)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([publicKey], map: "idx_wallet_public_key")
+  @@index([tatumWalletId], map: "idx_wallet_tatum_id")
+  @@index([polygonAddress], map: "idx_wallet_polygon_address")
   @@map("wallets")
 }
 
@@ -79,18 +80,26 @@ model Property {
 }
 
 model TokenTransaction {
-  id           String   @id @default(uuid()) @db.Uuid
-  userId       String   @map("user_id") @db.Uuid
-  propertyId   String   @map("property_id") @db.Uuid
-  tokensAmount Int      @map("tokens_amount")
-  txHash       String   @unique @map("tx_hash") @db.VarChar(66)
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  id              String @id @default(uuid()) @db.Uuid
+  userId          String @map("user_id") @db.Uuid
+  propertyId      String @map("property_id") @db.Uuid
+  tokensAmount    Int    @map("tokens_amount")
+  txHash          String @unique @map("tx_hash") @db.VarChar(66)
+  fromAddress     String @map("from_address") @db.VarChar(42)
+  toAddress       String @map("to_address") @db.VarChar(42)
+  paymentAmount   Float  @map("payment_amount") @db.Real
+  paymentCurrency String @map("payment_currency") @db.VarChar(10)
+  transactionType String @map("transaction_type") @db.VarChar(20)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Restrict)
   property Property @relation(fields: [propertyId], references: [id], onDelete: Restrict)
 
   @@index([userId, createdAt], map: "idx_transaction_user_time")
   @@index([propertyId, createdAt], map: "idx_transaction_property_time")
-  @@index([userId, propertyId, createdAt], map: "idx_transaction_user_prop_time")
+  @@index([fromAddress], map: "idx_transaction_from")
+  @@index([toAddress], map: "idx_transaction_to")
+  @@index([transactionType], map: "idx_transaction_type")
   @@map("transactions")
 }
