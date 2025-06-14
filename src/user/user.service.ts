@@ -21,42 +21,33 @@ export class UserService {
       throw UserError.databaseError("User creation failed");
     }
   }
+
   /**
-   * Получает пользователя по Cognito ID БЕЗ транзакций
+   * Получает пользователя по ID (первичный ключ)
    */
-  async getUserByCognitoId(cognitoId: string): Promise<User> {
-    try {
-      return await prisma.user.findUniqueOrThrow({
-        where: { cognitoId },
-        include: {
-          wallet: true,
-        },
-      });
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
-        throw UserError.notFound();
-      }
-      throw UserError.databaseError("User lookup failed");
-    }
+  async getUserById(id: string): Promise<User> {
+    return prisma.user.findUniqueOrThrow({
+      where: { id },
+    });
   }
 
   /**
-   * Завершает KYC верификацию
+   * Получает пользователя по Cognito ID
    */
-  async completeKycVerification(cognitoId: string, status: KycStatus): Promise<User> {
+  async getUserByCognitoId(cognitoId: string): Promise<User> {
+    console.log("🔍 UserService.getUserByCognitoId - searching for:", cognitoId);
+
     try {
-      return await prisma.user.update({
+      const user = await prisma.user.findUniqueOrThrow({
         where: { cognitoId },
-        data: {
-          kycStatus: status,
-          kycCompletedAt: status === KycStatus.COMPLETED ? new Date() : null,
-        },
       });
+
+      console.log("✅ Found user:", { id: user.id, email: user.email });
+      return user;
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
-        throw UserError.notFound();
-      }
-      throw UserError.databaseError("KYC verification update failed");
+      console.error("❌ User not found for cognitoId:", cognitoId);
+      console.error("💥 Error:", error);
+      throw error;
     }
   }
 

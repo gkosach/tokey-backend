@@ -1,4 +1,4 @@
-import { ModuleConfig } from "../common/interface/module.interface";
+import { ModuleConfig } from "../common/interfaces/module.interface";
 import { KycController } from "./kyc.controller";
 import kycRoutes from "./kyc.routes";
 import { KycService } from "./kyc.service";

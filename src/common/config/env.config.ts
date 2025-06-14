@@ -44,6 +44,8 @@ export function validateEnvConfig(): void {
     "POSTGRES_DB",
     "POSTGRES_USER",
     "POSTGRES_PASSWORD",
+    "TATUM_API_KEY",
+    "TATUM_API_URL",
   ];
   const missingVars = requiredVars.filter((varName) => !process.env[varName]);
 
@@ -59,6 +61,4 @@ export function validateEnvConfig(): void {
   if (!["development", "production", "test"].includes(process.env.NODE_ENV || "")) {
     console.warn("⚠️ NODE_ENV should be one of: development, production, test");
   }
-
-  console.log("✅ All environment variables validated successfully");
 }

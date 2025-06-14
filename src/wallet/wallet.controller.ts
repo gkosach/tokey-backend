@@ -1,42 +1,76 @@
 import { Response } from "express";
 import { AuthRequest } from "../common";
-import { TokenController } from "../token/token.controller";
+import { KycService } from "../kyc/kyc.service";
+import { UserService } from "../user/user.service";
 import { WalletService } from "./wallet.service";
 
 export class WalletController {
-  constructor(
-    readonly walletService: WalletService = new WalletService(),
-    readonly tokenController: TokenController = new TokenController(),
-  ) {}
+  private kycService: KycService;
+  private walletService: WalletService;
+  private userService: UserService;
 
-  /**
-   * Получает балансы токенов (делегируем в TokenController)
-   */
-  async getTokenBalances(req: AuthRequest, res: Response): Promise<void> {
-    return this.tokenController.getTokenBalances(req, res);
+  constructor() {
+    this.kycService = new KycService();
+    this.walletService = new WalletService();
+    this.userService = new UserService();
   }
 
   /**
-   * Покупка токенов (делегируем в TokenController)
+   * Создает кошелек
    */
-  async purchaseTokens(req: AuthRequest, res: Response): Promise<void> {
-    return this.tokenController.purchaseTokens(req, res);
+  async createWallet(req: AuthRequest, res: Response): Promise<void> {
+    if (!req.user) throw new Error("Unauthorized");
+
+    const user = await this.userService.getUserByCognitoId(req.user.id);
+    const walletAddress = await this.walletService.createWalletForUser(user.id);
+
+    res.status(201).json({
+      success: true,
+      data: { walletAddress },
+      message: "Wallet created successfully",
+    });
   }
 
   /**
-   * История транзакций (делегируем в TokenController)
+   * Получает полный профиль пользователя (KYC + Wallet)
    */
-  async getTransactionHistory(req: AuthRequest, res: Response): Promise<void> {
-    return this.tokenController.getTransactionHistory(req, res);
+  async getUserProfile(req: AuthRequest, res: Response): Promise<void> {
+    if (!req.user) throw new Error("Unauthorized");
+
+    // req.user.id содержит cognitoId, используем его везде последовательно
+    const user = await this.userService.getUserByCognitoId(req.user.id);
+    const kycDetails = await this.kycService.getKycDetails(req.user.id);
+
+    const hasWallet = await this.walletService.hasWallet(user.id);
+
+    let walletInfo = null;
+    if (hasWallet) {
+      walletInfo = await this.walletService.getWalletByUserId(user.id);
+    }
+
+    res.json({
+      success: true,
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          createdAt: user.createdAt,
+        },
+        kyc: kycDetails,
+        wallet: walletInfo,
+        canCreateWallet: kycDetails.walletEnabled && !hasWallet,
+      },
+    });
   }
 
   /**
-   * Получает информацию о кошельке
+   * Получает информацию только о кошельке
    */
   async getWalletInfo(req: AuthRequest, res: Response): Promise<void> {
     if (!req.user) throw new Error("Unauthorized");
 
-    const wallet = await this.walletService.getWalletByUserId(req.user.id);
+    const user = await this.userService.getUserByCognitoId(req.user.id);
+    const wallet = await this.walletService.getWalletByUserId(user.id);
 
     res.json({
       success: true,
@@ -45,30 +79,23 @@ export class WalletController {
   }
 
   /**
-   * Проверка статуса кошелька
+   * Получает баланс кошелька
    */
-  async checkWalletStatus(req: AuthRequest, res: Response): Promise<void> {
+  async getWalletBalance(req: AuthRequest, res: Response): Promise<void> {
     if (!req.user) throw new Error("Unauthorized");
 
-    const status = await this.walletService.checkWalletStatus(req.user.id);
+    const canPerformOperations = await this.kycService.canPerformOperations(req.user.id);
+    if (!canPerformOperations) {
+      throw new Error("KYC verification required for balance operations");
+    }
+
+    const user = await this.userService.getUserByCognitoId(req.user.id);
+    const wallet = await this.walletService.getWalletByUserId(user.id);
+    const balance = await this.walletService.getWalletBalance(wallet.walletAddress);
 
     res.json({
       success: true,
-      data: status,
-    });
-  }
-
-  /**
-   * Создает кошелек для пользователя
-   */
-  async createWallet(req: AuthRequest, res: Response): Promise<void> {
-    if (!req.user) throw new Error("Unauthorized");
-
-    const walletAddress = await this.walletService.createWalletForUser(req.user.id);
-
-    res.status(201).json({
-      success: true,
-      data: { walletAddress },
+      data: { balance },
     });
   }
 }

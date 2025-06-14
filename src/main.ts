@@ -1,42 +1,36 @@
 import cors from "cors";
 import dotenv from "dotenv";
 import express, { NextFunction, Request, Response, Router } from "express";
-import "express-async-errors"; // Добавить в начало
+import "express-async-errors";
 import helmet from "helmet";
 import morgan from "morgan";
-import { validateEnvConfig } from "./common/config/env.config";
-import { handlePrismaError } from "./common/utils/error.handler";
+import { handlePrismaError, validateEnvConfig } from "./common";
 import { APP_ROUTES } from "./index";
 
-/** Определение файла окружения */
-const envFile = process.env.NODE_ENV === "production" ? ".env" : ".development.env";
-
-const result = dotenv.config({ path: envFile });
-
-if (result.error) {
-  console.error(`❌ Error loading environment file: ${envFile}`);
-  process.exit(1);
+/** Загрузка переменных окружения */
+if (!process.env.DATABASE_URL) {
+  const envFile = process.env.NODE_ENV === "production" ? ".env" : ".development.env";
+  dotenv.config({ path: envFile });
 }
 
-/** Валидируем переменные окружения при старте */
+/** Валидация переменных окружения */
 try {
   validateEnvConfig();
-  console.log(`✅ Environment validated successfully: ${process.env.NODE_ENV}`);
+  console.log(`✅ Environment validated: ${process.env.NODE_ENV}`);
 } catch (error) {
-  console.error(`❌ Environment validation failed:`, (error as Error).message);
-  process.exit(1);
+  console.warn(`⚠️ Environment validation warning:`, (error as Error).message);
 }
 
 const app = express();
 
-/** Middleware для безопасности */
+/** Middleware */
 app.use(helmet());
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
 
-/** Middleware для логирования */
-app.use(morgan("dev"));
+if (process.env.NODE_ENV === "production") {
+  app.use(morgan("combined"));
+}
 
-/** Middleware для парсинга запросов */
 app.use(
   express.json({
     verify: (req, _, buf) => {
@@ -46,7 +40,7 @@ app.use(
 );
 app.use(express.urlencoded({ extended: true }));
 
-/** CORS конфигурация */
+/** CORS */
 app.use(
   cors({
     origin: ["http://localhost:3000", "https://trytokey.com"],
@@ -57,42 +51,48 @@ app.use(
   }),
 );
 
-/** Обработка preflight запросов */
-app.options("*", cors());
-
-/** Development логирование */
+/** Development логирование (оптимизированное) */
 if (process.env.NODE_ENV === "development") {
   app.use((req: Request, res: Response, next: NextFunction): void => {
-    console.log(`${req.method} ${req.path}`);
-    console.log("Body:", req.body);
+    if (!req.path.includes("/favicon") && !req.path.includes("/assets")) {
+      console.log(`${req.method} ${req.path}`);
+      if (["POST", "PUT", "PATCH"].includes(req.method) && Object.keys(req.body).length > 0) {
+        console.log("Body:", req.body);
+      }
+    }
     next();
   });
 }
 
-/** Health check endpoint */
+/** Health check */
 app.get("/", (req: Request, res: Response): void => {
   res.json({
     message: "Real Estate Tokenization API",
     status: "healthy",
     timestamp: new Date().toISOString(),
     version: "1.0.0",
+    environment: process.env.NODE_ENV || "unknown",
   });
 });
 
-/** Автоматическая регистрация всех модульных маршрутов */
+/** Регистрация маршрутов */
+const routeMap = [
+  "/api/users", // UserModule
+  "/api/wallets", // WalletModule
+  "/api/properties", // PropertyModule
+  "/api/kyc", // KycModule
+  "/api/tokens", // TokenModule
+  "/api/files", // FileModule
+];
 APP_ROUTES.forEach((route: Router, index: number) => {
-  const routePath = getRoutePathFromModule(route, index);
+  const routePath = routeMap[index] || `/api/module${index}`;
   app.use(routePath, route);
-  console.log(`📍 Registered route: ${routePath}`);
+  if (process.env.NODE_ENV === "development") {
+    console.log(`📍 Registered route: ${routePath}`);
+  }
 });
 
-/** Функция для определения пути маршрута */
-function getRoutePathFromModule(route: Router, index: number): string {
-  const routeMap = ["/api/users", "/api/wallets", "/api/properties", "/api/kyc", "/api/tokens", "/api/files"];
-  return routeMap[index] || `/api/module${index}`;
-}
-
-/** Обработка несуществующих маршрутов */
+/** 404 handler */
 app.use("*", (req: Request, res: Response): void => {
   res.status(404).json({
     success: false,
@@ -101,17 +101,10 @@ app.use("*", (req: Request, res: Response): void => {
   });
 });
 
-/** Глобальный обработчик ошибок */
+/** Error handler */
 app.use((error: any, req: Request, res: Response, next: NextFunction): void => {
   const errorResponse = handlePrismaError(error);
-
-  console.error("Error occurred:", {
-    path: req.path,
-    method: req.method,
-    error: error.message,
-    stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
-    timestamp: new Date().toISOString(),
-  });
+  console.error(`❌ ${req.method} ${req.path} - ${error.message}`);
 
   res.status(errorResponse.status).json({
     success: false,
@@ -119,15 +112,23 @@ app.use((error: any, req: Request, res: Response, next: NextFunction): void => {
     timestamp: new Date().toISOString(),
     ...(process.env.NODE_ENV === "development" && {
       details: errorResponse.details || errorResponse.field,
-      stack: error.stack,
     }),
   });
+});
+
+/** Graceful error handling */
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("⚠️ Unhandled Rejection:", reason);
+});
+
+process.on("uncaughtException", (error) => {
+  console.error("⚠️ Uncaught Exception:", error);
 });
 
 /** Запуск сервера */
 const port = Number(process.env.PORT) || 3002;
 app.listen(port, "0.0.0.0", (): void => {
-  console.log(`🚀 Server started on port ${port} | Environment: ${process.env.NODE_ENV}`);
+  console.log(`🚀 Server started on port ${port} | Environment: ${process.env.NODE_ENV || "unknown"}`);
   console.log(`📍 Health check: http://localhost:${port}/`);
   console.log(`📦 Loaded ${APP_ROUTES.length} modules`);
 });

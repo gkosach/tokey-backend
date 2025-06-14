@@ -1,4 +1,4 @@
-import { ModuleConfig } from "../common/interface/module.interface";
+import { ModuleConfig } from "../common/interfaces/module.interface";
 import { FileController } from "./file.controller";
 import fileRoutes from "./file.routes";
 import { FileService } from "./file.service";

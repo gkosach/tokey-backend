@@ -1,0 +1,59 @@
+services:
+  back-app:
+    container_name: back-app-prod
+    build:
+      context: .
+    env_file:
+      - .env
+    environment:
+      - HUSKY=0
+      - NODE_ENV=production
+    working_dir: /app
+    command: sh -c "
+      npm ci --only=production &&
+      npx prisma migrate deploy &&
+      npx prisma generate &&
+      npm run build &&
+      npm run start   "
+    networks:
+      - site
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  db:
+    container_name: postgres-db-prod
+    image: postgres:14-alpine
+    environment:
+      - POSTGRES_DB=sona
+      - POSTGRES_USER=german
+      - POSTGRES_PASSWORD=prioraKisel124!
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - site
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U german -d sona"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+networks:
+  site:
+    driver: bridge
+
+volumes:
+  postgres_data_prod:

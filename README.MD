@@ -25,72 +25,25 @@ cp .env.example .development.env
 
 #### Локальная разработка
 
-```bash
-# 1. Поднять Docker с локальной БД (dev_user/dev_password/dev_db)
-docker-compose --env-file .development.env up -d
-```
+``bash
+
+# Docker: Development
 
 ```bash
-# 2. Миграции локально
-dotenv -e .development.env -- npx prisma migrate dev --name wallet
+docker-compose -f docker-compose.dev.yml up -d --build
 ```
+
+# Docker: Production
 
 ```bash
-# 3. Заполнение данными
-dotenv -e .development.env -- npm run seed
+docker-compose -f docker-compose.prod.yml up -d --build
 ```
 
-#### Продакшен
-
-```bash
-# Поднять Docker с продакшен БД (german/prioraKisel124!/sona)
-docker-compose up -d
-```
-
-### 4. Настройка базы данных
-
-```ssh
-npm run prisma:generate
-npm run prisma:migrate
-npm run seed
-```
-
-Внутри контейнера или локально
-
-```bash
-npx prisma migrate dev --name init
-```
-
-```bash
-npx prisma generate
-npm run seed
-```
-
-### 5. Проверка работы
-
-```bash
-curl http://localhost:3002/
-```
-
-### 4. Запуск в режиме разработки
+### Запуск сервера для разработки
 
 ```ssh
 npm run dev
 ```
-
-## 📋 Команды управления
-
-| Команда                   | Назначение                   |
-| ------------------------- | ---------------------------- |
-| `npm run dev`             | Запуск в development режиме  |
-| `docker compose up -d`    | Запуск с Docker              |
-| `npm run build`           | Сборка production версии     |
-| `npm run start`           | Запуск production версии     |
-| `npm run prisma:generate` | Генерация Prisma Client      |
-| `npm run prisma:migrate`  | Применение миграций          |
-| `npm run seed`            | Заполнение тестовыми данными |
-| `npm run lint`            | Проверка кода ESLint         |
-| `npm run format:prettier` | Форматирование кода          |
 
 ## Документация
 
