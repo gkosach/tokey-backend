@@ -63,29 +63,41 @@ export class KycService {
    * Создание запроса на верификацию в Persona
    */
   private async createPersonaInquiry(user: User): Promise<{ id: string }> {
-    const response = await axios.post(
-      "https://api.withpersona.com/api/v1/inquiries",
-      {
-        data: {
-          attributes: {
-            "inquiry-template-id": this.personaTemplateId,
-            "reference-id": user.cognitoId,
-            fields: {
-              "email-address": user.email,
+    try {
+      const response = await axios.post(
+        "https://api.withpersona.com/api/v1/inquiries",
+        {
+          data: {
+            attributes: {
+              "inquiry-template-id": this.personaTemplateId,
+              "reference-id": user.cognitoId,
+              fields: {
+                "email-address": user.email,
+              },
             },
           },
         },
-      },
-      {
-        headers: {
-          "Persona-Version": "2023-01-05",
-          Authorization: `Bearer ${this.personaApiKey}`,
-          "Content-Type": "application/json",
+        {
+          headers: {
+            "Persona-Version": "2023-01-05",
+            Authorization: `Bearer ${this.personaApiKey}`,
+            "Content-Type": "application/json",
+          },
         },
-      },
-    );
+      );
 
-    return { id: response.data.data.id };
+      return { id: response.data.data.id };
+    } catch (error: any) {
+      const isAxiosError =
+        error instanceof AxiosError || error.isAxiosError === true || (error.response && error.response.status);
+
+      if (isAxiosError && error.response) {
+        const message = error.response.data?.message || error.response.data?.error || error.message;
+        throw KycError.providerError(`Persona API error: ${error.response.status} - ${message}`);
+      }
+
+      throw KycError.providerError("Unknown error occurred");
+    }
   }
 
   /**

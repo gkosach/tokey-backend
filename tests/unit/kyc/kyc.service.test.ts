@@ -24,16 +24,52 @@ describe("KycService - Critical Tests", () => {
 
   describe("initiateVerification", () => {
     it("🔴 КРИТИЧНО: правильно обрабатывает ошибки Persona API", async () => {
-      const mockUser = mockUsers.kycPending;
+      // 🔧 ИСПРАВЛЕНО: используем пользователя, который будет создавать новый inquiry
+      const mockUser = {
+        ...mockUsers.kycPending,
+        kycStatus: KycStatus.PENDING, // Но без kycProviderId!
+        kycProviderId: null, // ⚠️ КЛЮЧЕВОЕ: нет существующего ID
+      };
 
       prisma.$transaction.mockImplementation(
         createTransactionMock({
           user: {
             findUniqueOrThrow: jest.fn().mockResolvedValue(mockUser),
+            update: jest.fn().mockResolvedValue(mockUser),
           },
         }),
       );
 
+      // Мокаем ошибку от Persona API
+      mockedAxios.post.mockRejectedValue(apiErrors.persona400);
+
+      await expect(kycService.initiateVerification("cognito-123")).rejects.toThrow(
+        "KYC provider error: Persona API error: 400 - Invalid template",
+      );
+    });
+
+    // Альтернативный тест с другим статусом
+    it("🔴 КРИТИЧНО: правильно обрабатывает ошибки Persona API (REJECTED статус)", async () => {
+      const mockUser = {
+        ...mockUsers.kycPending,
+        kycStatus: KycStatus.REJECTED,
+        kycProviderId: "old_rejected_inquiry",
+      };
+
+      prisma.$transaction.mockImplementation(
+        createTransactionMock({
+          user: {
+            findUniqueOrThrow: jest.fn().mockResolvedValue(mockUser),
+            update: jest.fn().mockResolvedValue({
+              ...mockUser,
+              kycStatus: KycStatus.PENDING,
+              kycProviderId: "new_inquiry_123",
+            }),
+          },
+        }),
+      );
+
+      // Мокаем ошибку от Persona API
       mockedAxios.post.mockRejectedValue(apiErrors.persona400);
 
       await expect(kycService.initiateVerification("cognito-123")).rejects.toThrow(
@@ -65,21 +101,157 @@ describe("KycService - Critical Tests", () => {
     });
   });
 
+  describe("canCreateWallet", () => {
+    it("🆕 КРИТИЧНО: разрешает создание кошелька для COMPLETED KYC", async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        kycStatus: KycStatus.COMPLETED,
+      });
+
+      const result = await kycService.canCreateWallet("cognito-123");
+
+      expect(result).toBe(true);
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
+        where: { cognitoId: "cognito-123" },
+        select: { kycStatus: true },
+      });
+    });
+
+    it("🆕 КРИТИЧНО: блокирует создание кошелька для PENDING KYC", async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        kycStatus: KycStatus.PENDING,
+      });
+
+      const result = await kycService.canCreateWallet("cognito-123");
+
+      expect(result).toBe(false);
+    });
+
+    it("🆕 КРИТИЧНО: возвращает false для несуществующего пользователя", async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+
+      const result = await kycService.canCreateWallet("nonexistent");
+
+      expect(result).toBe(false);
+    });
+  });
+
   describe("canPerformOperations", () => {
     it("🟡 СРЕДНЕ-КРИТИЧНО: разрешает операции для завершенного KYC", async () => {
-      jest.spyOn(kycService, "getKycStatus").mockResolvedValue(KycStatus.COMPLETED);
+      // 🔧 ИСПРАВЛЕНО: используем правильный mock для findUniqueOrThrow
+      prisma.user.findUniqueOrThrow.mockResolvedValue({
+        kycStatus: KycStatus.COMPLETED,
+      });
 
       const result = await kycService.canPerformOperations("cognito-123");
 
       expect(result).toBe(true);
+      expect(prisma.user.findUniqueOrThrow).toHaveBeenCalledWith({
+        where: { cognitoId: "cognito-123" },
+        select: { kycStatus: true },
+      });
     });
 
     it("🟡 СРЕДНЕ-КРИТИЧНО: блокирует операции для незавершенного KYC", async () => {
-      jest.spyOn(kycService, "getKycStatus").mockResolvedValue(KycStatus.PENDING);
+      // 🔧 ИСПРАВЛЕНО: используем правильный mock для findUniqueOrThrow
+      prisma.user.findUniqueOrThrow.mockResolvedValue({
+        kycStatus: KycStatus.PENDING,
+      });
 
       const result = await kycService.canPerformOperations("cognito-123");
 
       expect(result).toBe(false);
+    });
+  });
+
+  describe("handleWebhook", () => {
+    it("🆕 КРИТИЧНО: обновляет статус на COMPLETED при approved", async () => {
+      const mockUser = {
+        cognitoId: "cognito-123",
+        kycStatus: KycStatus.PENDING,
+      };
+
+      prisma.user.findFirst.mockResolvedValue(mockUser);
+      prisma.user.update.mockResolvedValue({
+        ...mockUser,
+        kycStatus: KycStatus.COMPLETED,
+        kycCompletedAt: new Date(),
+      });
+
+      await kycService.handleWebhook("verification_123", "approved");
+
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { cognitoId: "cognito-123" },
+        data: {
+          kycStatus: KycStatus.COMPLETED,
+          kycCompletedAt: expect.any(Date),
+        },
+      });
+    });
+
+    it("🆕 КРИТИЧНО: обновляет статус на REJECTED при declined", async () => {
+      const mockUser = {
+        cognitoId: "cognito-123",
+        kycStatus: KycStatus.PENDING,
+      };
+
+      prisma.user.findFirst.mockResolvedValue(mockUser);
+      prisma.user.update.mockResolvedValue({
+        ...mockUser,
+        kycStatus: KycStatus.REJECTED,
+      });
+
+      await kycService.handleWebhook("verification_123", "declined");
+
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { cognitoId: "cognito-123" },
+        data: {
+          kycStatus: KycStatus.REJECTED,
+          kycCompletedAt: null,
+        },
+      });
+    });
+
+    it("🆕 КРИТИЧНО: выбрасывает ошибку для несуществующей верификации", async () => {
+      prisma.user.findFirst.mockResolvedValue(null);
+
+      await expect(kycService.handleWebhook("nonexistent_verification", "approved")).rejects.toThrow(
+        "Verification not found",
+      );
+    });
+  });
+
+  describe("getKycDetails", () => {
+    it("🆕 КРИТИЧНО: возвращает детальную информацию о KYC", async () => {
+      const mockUser = {
+        kycStatus: KycStatus.COMPLETED,
+        kycProviderId: "verification_123",
+        kycCompletedAt: new Date("2024-01-01"),
+      };
+
+      prisma.user.findUniqueOrThrow.mockResolvedValue(mockUser);
+
+      const result = await kycService.getKycDetails("cognito-123");
+
+      expect(result).toEqual({
+        status: KycStatus.COMPLETED,
+        verificationId: "verification_123",
+        completedAt: mockUser.kycCompletedAt,
+        walletEnabled: true,
+      });
+    });
+
+    it("🆕 КРИТИЧНО: walletEnabled = false для незавершенного KYC", async () => {
+      const mockUser = {
+        kycStatus: KycStatus.PENDING,
+        kycProviderId: "verification_123",
+        kycCompletedAt: null,
+      };
+
+      prisma.user.findUniqueOrThrow.mockResolvedValue(mockUser);
+
+      const result = await kycService.getKycDetails("cognito-123");
+
+      expect(result.walletEnabled).toBe(false);
     });
   });
 });

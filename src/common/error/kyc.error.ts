@@ -9,9 +9,8 @@ export class KycError extends BaseError {
     return new KycError("Verification not found", 404);
   }
 
-  static providerError(details?: string): KycError {
-    const message = details ? `KYC provider error: ${details}` : "KYC provider error";
-    return new KycError(message, 500);
+  static providerError(message: string): KycError {
+    return new KycError(`KYC provider error: ${message}`);
   }
 
   static alreadyVerified(): KycError {
