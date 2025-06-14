@@ -1,79 +1,83 @@
-import { KycStatus } from "@prisma/client";
-import { prisma, WalletError } from "../common";
+  import { prisma, WalletError } from "../common";
+  import { TatumKMSProvider } from "../common/providers/tatum-kms/tatum-kms.provider";
 
-export class WalletService {
-  /**
-   * Создает кошелек через Tatum KMS
-   */
-  async createWalletForUser(userId: string): Promise<string> {
-    const tatumWallet = await this.generateTatumWallet();
+  export class WalletService {
+    private tatumProvider: TatumKMSProvider;
 
-    await prisma.wallet.create({
-      data: {
-        userId,
-        tatumWalletId: tatumWallet.signatureId,
-        walletAddress: tatumWallet.address,
-        status: "active",
-      },
-    });
-
-    return tatumWallet.address;
-  }
-
-  /**
-   * Получает кошелек пользователя по Cognito ID
-   */
-  async getWalletByUserId(cognitoId: string) {
-    const user = await prisma.user.findUnique({
-      where: { cognitoId },
-      include: { wallet: true },
-    });
-
-    if (!user || !user.wallet) {
-      throw WalletError.notFound();
+    constructor() {
+      this.tatumProvider = new TatumKMSProvider();
     }
 
-    return {
-      walletAddress: user.wallet.walletAddress, // ✅ ИСПРАВЛЕНО: используем walletAddress
-      tatumWalletId: user.wallet.tatumWalletId,
-      status: user.wallet.status,
-      isEnabled: user.kycStatus === KycStatus.COMPLETED,
-      kycStatus: user.kycStatus,
-    };
-  }
+    /**
+     * Создает кошелек
+     */
+    async createWalletForUser(userId: string): Promise<string> {
+      try {
+        const existing = await prisma.wallet.findUnique({ where: { userId } });
+        if (existing) {
+          console.log(`⏭️ User ${userId} already has wallet: ${existing.walletAddress}`);
+          return existing.walletAddress;
+        }
 
-  /**
-   * Проверяет статус кошелька
-   */
-  async checkWalletStatus(cognitoId: string) {
-    const user = await prisma.user.findUnique({
-      where: { cognitoId },
-      select: { kycStatus: true, wallet: true },
-    });
+        const isHealthy = await this.tatumProvider.healthCheck();
+        if (!isHealthy) {
+          throw new Error("KMS service is not available");
+        }
 
-    if (!user) {
-      throw WalletError.notFound();
+        const walletData = await this.tatumProvider.createManagedWallet(userId);
+
+        const wallet = await prisma.wallet.create({
+          data: {
+            userId,
+            tatumWalletId: walletData.signatureId,
+            walletAddress: walletData.address,
+            status: "active",
+          },
+        });
+
+        console.log(`✅ KMS wallet created for user ${userId}: ${wallet.walletAddress}`);
+        return wallet.walletAddress;
+      } catch (error) {
+        console.error(`❌ Wallet creation failed for user ${userId}:`, error);
+        throw WalletError.transactionFailed("Wallet creation failed");
+      }
     }
 
-    return {
-      hasWallet: !!user.wallet,
-      isEnabled: user.kycStatus === KycStatus.COMPLETED,
-      kycStatus: user.kycStatus,
-      walletAddress: user.wallet?.walletAddress || null,
-    };
-  }
+    /**
+     * Получает кошелек по userId
+     */
+    async getWalletByUserId(userId: string) {
+      const wallet = await prisma.wallet.findUnique({
+        where: { userId },
+      });
 
-  /**
-   * Генерирует кошелек через Tatum KMS
-   */
-  private async generateTatumWallet(): Promise<{ signatureId: string; address: string }> {
-    // TODO: Реальная интеграция с Tatum KMS
-    // const result = await tatumKms.generatemanagedwallet('MATIC');
+      if (!wallet) {
+        throw WalletError.notFound();
+      }
 
-    // Временная заглушка
-    return {
-      signatureId: `tatum_${Date.now()}`,
-      address: `0x${Math.random().toString(16).substring(2, 42).padStart(40, "0")}`,
-    };
+      return {
+        walletAddress: wallet.walletAddress,
+        tatumWalletId: wallet.tatumWalletId,
+        status: wallet.status,
+        createdAt: wallet.createdAt,
+      };
+    }
+
+    /**
+     * Получает баланс кошелька по адресу
+     */
+    async getWalletBalance(walletAddress: string): Promise<string> {
+      return await this.tatumProvider.getWalletBalance(walletAddress);
+    }
+
+    /**
+     * Проверяет существование кошелька
+     */
+    async hasWallet(userId: string): Promise<boolean> {
+      const wallet = await prisma.wallet.findUnique({
+        where: { userId },
+        select: { userId: true },
+      });
+      return !!wallet;
+    }
   }
-}

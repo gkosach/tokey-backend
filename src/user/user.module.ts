@@ -1,4 +1,4 @@
-import { ModuleConfig } from "../common/interface/module.interface";
+import { ModuleConfig } from "../common/interfaces/module.interface";
 import { UserController } from "./user.controller";
 import userRoutes from "./user.routes";
 import { UserService } from "./user.service";

@@ -1,6 +1,7 @@
-export { BaseError } from "./base.error";
-export { KycError } from "./kyc.error";
-export { PropertyError } from "./property.error";
-export { TokenError } from "./token.error";
-export { UserError } from "./user.error";
-export { WalletError } from "./wallet.error";
+export * from "./base.error";
+export * from "./kyc.error";
+export * from "./property.error";
+export * from "./tatum.error";
+export * from "./token.error";
+export * from "./user.error";
+export * from "./wallet.error";

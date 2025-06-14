@@ -63,38 +63,29 @@ export class KycService {
    * Создание запроса на верификацию в Persona
    */
   private async createPersonaInquiry(user: User): Promise<{ id: string }> {
-    try {
-      const response = await axios.post(
-        "https://api.withpersona.com/api/v1/inquiries",
-        {
-          data: {
-            attributes: {
-              "inquiry-template-id": this.personaTemplateId,
-              "reference-id": user.cognitoId,
-              fields: {
-                "email-address": user.email,
-              },
+    const response = await axios.post(
+      "https://api.withpersona.com/api/v1/inquiries",
+      {
+        data: {
+          attributes: {
+            "inquiry-template-id": this.personaTemplateId,
+            "reference-id": user.cognitoId,
+            fields: {
+              "email-address": user.email,
             },
           },
         },
-        {
-          headers: {
-            "Persona-Version": "2023-01-05",
-            Authorization: `Bearer ${this.personaApiKey}`,
-            "Content-Type": "application/json",
-          },
+      },
+      {
+        headers: {
+          "Persona-Version": "2023-01-05",
+          Authorization: `Bearer ${this.personaApiKey}`,
+          "Content-Type": "application/json",
         },
-      );
+      },
+    );
 
-      return { id: response.data.data.id };
-    } catch (error: any) {
-      const status = error?.response?.status ?? "unknown";
-      const details = error?.response?.data?.error ?? error?.message ?? "";
-      if (error?.response) {
-        throw KycError.providerError(`Persona API error: ${status} - ${details}`);
-      }
-      throw KycError.providerError("Unknown Persona API error");
-    }
+    return { id: response.data.data.id };
   }
 
   /**
@@ -250,12 +241,30 @@ export class KycService {
   }
 
   /**
-   * Проверка возможности выполнения операций (требует завершенного KYC)
-   * @param userId - Идентификатор пользователя (cognitoId)
-   * @returns true если KYC завершен
+   * Проверка возможности создания кошелька
    */
-  async canPerformOperations(userId: string): Promise<boolean> {
-    const status = await this.getKycStatus(userId);
-    return status === KycStatus.COMPLETED;
+  async canCreateWallet(userId: string): Promise<boolean> {
+    const user = await prisma.user.findUnique({
+      where: { cognitoId: userId },
+      select: { kycStatus: true },
+    });
+
+    if (!user) {
+      return false;
+    }
+
+    return user.kycStatus === KycStatus.COMPLETED;
+  }
+
+  /**
+   * Проверка возможности выполнения операций (требует завершенного KYC)
+   */
+  async canPerformOperations(cognitoId: string): Promise<boolean> {
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { cognitoId },
+      select: { kycStatus: true },
+    });
+
+    return user.kycStatus === KycStatus.COMPLETED;
   }
 }
