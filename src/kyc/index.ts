@@ -1,1 +1,1 @@
-export * from "./contract/error/kyc.error";
+export * from "./contract/types/kyc-inquiry-response.type";

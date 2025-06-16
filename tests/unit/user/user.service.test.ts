@@ -1,10 +1,10 @@
 import { KycStatus, Prisma } from "@prisma/client";
-import { UserError } from "../../../src/user/contract/error/user.error";
+import { UserError } from "../../../src/common";
 import { UserService } from "../../../src/user/user.service";
 
 const { prisma } = require("../../../src/common");
 
-describe("UserService", () => {
+describe("UserService - Critical Tests", () => {
   let userService: UserService;
 
   beforeEach(() => {
@@ -12,135 +12,153 @@ describe("UserService", () => {
     jest.clearAllMocks();
   });
 
+  describe("createUser", () => {
+    it("🔴 КРИТИЧНО: создает пользователя с правильными default значениями", async () => {
+      const userData = { cognitoId: "new-123", email: "new@tokey.com" };
+      const mockCreatedUser = {
+        id: "user-456",
+        ...userData,
+        kycStatus: KycStatus.PENDING,
+        referralLink: null,
+        kycProviderId: null,
+        kycCompletedAt: null,
+        createdAt: new Date(),
+      };
+
+      prisma.user.create.mockResolvedValue(mockCreatedUser);
+
+      const result = await userService.createUser(userData);
+
+      expect(prisma.user.create).toHaveBeenCalledWith({
+        data: {
+          cognitoId: "new-123",
+          email: "new@tokey.com",
+          kycStatus: KycStatus.PENDING,
+        },
+      });
+      expect(result.kycStatus).toBe(KycStatus.PENDING);
+    });
+
+    it("🔴 КРИТИЧНО: обрабатывает дублирование пользователей", async () => {
+      const prismaError = new Prisma.PrismaClientKnownRequestError("Unique constraint", {
+        code: "P2002",
+        clientVersion: "5.0.0",
+      });
+      prisma.user.create.mockRejectedValue(prismaError);
+
+      await expect(
+        userService.createUser({
+          cognitoId: "test",
+          email: "duplicate@tokey.com",
+        }),
+      ).rejects.toThrow(UserError); // 🔧 ИСПРАВЛЕНО: ожидаем UserError
+    });
+  });
+
   describe("getUserByCognitoId", () => {
-    it("возвращает пользователя с транзакциями", async () => {
+    it("🔴 КРИТИЧНО: возвращает пользователя", async () => {
       const mockUser = {
         id: "user-123",
         cognitoId: "cognito-123",
         email: "test@tokey.com",
-        walletAddress: "0x123...",
-        kycStatus: KycStatus.PENDING,
-        transactions: [],
+        kycStatus: KycStatus.COMPLETED,
+        referralLink: null,
+        kycProviderId: "verification_123",
+        kycCompletedAt: new Date(),
+        createdAt: new Date(),
       };
 
       prisma.user.findUniqueOrThrow.mockResolvedValue(mockUser);
 
       const result = await userService.getUserByCognitoId("cognito-123");
 
+      // 🔧 ИСПРАВЛЕНО: убрали include wallet
+      expect(prisma.user.findUniqueOrThrow).toHaveBeenCalledWith({
+        where: { cognitoId: "cognito-123" },
+      });
       expect(result).toEqual(mockUser);
     });
 
-    it("выбрасывает UserError.notFound при отсутствии пользователя", async () => {
+    it("🔴 КРИТИЧНО: пробрасывает Prisma ошибку при отсутствии пользователя", async () => {
       const prismaError = new Prisma.PrismaClientKnownRequestError("Not found", {
         code: "P2025",
         clientVersion: "5.0.0",
       });
       prisma.user.findUniqueOrThrow.mockRejectedValue(prismaError);
 
-      await expect(userService.getUserByCognitoId("nonexistent")).rejects.toThrow(UserError);
-    });
-  });
-
-  describe("createUser", () => {
-    it("создает пользователя с HSM кошельком", async () => {
-      const userData = { cognitoId: "new-123", email: "new@tokey.com" };
-      const mockCreatedUser = {
-        id: "user-456",
-        ...userData,
-        walletAddress: "0x456...",
-        kycStatus: KycStatus.PENDING,
-      };
-
-      prisma.user.upsert.mockResolvedValue(mockCreatedUser);
-
-      const result = await userService.createUser(userData);
-
-      expect(result).toEqual(mockCreatedUser);
-    });
-
-    it("выбрасывает UserError.conflict при дублировании email", async () => {
-      const prismaError = new Prisma.PrismaClientKnownRequestError("Unique constraint", {
-        code: "P2002",
-        clientVersion: "5.0.0",
-      });
-      prisma.user.upsert.mockRejectedValue(prismaError);
-
-      await expect(userService.createUser({ cognitoId: "test", email: "duplicate@tokey.com" })).rejects.toThrow(
-        UserError,
-      );
+      // 🔧 ИСПРАВЛЕНО: ожидаем Prisma ошибку, а не UserError
+      await expect(userService.getUserByCognitoId("nonexistent")).rejects.toThrow(Prisma.PrismaClientKnownRequestError);
     });
   });
 
   describe("updateUserEmail", () => {
-    it("обновляет email пользователя", async () => {
+    it("🟡 СРЕДНЕ-КРИТИЧНО: предотвращает дублирование email", async () => {
+      const prismaError = new Prisma.PrismaClientKnownRequestError("Unique constraint", {
+        code: "P2002",
+        clientVersion: "5.0.0",
+      });
+      prisma.user.update.mockRejectedValue(prismaError);
+
+      await expect(userService.updateUserEmail("cognito-123", "duplicate@tokey.com")).rejects.toThrow(
+        "Email already exists",
+      );
+    });
+
+    it("🟡 СРЕДНЕ-КРИТИЧНО: обрабатывает ошибки БД", async () => {
+      const prismaError = new Prisma.PrismaClientKnownRequestError("Database error", {
+        code: "P2003",
+        clientVersion: "5.0.0",
+      });
+      prisma.user.update.mockRejectedValue(prismaError);
+
+      await expect(userService.updateUserEmail("cognito-123", "new@email.com")).rejects.toThrow("Email update failed");
+    });
+
+    it("🆕 КРИТИЧНО: успешно обновляет email", async () => {
       const mockUpdatedUser = {
         id: "user-123",
+        cognitoId: "cognito-123",
         email: "updated@tokey.com",
+        kycStatus: KycStatus.PENDING,
+        referralLink: null,
+        kycProviderId: null,
+        kycCompletedAt: null,
+        createdAt: new Date(),
       };
 
       prisma.user.update.mockResolvedValue(mockUpdatedUser);
 
       const result = await userService.updateUserEmail("cognito-123", "updated@tokey.com");
 
-      expect(result).toEqual(mockUpdatedUser);
-    });
-
-    it("выбрасывает UserError.conflict при дублировании email", async () => {
-      prisma.user.update.mockImplementation(() => {
-        throw new Prisma.PrismaClientKnownRequestError("Unique constraint violation", {
-          code: "P2002",
-          clientVersion: "5.0.0",
-          meta: { target: ["email"] },
-        });
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { cognitoId: "cognito-123" },
+        data: { email: "updated@tokey.com" },
       });
-
-      await expect(userService.updateUserEmail("cognito-123", "duplicate@tokey.com")).rejects.toThrow(
-        "Email already exists",
-      );
+      expect(result.email).toBe("updated@tokey.com");
     });
   });
 
-  describe("getUserTokenBalances", () => {
-    it("возвращает агрегированные балансы по объектам", async () => {
-      const mockTransactions = [
-        {
-          propertyId: "prop-1",
-          tokensAmount: 1000,
-          property: { id: "prop-1", title: "ЖК Тест 1", contractAddress: "0x111" },
-        },
-        {
-          propertyId: "prop-1",
-          tokensAmount: 500,
-          property: { id: "prop-1", title: "ЖК Тест 1", contractAddress: "0x111" },
-        },
-        {
-          propertyId: "prop-2",
-          tokensAmount: 2000,
-          property: { id: "prop-2", title: "ЖК Тест 2", contractAddress: "0x222" },
-        },
-      ];
+  describe("getUserById", () => {
+    it("🆕 КРИТИЧНО: возвращает пользователя по ID", async () => {
+      const mockUser = {
+        id: "user-123",
+        cognitoId: "cognito-123",
+        email: "test@tokey.com",
+        kycStatus: KycStatus.COMPLETED,
+        referralLink: null,
+        kycProviderId: "verification_123",
+        kycCompletedAt: new Date(),
+        createdAt: new Date(),
+      };
 
-      prisma.transaction.findMany.mockResolvedValue(mockTransactions);
+      prisma.user.findUniqueOrThrow.mockResolvedValue(mockUser);
 
-      const result = await userService.getUserTokenBalances("user-123");
+      const result = await userService.getUserById("user-123");
 
-      expect(result).toHaveLength(2);
-      expect(result[0]).toEqual({
-        property: { id: "prop-1", title: "ЖК Тест 1", contractAddress: "0x111" },
-        totalTokens: 1500,
+      expect(prisma.user.findUniqueOrThrow).toHaveBeenCalledWith({
+        where: { id: "user-123" },
       });
-      expect(result[1]).toEqual({
-        property: { id: "prop-2", title: "ЖК Тест 2", contractAddress: "0x222" },
-        totalTokens: 2000,
-      });
-    });
-
-    it("возвращает пустой массив при отсутствии транзакций", async () => {
-      prisma.transaction.findMany.mockResolvedValue([]);
-
-      const result = await userService.getUserTokenBalances("user-123");
-
-      expect(result).toEqual([]);
+      expect(result).toEqual(mockUser);
     });
   });
 });

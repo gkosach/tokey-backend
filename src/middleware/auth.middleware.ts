@@ -44,13 +44,22 @@ declare module "express-serve-static-core" {
   }
 }
 
-/** @romanov.nr
+/**
  * Middleware для аутентификации
  * @returns {RequestHandler} Middleware для аутентификации
  */
 export const authMiddleware = (): RequestHandler => {
   return async (req: Request, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
+
+    // TODO: убрать на проде 🔥 ТОЛЬКО ДЛЯ РАЗРАБОТКИ - тестовый bypass
+    if (process.env.NODE_ENV === "development" && authHeader === "Bearer test-token-550e8400") {
+      req.user = {
+        id: "e40824e8-f0d1-7029-07be-f4d76a53efe3",
+        accessToken: "test-token",
+      };
+      return next();
+    }
 
     if (!authHeader?.startsWith("Bearer ")) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -65,14 +74,16 @@ export const authMiddleware = (): RequestHandler => {
       const key = await client.getSigningKey(decoded.header.kid);
       const publicKey = key.getPublicKey();
 
-      const payload = jwt.verify(token, publicKey, { algorithms: ["RS256"] });
+      const payload = jwt.verify(token, publicKey, { algorithms: ["RS256"] }) as any;
+
       req.user = {
-        id: typeof payload.sub === "string" ? payload.sub : "",
+        id: payload.sub,
         accessToken: token,
       };
 
       next();
     } catch (err) {
+      console.error("Auth failed:", err instanceof Error ? err.message : "Unknown error");
       res.status(401).json({ error: "Invalid token" });
     }
   };

@@ -1,0 +1,50 @@
+services:
+  back-app:
+    container_name: back-app-dev
+    build:
+      context: .
+    env_file:
+      - .development.env
+    environment:
+      - HUSKY=0
+      - NODE_ENV=development
+    volumes:
+      - ./src:/app/src
+      - ./prisma:/app/prisma
+      - ./package.json:/app/package.json
+      - ./package-lock.json:/app/package-lock.json
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./nodemon.json:/app/nodemon.json
+    working_dir: /app
+    command: sh -c "
+      npm install &&
+      npx prisma db push &&
+      npx prisma generate &&
+      npm run dev   "
+    networks:
+      - site
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+
+  db:
+    container_name: postgres-db-dev
+    image: postgres:14-alpine
+    environment:
+      - POSTGRES_DB=dev_db
+      - POSTGRES_USER=dev_user
+      - POSTGRES_PASSWORD=dev_password
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - site
+    restart: unless-stopped
+
+networks:
+  site:
+    driver: bridge
+
+volumes:
+  postgres_data_dev:

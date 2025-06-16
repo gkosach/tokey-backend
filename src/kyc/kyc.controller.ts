@@ -1,5 +1,5 @@
 import { NextFunction, Response } from "express";
-import { AuthRequest } from "../common/types/auth-request.types";
+import { AuthRequest } from "../common";
 import { KycService } from "./kyc.service";
 
 export class KycController {

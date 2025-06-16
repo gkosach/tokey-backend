@@ -1,5 +1,5 @@
 import { NextFunction, Response } from "express";
-import { AuthRequest } from "../common/types/auth-request.types";
+import { AuthRequest } from "../common";
 import { UserService } from "./user.service";
 
 export class UserController {
@@ -7,54 +7,40 @@ export class UserController {
 
   /**
    * Получает профиль текущего пользователя
-   * @returns Пользователь с транзакциями и балансами токенов
-   * @throws {Error} Если пользователь не авторизован
    */
-  async getProfile(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-    try {
-      if (!req.user) throw new Error("Unauthorized");
+  async getProfile(req: AuthRequest, res: Response): Promise<void> {
+    if (!req.user) throw new Error("Unauthorized");
 
-      const user = await this.userService.getUserByCognitoId(req.user.id);
-      res.json({
-        success: true,
-        data: user,
-      });
-    } catch (error) {
-      next(error);
-    }
+    const user = await this.userService.getUserByCognitoId(req.user.id);
+    res.json({
+      success: true,
+      data: user,
+    });
   }
 
   /**
-   * Создает нового пользователя с автоматическим HSM кошельком
-   * @returns Созданный пользователь со статусом 201 Created
+   * Создает нового пользователя
    */
-  async createUser(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const { cognitoId, email } = req.body;
-      console.log("Creating user with Cognito ID:", cognitoId);
+  async createUser(req: AuthRequest, res: Response): Promise<void> {
+    const { cognitoId, email } = req.body;
 
-      if (!cognitoId || !email) {
-        res.status(400).json({
-          success: false,
-          error: "Missing required fields: cognitoId, email",
-        });
-        return;
-      }
-
-      const newUser = await this.userService.createUser({
-        cognitoId,
-        email,
+    if (!cognitoId || !email) {
+      res.status(400).json({
+        success: false,
+        error: "Missing required fields: cognitoId, email",
       });
-
-      console.log("New user created with HSM wallet:", newUser.walletAddress);
-
-      res.status(201).json({
-        success: true,
-        data: newUser,
-      });
-    } catch (error) {
-      next(error);
+      return;
     }
+
+    const newUser = await this.userService.createUser({
+      cognitoId,
+      email,
+    });
+
+    res.status(201).json({
+      success: true,
+      data: newUser,
+    });
   }
 
   /**
@@ -84,6 +70,13 @@ export class UserController {
   async updateEmail(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) throw new Error("Unauthorized");
+      if (!req.body.email) {
+        res.status(400).json({
+          success: false,
+          error: "Missing email",
+        });
+        return;
+      }
 
       const updatedUser = await this.userService.updateUserEmail(req.user.id, req.body.email);
       res.json(updatedUser);
@@ -105,7 +98,8 @@ export class UserController {
       res.json({
         success: true,
         data: {
-          walletAddress: user.walletAddress,
+          // @german fixme
+          walletAddress: "user.walletAddress",
           kycStatus: user.kycStatus,
         },
       });

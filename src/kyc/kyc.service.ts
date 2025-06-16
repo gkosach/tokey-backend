@@ -1,9 +1,8 @@
 import { KycStatus, User } from "@prisma/client";
 import axios, { AxiosError } from "axios";
-import { prisma } from "../common";
-import { KycError } from "./contract/error/kyc.error";
+import { KycError, prisma } from "../common";
+import { PersonaInquiryStatus } from "./contract/enum/persona-inquiry-status.enum";
 import { InquiryStatusResponse } from "./contract/inquiry-status-response.type";
-import { PersonaInquiryStatus } from "./contract/persona-inquiry-status.enum";
 
 /**
  * Сервис для управления процессом верификации пользователей (KYC)
@@ -13,7 +12,6 @@ export class KycService {
   private readonly personaTemplateId: string;
 
   constructor() {
-    // Инициализация ключей Persona из переменных окружения
     this.personaApiKey = process.env.PERSONA_API_KEY!;
     this.personaTemplateId = process.env.PERSONA_TEMPLATE_ID!;
   }
@@ -260,7 +258,6 @@ export class KycService {
         kycStatus: true,
         kycProviderId: true,
         kycCompletedAt: true,
-        walletAddress: true, // Добавляем адрес кошелька
       },
     });
 
@@ -269,17 +266,34 @@ export class KycService {
       verificationId: user.kycProviderId,
       completedAt: user.kycCompletedAt,
       walletEnabled: user.kycStatus === KycStatus.COMPLETED,
-      walletAddress: user.walletAddress,
     };
   }
 
   /**
-   * Проверка возможности выполнения операций (требует завершенного KYC)
-   * @param userId - Идентификатор пользователя (cognitoId)
-   * @returns true если KYC завершен
+   * Проверка возможности создания кошелька
    */
-  async canPerformOperations(userId: string): Promise<boolean> {
-    const status = await this.getKycStatus(userId);
-    return status === KycStatus.COMPLETED;
+  async canCreateWallet(userId: string): Promise<boolean> {
+    const user = await prisma.user.findUnique({
+      where: { cognitoId: userId },
+      select: { kycStatus: true },
+    });
+
+    if (!user) {
+      return false;
+    }
+
+    return user.kycStatus === KycStatus.COMPLETED;
+  }
+
+  /**
+   * Проверка возможности выполнения операций (требует завершенного KYC)
+   */
+  async canPerformOperations(cognitoId: string): Promise<boolean> {
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { cognitoId },
+      select: { kycStatus: true },
+    });
+
+    return user.kycStatus === KycStatus.COMPLETED;
   }
 }

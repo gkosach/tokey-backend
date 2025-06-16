@@ -1,19 +1,10 @@
-import { ErrorStatus } from "../enum";
+export abstract class BaseError extends Error {
+  public readonly statusCode: number;
 
-export abstract class BaseError<TMessage extends string = string> extends Error {
-  protected constructor(
-    public readonly statusCode: ErrorStatus,
-    public readonly message: TMessage,
-  ) {
+  constructor(message: string, statusCode: number = 500) {
     super(message);
+    this.name = this.constructor.name;
+    this.statusCode = statusCode;
     Object.setPrototypeOf(this, new.target.prototype);
-  }
-
-  static create<T extends BaseError<TMessage>, TMessage extends string>(
-    this: new (code: ErrorStatus, message: TMessage) => T,
-    code: ErrorStatus,
-    message: TMessage,
-  ): T {
-    return new this(code, message);
   }
 }
