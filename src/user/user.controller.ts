@@ -44,26 +44,6 @@ export class UserController {
   }
 
   /**
-   * Получает балансы токенов пользователя по объектам недвижимости
-   * @returns Балансы токенов с информацией о недвижимости
-   * @throws {Error} Если пользователь не авторизован
-   */
-  async getTokenBalances(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-    try {
-      if (!req.user) throw new Error("Unauthorized");
-
-      const balances = await this.userService.getUserTokenBalances(req.user.id);
-
-      res.json({
-        success: true,
-        data: balances,
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
    * Обновляет email пользователя
    * @returns Обновленный пользователь
    */
@@ -83,17 +63,8 @@ export class UserController {
     } catch (error) {
       next(error);
     }
-  }
 
-  /**
-   * Получает адрес HSM кошелька пользователя
-   * @returns Адрес кошелька пользователя
-   */
-  async getWalletAddress(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-    try {
-      if (!req.user) throw new Error("Unauthorized");
-
-      const user = await this.userService.getUserByCognitoId(req.user.id);
+    const updatedUser = await this.userService.updateUserEmail(req.user.id, email);
 
       res.json({
         success: true,
@@ -108,5 +79,4 @@ export class UserController {
     }
   }
 }
-
 export const userController = new UserController();
