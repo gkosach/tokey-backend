@@ -9,9 +9,11 @@ datasource db {
 }
 
 enum KycStatus {
-  PENDING   @map("pending")
-  COMPLETED @map("completed")
-  REJECTED  @map("rejected")
+  NOT_STARTED @map("not_started")
+  PENDING     @map("pending")
+  COMPLETED   @map("completed")
+  APPROVED    @map("approved")
+  REJECTED    @map("rejected")
 }
 
 enum PropertyStatus {

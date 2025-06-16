@@ -1,8 +1,8 @@
 import { KycStatus, User } from "@prisma/client";
 import axios, { AxiosError } from "axios";
 import { KycError, prisma } from "../common";
+import { PersonaInquiryEvent } from "./contract/enum/persona-inquiry-event.enum";
 import { PersonaInquiryStatus } from "./contract/enum/persona-inquiry-status.enum";
-import { InquiryStatusResponse } from "./contract/inquiry-status-response.type";
 
 /**
  * Сервис для управления процессом верификации пользователей (KYC)
@@ -61,19 +61,19 @@ export class KycService {
    * @param userId - Идентификатор пользователя (cognitoId)
    * @returns ID верификации для прохождения KYC
    */
-  async initiateVerification(userId: string): Promise<{ inquiryId: string; sessionId?: string }> {
+  async initiateVerification(userId: string): Promise<{ inquiryId: string; sessionToken?: string }> {
     return prisma.$transaction(async (tx) => {
       const user = await tx.user.findUniqueOrThrow({
         where: { cognitoId: userId },
       });
 
       // Если KYC уже завершен, выбрасываем ошибку
-      if (user.kycStatus === KycStatus.COMPLETED) {
+      if (user.kycStatus === KycStatus.APPROVED) {
         throw KycError.alreadyVerified();
       }
 
       let inquiryIdToReturn = user.kycProviderId;
-      let sessionId: string | undefined;
+      let sessionToken: string | undefined;
 
       // Если есть активный запрос
       if (user.kycStatus === KycStatus.PENDING && user.kycProviderId) {
@@ -82,12 +82,19 @@ export class KycService {
 
           switch (personaInquiryStatus) {
             case PersonaInquiryStatus.COMPLETED:
+              await tx.user.update({
+                where: { cognitoId: user.cognitoId },
+                data: {
+                  kycStatus: KycStatus.COMPLETED,
+                },
+              });
+              break;
             case PersonaInquiryStatus.APPROVED:
               // Если Persona говорит, что COMPLETED/APPROVED, но у нас PENDING, синхронизируем
               await tx.user.update({
                 where: { cognitoId: user.cognitoId },
                 data: {
-                  kycStatus: KycStatus.COMPLETED,
+                  kycStatus: KycStatus.APPROVED,
                   kycCompletedAt: new Date(),
                 },
               });
@@ -108,8 +115,8 @@ export class KycService {
             case PersonaInquiryStatus.CREATED:
             case PersonaInquiryStatus.PENDING:
               // Если Persona говорит, что PENDING, то получаем session_id
-              const { sessionId: currentSessionId } = await this.getInquirySessionKey(user.kycProviderId);
-              sessionId = currentSessionId;
+              const { sessionToken: currentSessionToken } = await this.getInquirySessionToken(user.kycProviderId);
+              sessionToken = currentSessionToken;
               break;
             default:
               break;
@@ -122,8 +129,8 @@ export class KycService {
       if (!inquiryIdToReturn) {
         const inquiry = await this.createPersonaInquiry(user);
         inquiryIdToReturn = inquiry.id;
-        const { sessionId: newSessionId } = await this.getInquirySessionKey(inquiry.id);
-        sessionId = newSessionId;
+        const { sessionToken: newSessionToken } = await this.getInquirySessionToken(inquiry.id);
+        sessionToken = newSessionToken;
 
         await tx.user.update({
           where: { cognitoId: user.cognitoId },
@@ -135,7 +142,7 @@ export class KycService {
         });
       }
 
-      return { inquiryId: inquiryIdToReturn, sessionId };
+      return { inquiryId: inquiryIdToReturn, sessionToken };
     });
   }
 
@@ -161,9 +168,9 @@ export class KycService {
   /**
    * Обработка вебхука от Persona с результатом верификации
    * @param verificationId - Идентификатор верификации
-   * @param status - Статус верификации (approved/declined)
+   * @param eventName - Статус верификации (approved/declined)
    */
-  async handleWebhook(verificationId: string, status: "approved" | "declined"): Promise<void> {
+  async handleWebhook(verificationId: string, eventName: PersonaInquiryEvent): Promise<void> {
     const user = await prisma.user.findFirst({
       where: { kycProviderId: verificationId },
     });
@@ -173,7 +180,7 @@ export class KycService {
       throw KycError.verificationNotFound();
     }
 
-    const newStatus = status === "approved" ? KycStatus.COMPLETED : KycStatus.REJECTED;
+    const { status: newStatus } = this.inquiryEventToKycStatus(eventName);
 
     if (user.kycStatus !== newStatus) {
       await prisma.user.update({
@@ -183,10 +190,10 @@ export class KycService {
           kycCompletedAt: newStatus === KycStatus.COMPLETED ? new Date() : null,
         },
       });
-      console.log(`KYC ${status} for user ${user.cognitoId}, status updated to ${newStatus}`);
+      console.log(`KYC ${eventName} for user ${user.cognitoId}, status updated to ${newStatus}`);
     } else {
       console.log(
-        `KYC webhook for user ${user.cognitoId} with status ${status}, status already ${newStatus}. No update needed.`,
+        `KYC webhook for user ${user.cognitoId} with status ${eventName}, status already ${newStatus}. No update needed.`,
       );
     }
   }
@@ -206,40 +213,35 @@ export class KycService {
     };
   }
 
-  private async getInquirySessionKey(inquiryId: string): Promise<{ sessionId: string }> {
-    const response = await this._callPersonaApi<{ data: { attributes: { session_id: string } } }>(
+  private async getInquirySessionToken(inquiryId: string): Promise<{ sessionToken: string }> {
+    const response = await this._callPersonaApi<{ meta: { "session-token": string } }>(
       "post",
       `inquiries/${inquiryId}/resume`,
-      {},
     );
 
+    console.log(response.meta["session-token"]);
+
     return {
-      sessionId: response.data.attributes.session_id,
+      sessionToken: response.meta["session-token"],
     };
   }
 
-  async handleInquiryStatusUpdate(inquiryId: string) {
-    const { status } = await this.getInquiryData(inquiryId);
-    return await this.handleInquiryStatus(status, inquiryId);
-  }
-
-  async handleInquiryStatus(inquiryStatus: PersonaInquiryStatus, inquiryId: string): Promise<InquiryStatusResponse> {
-    switch (inquiryStatus) {
-      case PersonaInquiryStatus.CREATED:
-      case PersonaInquiryStatus.PENDING:
+  private inquiryEventToKycStatus(eventName: PersonaInquiryEvent) {
+    switch (eventName) {
+      case PersonaInquiryEvent.CREATED:
+      case PersonaInquiryEvent.COMPLETED:
         return {
-          status: PersonaInquiryStatus.PENDING,
+          status: KycStatus.PENDING,
         };
-      case PersonaInquiryStatus.COMPLETED:
-      case PersonaInquiryStatus.APPROVED:
+      case PersonaInquiryEvent.APPROVED:
         return {
-          status: PersonaInquiryStatus.APPROVED,
+          status: KycStatus.COMPLETED,
         };
-      case PersonaInquiryStatus.DECLINED:
-      case PersonaInquiryStatus.FAILED:
-      case PersonaInquiryStatus.EXPIRED:
+      case PersonaInquiryEvent.DECLINED:
+      case PersonaInquiryEvent.FAILED:
+      case PersonaInquiryEvent.EXPIRED:
         return {
-          status: PersonaInquiryStatus.DECLINED,
+          status: KycStatus.REJECTED,
         };
       default:
         throw KycError.providerError("Unknown inquiry status");

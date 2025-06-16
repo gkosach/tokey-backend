@@ -70,8 +70,12 @@ async function seed() {
 
       console.log("🗑️ Очистили существующие данные");
     }
-
-    const seedOrder = ["user", "wallet", "property", "token-transaction"] as const;
+    // @german check how wallet seeding works
+    // had some errors:
+    // ❌ Ошибка валидации wallet: data is not iterable
+    // ❌ Ошибка при заполнении базы данных: data is not iterable
+    // ❌ Критическая ошибка: data is not iterable
+    const seedOrder = ["user", "property", "token-transaction", "wallet"] as const;
 
     for (const modelName of seedOrder) {
       const filePath = path.join(dataDir, `${modelName}.json`);

@@ -10,13 +10,27 @@ import { RequestHandler } from "express";
  * @throws 403 - Если подпись не совпадает
  */
 export const personaWebhookMiddleware: RequestHandler = (req, res, next) => {
-  const signature = req.headers["persona-signature"] as string;
-  const rawBody = (req as any).rawBody || "";
-  const expectedSignature = crypto.createHmac("sha256", process.env.PERSONA_API_KEY!).update(rawBody).digest("hex");
-  if (signature !== `sha256=${expectedSignature}`) {
+  const signatureHeader = req.headers["persona-signature"] as string;
+  const t = signatureHeader.split(",")[0].split("=")[1];
+  const signatures = signatureHeader.split(" ").map((pair) => pair.split("v1=")[1]);
+
+  const hmac = crypto
+    .createHmac("sha256", process.env.PERSONA_WEBHOOK_SECRET!)
+    .update(`${t}.${JSON.stringify(req.body)}`)
+    .digest("hex");
+
+  // See if any of the signatures are valid
+  const isVerified = signatures.some((signature) => {
+    return crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(signature));
+  });
+
+  if (!isVerified) {
+    console.log("Failed passing personaWebhookMiddleware");
     res.status(403).json({ error: "Invalid signature" });
     return;
   }
+
+  console.log("Passed personaWebhookMiddleware");
 
   next();
 };

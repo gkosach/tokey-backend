@@ -1,5 +1,6 @@
 import { NextFunction, Response } from "express";
 import { AuthRequest } from "../common";
+import { PersonaInquiryEvent } from "./contract/enum/persona-inquiry-event.enum";
 import { KycService } from "./kyc.service";
 
 export class KycController {
@@ -34,11 +35,11 @@ export class KycController {
     try {
       if (!req.user) throw new Error("Unauthorized");
 
-      const { inquiryId } = await this.kycService.initiateVerification(req.user.id);
+      const { inquiryId, sessionToken } = await this.kycService.initiateVerification(req.user.id);
 
       res.status(202).json({
         success: true,
-        data: { inquiryId },
+        data: { inquiryId, sessionToken },
       });
     } catch (error) {
       next(error);
@@ -51,44 +52,17 @@ export class KycController {
    */
   async handleWebhook(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
+      const webhookPayloadData = req.body.data.attributes.payload.data;
       const {
-        data: {
-          id: verificationId,
-          attributes: { status },
-        },
-      } = req.body;
+        id: inquiryId,
+        attributes: { status },
+      } = webhookPayloadData;
 
-      await this.kycService.handleWebhook(verificationId, status === "approved" ? "approved" : "declined");
+      await this.kycService.handleWebhook(inquiryId as string, status as PersonaInquiryEvent);
 
       res.json({
         success: true,
         message: "Webhook processed successfully",
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * Обновляет статус KYC пользователя
-   * @returns Статус обновления KYC
-   * @throws {Error} Если пользователь не авторизован
-   */
-  async updateKycStatus(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-    try {
-      if (!req.user) throw new Error("Unauthorized");
-
-      const { inquiryId } = req.body;
-      if (!inquiryId) {
-        this.startVerification(req, res, next);
-        return;
-      }
-
-      const response = await this.kycService.handleInquiryStatusUpdate(inquiryId);
-
-      res.json({
-        success: true,
-        data: response,
       });
     } catch (error) {
       next(error);
