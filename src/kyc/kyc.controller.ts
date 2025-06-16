@@ -84,7 +84,7 @@ export class KycController {
         return;
       }
 
-      const response = await this.kycService.handleInquiryStatusUpdate(inquiryId, req.user.id);
+      const response = await this.kycService.handleInquiryStatusUpdate(inquiryId);
 
       res.json({
         success: true,

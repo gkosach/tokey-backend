@@ -1,4 +1,4 @@
-export enum KycInquiryStatus {
+export enum PersonaInquiryStatus {
   CREATED = "created",
   PENDING = "pending",
   COMPLETED = "completed",

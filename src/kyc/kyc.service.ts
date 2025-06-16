@@ -2,8 +2,8 @@ import { KycStatus, User } from "@prisma/client";
 import axios, { AxiosError } from "axios";
 import { prisma } from "../common";
 import { KycError } from "./contract/error/kyc.error";
-import { KycInquiryResponse } from "./contract/kyc-inquiry-response.type";
-import { KycInquiryStatus } from "./contract/kyc-inquiry-status.enum";
+import { InquiryStatusResponse } from "./contract/inquiry-status-response.type";
+import { PersonaInquiryStatus } from "./contract/persona-inquiry-status.enum";
 
 /**
  * Сервис для управления процессом верификации пользователей (KYC)
@@ -16,6 +16,33 @@ export class KycService {
     // Инициализация ключей Persona из переменных окружения
     this.personaApiKey = process.env.PERSONA_API_KEY!;
     this.personaTemplateId = process.env.PERSONA_TEMPLATE_ID!;
+  }
+
+  private async _callPersonaApi<T>(method: "get" | "post", path: string, data?: any): Promise<T> {
+    try {
+      const response = await axios({
+        method,
+        url: `https://api.withpersona.com/api/v1/${path}`,
+        data,
+        headers: {
+          "Persona-Version": "2023-01-05",
+          Authorization: `Bearer ${this.personaApiKey}`,
+          "Content-Type": "application/json",
+        },
+      });
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        console.error(`Persona API error on ${method} ${path}:`, error.response?.data);
+        throw KycError.providerError(`Persona API error: ${error.response?.status}`);
+      } else if (error instanceof Error) {
+        console.error(`Unexpected error on ${method} ${path}:`, error.message);
+        throw KycError.providerError(`Unexpected error: ${error.message}`);
+      } else {
+        console.error(`Unknown error on ${method} ${path}:`, error);
+        throw KycError.providerError("Unknown error occurred");
+      }
+    }
   }
 
   /**
@@ -36,35 +63,81 @@ export class KycService {
    * @param userId - Идентификатор пользователя (cognitoId)
    * @returns ID верификации для прохождения KYC
    */
-  async initiateVerification(userId: string): Promise<{ inquiryId: string }> {
+  async initiateVerification(userId: string): Promise<{ inquiryId: string; sessionId?: string }> {
     return prisma.$transaction(async (tx) => {
       const user = await tx.user.findUniqueOrThrow({
         where: { cognitoId: userId },
       });
 
-      // Если уже есть активная верификация
-      if (user.kycStatus === KycStatus.PENDING && user.kycProviderId) {
-        return { inquiryId: user.kycProviderId };
-      }
-
-      // Если KYC уже завершен
+      // Если KYC уже завершен, выбрасываем ошибку
       if (user.kycStatus === KycStatus.COMPLETED) {
         throw KycError.alreadyVerified();
       }
 
-      // Создаем новую верификацию в Persona
-      const inquiry = await this.createPersonaInquiry(user);
+      let inquiryIdToReturn = user.kycProviderId;
+      let sessionId: string | undefined;
 
-      // Обновляем статус пользователя
-      await tx.user.update({
-        where: { cognitoId: user.cognitoId },
-        data: {
-          kycStatus: KycStatus.PENDING,
-          kycProviderId: inquiry.id,
-        },
-      });
+      // Если есть активный запрос
+      if (user.kycStatus === KycStatus.PENDING && user.kycProviderId) {
+        try {
+          const { status: personaInquiryStatus } = await this.getInquiryData(user.kycProviderId);
 
-      return { inquiryId: inquiry.id };
+          switch (personaInquiryStatus) {
+            case PersonaInquiryStatus.COMPLETED:
+            case PersonaInquiryStatus.APPROVED:
+              // Если Persona говорит, что COMPLETED/APPROVED, но у нас PENDING, синхронизируем
+              await tx.user.update({
+                where: { cognitoId: user.cognitoId },
+                data: {
+                  kycStatus: KycStatus.COMPLETED,
+                  kycCompletedAt: new Date(),
+                },
+              });
+              // Возвращаем ошибку или специальный ответ, что уже верифицирован
+              throw KycError.alreadyVerified();
+            case PersonaInquiryStatus.DECLINED:
+            case PersonaInquiryStatus.FAILED:
+            case PersonaInquiryStatus.EXPIRED:
+              await tx.user.update({
+                where: { cognitoId: user.cognitoId },
+                data: {
+                  kycStatus: KycStatus.REJECTED,
+                  kycProviderId: null,
+                  kycCompletedAt: null,
+                },
+              });
+              break;
+            case PersonaInquiryStatus.CREATED:
+            case PersonaInquiryStatus.PENDING:
+              // Если Persona говорит, что PENDING, то получаем session_id
+              const { sessionId: currentSessionId } = await this.getInquirySessionKey(user.kycProviderId);
+              sessionId = currentSessionId;
+              break;
+            default:
+              break;
+          }
+        } catch (error) {
+          console.warn(`Failed to get status for existing inquiryId ${user.kycProviderId}:`, error);
+          inquiryIdToReturn = null;
+        }
+      }
+      if (!inquiryIdToReturn) {
+        const inquiry = await this.createPersonaInquiry(user);
+        inquiryIdToReturn = inquiry.id;
+        const { sessionId: newSessionId } = await this.getInquirySessionKey(inquiry.id);
+        sessionId = newSessionId;
+
+        await tx.user.update({
+          where: { cognitoId: user.cognitoId },
+          data: {
+            kycStatus: KycStatus.PENDING,
+            kycProviderId: inquiry.id,
+            kycCompletedAt: null, // Убедиться, что сброшено
+          },
+        });
+      }
+
+      return { inquiryId: inquiryIdToReturn, sessionId };
     });
   }
 
@@ -72,43 +145,19 @@ export class KycService {
    * Создание запроса на верификацию в Persona
    */
   private async createPersonaInquiry(user: User): Promise<{ id: string }> {
-    try {
-      const response = await axios.post(
-        "https://api.withpersona.com/api/v1/inquiries",
-        {
-          data: {
-            attributes: {
-              "inquiry-template-id": this.personaTemplateId,
-              "reference-id": user.cognitoId,
-              fields: {
-                "email-address": user.email,
-                // Убрали phone-number так как его нет в новой схеме
-              },
-            },
+    const response = await this._callPersonaApi<{ data: { id: string } }>("post", "inquiries", {
+      data: {
+        attributes: {
+          "inquiry-template-id": this.personaTemplateId,
+          "reference-id": user.cognitoId,
+          fields: {
+            "email-address": user.email,
           },
         },
-        {
-          headers: {
-            "Persona-Version": "2023-01-05",
-            Authorization: `Bearer ${this.personaApiKey}`,
-            "Content-Type": "application/json",
-          },
-        },
-      );
+      },
+    });
 
-      return { id: response.data.data.id };
-    } catch (error) {
-      if (error instanceof AxiosError) {
-        console.error("Persona API error:", error.response?.data);
-        throw KycError.providerError(`Persona API error: ${error.response?.status}`);
-      } else if (error instanceof Error) {
-        console.error("Unexpected error:", error.message);
-        throw KycError.providerError(`Unexpected error: ${error.message}`);
-      } else {
-        console.error("Unknown error:", error);
-        throw KycError.providerError("Unknown error occurred");
-      }
-    }
+    return { id: response.data.id };
   }
 
   /**
@@ -118,126 +167,82 @@ export class KycService {
    */
   async handleWebhook(verificationId: string, status: "approved" | "declined"): Promise<void> {
     const user = await prisma.user.findFirst({
-      where: { kycProviderId: verificationId }, // Исправлено поле
+      where: { kycProviderId: verificationId },
     });
 
-    if (!user) throw KycError.verificationNotFound();
+    if (!user) {
+      console.warn(`Webhook received for unknown verificationId: ${verificationId}`);
+      throw KycError.verificationNotFound();
+    }
 
-    // Используем правильные статусы из новой схемы
     const newStatus = status === "approved" ? KycStatus.COMPLETED : KycStatus.REJECTED;
 
-    // Убрали обновление wallet так как модели Wallet больше нет
-    await prisma.user.update({
-      where: { cognitoId: user.cognitoId },
-      data: {
-        kycStatus: newStatus,
-        kycCompletedAt: newStatus === KycStatus.COMPLETED ? new Date() : null,
-      },
-    });
-
-    console.log(`KYC ${status} for user ${user.cognitoId}, status updated to ${newStatus}`);
+    if (user.kycStatus !== newStatus) {
+      await prisma.user.update({
+        where: { cognitoId: user.cognitoId },
+        data: {
+          kycStatus: newStatus,
+          kycCompletedAt: newStatus === KycStatus.COMPLETED ? new Date() : null,
+        },
+      });
+      console.log(`KYC ${status} for user ${user.cognitoId}, status updated to ${newStatus}`);
+    } else {
+      console.log(
+        `KYC webhook for user ${user.cognitoId} with status ${status}, status already ${newStatus}. No update needed.`,
+      );
+    }
   }
 
-  async getInquiryData(inquiryId: string): Promise<{ status: KycInquiryStatus }> {
-    try {
-      const response = await axios.post(
-        `https://api.withpersona.com/api/v1/inquiries/${inquiryId}`,
-        {},
-        {
-          headers: {
-            "Persona-Version": "2023-01-05",
-            Authorization: `Bearer ${this.personaApiKey}`,
-            "Content-Type": "application/json",
-          },
-        },
-      );
-      return {
-        status: response.data.data.attributes.status as KycInquiryStatus,
+  async getInquiryData(inquiryId: string): Promise<{ status: PersonaInquiryStatus }> {
+    const { data } = await this._callPersonaApi<{
+      data: {
+        attributes: {
+          status: PersonaInquiryStatus;
+        };
+        id: string;
       };
-    } catch (error) {
-      if (error instanceof AxiosError) {
-        console.error("Persona API error:", error.response?.data);
-        throw KycError.providerError(`Persona API error: ${error.response?.status}`);
-      } else if (error instanceof Error) {
-        console.error("Unexpected error:", error.message);
-        throw KycError.providerError(`Unexpected error: ${error.message}`);
-      } else {
-        console.error("Unknown error:", error);
-        throw KycError.providerError("Unknown error occurred");
-      }
-    }
+    }>("get", `inquiries/${inquiryId}`);
+
+    return {
+      status: data.attributes.status as PersonaInquiryStatus,
+    };
   }
 
   private async getInquirySessionKey(inquiryId: string): Promise<{ sessionId: string }> {
-    try {
-      const response = await axios.post(
-        `https://api.withpersona.com/api/v1/inquiries/${inquiryId}/resume`,
-        {},
-        {
-          headers: {
-            "Persona-Version": "2023-01-05",
-            Authorization: `Bearer ${this.personaApiKey}`,
-            "Content-Type": "application/json",
-          },
-        },
-      );
-      return {
-        sessionId: response.data.data.attributes.session_id,
-      };
-    } catch (error) {
-      if (error instanceof AxiosError) {
-        console.error("Persona API error:", error.response?.data);
-        throw KycError.providerError(`Persona API error: ${error.response?.status}`);
-      } else if (error instanceof Error) {
-        console.error("Unexpected error:", error.message);
-        throw KycError.providerError(`Unexpected error: ${error.message}`);
-      } else {
-        console.error("Unknown error:", error);
-        throw KycError.providerError("Unknown error occurred");
-      }
-    }
+    const response = await this._callPersonaApi<{ data: { attributes: { session_id: string } } }>(
+      "post",
+      `inquiries/${inquiryId}/resume`,
+      {},
+    );
+
+    return {
+      sessionId: response.data.attributes.session_id,
+    };
   }
 
-  async handleInquiryStatusUpdate(inquiryId: string, userId: string) {
+  async handleInquiryStatusUpdate(inquiryId: string) {
     const { status } = await this.getInquiryData(inquiryId);
-    return await this.handleInquiryStatus(status, userId);
+    return await this.handleInquiryStatus(status, inquiryId);
   }
 
-  async handleInquiryStatus(inquiryStatus: KycInquiryStatus, userId: string): Promise<KycInquiryResponse> {
+  async handleInquiryStatus(inquiryStatus: PersonaInquiryStatus, inquiryId: string): Promise<InquiryStatusResponse> {
     switch (inquiryStatus) {
-      case KycInquiryStatus.COMPLETED:
-      case KycInquiryStatus.APPROVED:
-        await prisma.user.update({
-          where: { cognitoId: userId },
-          data: {
-            kycStatus: KycStatus.COMPLETED,
-            kycCompletedAt: new Date(),
-          },
-        });
+      case PersonaInquiryStatus.CREATED:
+      case PersonaInquiryStatus.PENDING:
         return {
-          status: KycInquiryStatus.APPROVED,
+          status: PersonaInquiryStatus.PENDING,
         };
-      case KycInquiryStatus.CREATED:
-      case KycInquiryStatus.PENDING:
-      case KycInquiryStatus.EXPIRED:
-        const { sessionId } = await this.getInquirySessionKey(inquiryStatus);
+      case PersonaInquiryStatus.COMPLETED:
+      case PersonaInquiryStatus.APPROVED:
         return {
-          status: KycInquiryStatus.PENDING,
-          sessionId,
+          status: PersonaInquiryStatus.APPROVED,
         };
-      case KycInquiryStatus.DECLINED:
-      case KycInquiryStatus.FAILED:
-        await prisma.user.update({
-          where: { cognitoId: userId },
-          data: {
-            kycStatus: KycStatus.REJECTED,
-            kycCompletedAt: new Date(),
-          },
-        });
+      case PersonaInquiryStatus.DECLINED:
+      case PersonaInquiryStatus.FAILED:
+      case PersonaInquiryStatus.EXPIRED:
         return {
-          status: KycInquiryStatus.DECLINED,
+          status: PersonaInquiryStatus.DECLINED,
         };
-
       default:
         throw KycError.providerError("Unknown inquiry status");
     }
