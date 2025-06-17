@@ -1,4 +1,4 @@
-import { Response } from "express";
+import { NextFunction, Response } from "express";
 import { AuthRequest } from "../common";
 import { UserService } from "./user.service";
 
@@ -45,26 +45,43 @@ export class UserController {
 
   /**
    * Обновляет email пользователя
+   * @returns Обновленный пользователь
    */
-  async updateEmail(req: AuthRequest, res: Response): Promise<void> {
-    if (!req.user) throw new Error("Unauthorized");
+  async updateEmail(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) throw new Error("Unauthorized");
+      if (!req.body.email) {
+        res.status(400).json({
+          success: false,
+          error: "Missing email",
+        });
+        return;
+      }
 
-    const { email } = req.body;
-
-    if (!email) {
-      res.status(400).json({
-        success: false,
-        error: "Missing email",
-      });
-      return;
+      const updatedUser = await this.userService.updateUserEmail(req.user.id, req.body.email);
+      res.json(updatedUser);
+    } catch (error) {
+      next(error);
     }
+  }
 
-    const updatedUser = await this.userService.updateUserEmail(req.user.id, email);
+  async getWalletAddress(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) throw new Error("Unauthorized");
 
-    res.json({
-      success: true,
-      data: updatedUser,
-    });
+      const user = await this.userService.getUserByCognitoId(req.user.id);
+
+      res.json({
+        success: true,
+        data: {
+          // @german fixme
+          walletAddress: "user.walletAddress",
+          kycStatus: user.kycStatus,
+        },
+      });
+    } catch (error: any) {
+      next(error);
+    }
   }
 }
 export const userController = new UserController();

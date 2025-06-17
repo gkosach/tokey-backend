@@ -1,11 +1,11 @@
-import { KycInquiryStatus } from "../enum/kyc-inquiry-status.enum";
+import { PersonaInquiryStatus } from "../enum/persona-inquiry-status.enum";
 
 export type KycInquiryResponse =
   | {
-      status: KycInquiryStatus.APPROVED;
+      status: PersonaInquiryStatus.APPROVED;
     }
-  | { status: KycInquiryStatus.DECLINED }
+  | { status: PersonaInquiryStatus.DECLINED }
   | {
-      status: KycInquiryStatus.PENDING;
+      status: PersonaInquiryStatus.PENDING;
       sessionId: string;
     };

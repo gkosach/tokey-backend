@@ -40,6 +40,8 @@ export namespace $Enums {
     PENDING: "PENDING";
     COMPLETED: "COMPLETED";
     REJECTED: "REJECTED";
+    NOT_STARTED: "NOT_STARTED";
+    APPROVED: "APPROVED";
   };
 
   export type KycStatus = (typeof KycStatus)[keyof typeof KycStatus];

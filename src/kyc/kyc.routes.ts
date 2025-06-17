@@ -14,7 +14,7 @@ router.get("/status", authMiddleware(), (req, res, next) => {
   return kycController.getKycStatus(req, res, next);
 });
 
-router.post("/start", authMiddleware(), (req, res, next) => {
+router.post("/verificate", authMiddleware(), (req, res, next) => {
   return kycController.startVerification(req, res, next);
 });
 

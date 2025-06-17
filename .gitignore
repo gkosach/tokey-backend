@@ -1,7 +1,8 @@
 # compiled output
 /dist
 /node_modules
-
+.development.env
+.env
 # Logs
 logs
 *.log
@@ -61,3 +62,6 @@ prisma/migrations/dev.db*
 
 # Husky
 .husky/_
+!/.development.env
+
+!/.env

@@ -11,7 +11,7 @@ export class UserService {
         data: {
           cognitoId: data.cognitoId,
           email: data.email,
-          kycStatus: KycStatus.PENDING,
+          kycStatus: KycStatus.NOT_STARTED,
         },
       });
     } catch (error) {
@@ -69,5 +69,8 @@ export class UserService {
       }
       throw error;
     }
+  }
+  async getUserTokenBalances(cognitoId: string) {
+    // @german create me
   }
 }
