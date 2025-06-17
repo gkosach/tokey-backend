@@ -108,9 +108,18 @@ export class KycService {
               });
               // Возвращаем ошибку или специальный ответ, что уже верифицирован
               throw KycError.alreadyVerified();
-            case PersonaInquiryStatus.DECLINED:
             case PersonaInquiryStatus.FAILED:
             case PersonaInquiryStatus.EXPIRED:
+              await tx.user.update({
+                where: { cognitoId: user.cognitoId },
+                data: {
+                  kycStatus: KycStatus.NOT_STARTED,
+                  kycProviderId: null,
+                  kycCompletedAt: null,
+                },
+              });
+              break;
+            case PersonaInquiryStatus.DECLINED:
               await tx.user.update({
                 where: { cognitoId: user.cognitoId },
                 data: {
