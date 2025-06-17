@@ -28,22 +28,18 @@ export class KycService {
           "Content-Type": "application/json",
         },
       });
+
       if (!response || !response.data) {
         throw KycError.providerError("Persona API error: 400");
       }
       return response.data;
     } catch (error) {
-      if (error && (error as any).isAxiosError) {
-        const err: any = error;
-        console.error(`Persona API error on ${method} ${path}:`, err.response?.data);
-        throw KycError.providerError(`Persona API error: ${err.response?.status}`);
-      } else if (error instanceof Error) {
-        console.error(`Unexpected error on ${method} ${path}:`, error.message);
-        throw KycError.providerError(`Unexpected error: ${error.message}`);
-      } else {
-        console.error(`Unknown error on ${method} ${path}:`, error);
-        throw KycError.providerError("Unknown error occurred");
+      if ((error as any).isAxiosError) {
+        const axiosError = error as any;
+        const message = axiosError.response?.data?.message || axiosError.message;
+        throw KycError.providerError(`Persona API error: ${axiosError.response?.status} - ${message}`);
       }
+      throw error;
     }
   }
 

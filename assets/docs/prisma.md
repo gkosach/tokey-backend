@@ -16,6 +16,12 @@ npx prisma generate
 dotenv -e .development.env -- npm run seed
 ```
 
+Просмотр данных
+
+```bash
+dotenv -e .development.env -- npx prisma studio
+```
+
 ---
 
 ## Продакшн

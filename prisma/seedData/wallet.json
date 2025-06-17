@@ -1,1 +1,16 @@
-{}
+[
+  {
+    "userId": "550e8400-e29b-41d4-a716-446655440001",
+    "tatumWalletId": "tatum_wallet_123",
+    "walletAddress": "0x742d35Cc6634C0532925a3b8D4C0C8b3C2e1e1e1",
+    "status": "active",
+    "createdAt": "2024-03-16T12:00:00.000Z"
+  },
+  {
+    "userId": "550e8400-e29b-41d4-a716-446655440003",
+    "tatumWalletId": "tatum_wallet_456",
+    "walletAddress": "0x742d35Cc6634C0532925a3b8D4C0C8b3C2e1e2e2",
+    "status": "active",
+    "createdAt": "2024-03-08T10:00:00.000Z"
+  }
+]
