@@ -40,7 +40,6 @@ describe("KycService - Critical Tests", () => {
         }),
       );
 
-      // 🔧 ИСПРАВЛЕНО: мокаем axios() вместо axios.post()
       const personaError = new Error("Request failed with status code 400");
       (personaError as any).isAxiosError = true;
       (personaError as any).response = {
@@ -49,7 +48,6 @@ describe("KycService - Critical Tests", () => {
         data: { message: "Invalid template" },
       };
 
-      // Мокаем axios функцию напрямую
       mockedAxios.mockRejectedValueOnce(personaError);
 
       await expect(kycService.initiateVerification("cognito-123")).rejects.toThrow(
