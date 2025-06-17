@@ -34,7 +34,7 @@ if (process.env.NODE_ENV === "production") {
 app.use(
   express.json({
     verify: (req, _, buf) => {
-      (req as any).rawBody = buf;
+      (req as any).rawBody = buf.toString("utf8");
     },
   }),
 );

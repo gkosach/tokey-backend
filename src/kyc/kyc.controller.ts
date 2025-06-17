@@ -58,6 +58,8 @@ export class KycController {
         attributes: { status },
       } = webhookPayloadData;
 
+      console.log("New webhook event:", { inquiryId: inquiryId, status: status });
+
       await this.kycService.handleWebhook(inquiryId as string, status as PersonaInquiryEvent);
 
       res.json({

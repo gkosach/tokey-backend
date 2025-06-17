@@ -204,7 +204,7 @@ export class KycService {
         where: { cognitoId: user.cognitoId },
         data: {
           kycStatus: newStatus,
-          kycCompletedAt: newStatus === KycStatus.COMPLETED ? new Date() : null,
+          kycCompletedAt: newStatus === KycStatus.APPROVED ? new Date() : null,
         },
       });
       console.log(`KYC ${eventName} for user ${user.cognitoId}, status updated to ${newStatus}`);
@@ -236,8 +236,6 @@ export class KycService {
       `inquiries/${inquiryId}/resume`,
     );
 
-    console.log(response.meta["session-token"]);
-
     return {
       sessionToken: response.meta["session-token"],
     };
@@ -252,7 +250,7 @@ export class KycService {
         };
       case PersonaInquiryEvent.APPROVED:
         return {
-          status: KycStatus.COMPLETED,
+          status: KycStatus.APPROVED,
         };
       case PersonaInquiryEvent.DECLINED:
       case PersonaInquiryEvent.FAILED:
