@@ -63,8 +63,13 @@ export class UserController {
     } catch (error) {
       next(error);
     }
+  }
 
-    const updatedUser = await this.userService.updateUserEmail(req.user.id, email);
+  async getWalletAddress(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) throw new Error("Unauthorized");
+
+      const user = await this.userService.getUserByCognitoId(req.user.id);
 
       res.json({
         success: true,
@@ -74,7 +79,7 @@ export class UserController {
           kycStatus: user.kycStatus,
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       next(error);
     }
   }

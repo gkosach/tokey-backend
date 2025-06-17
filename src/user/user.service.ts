@@ -14,9 +14,6 @@ export class UserService {
           kycStatus: KycStatus.NOT_STARTED,
         },
       });
-
-      console.log("✅ Found user:", { id: user.id, email: user.email });
-      return user;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
         throw UserError.conflict("User with this email or cognitoId already exists");

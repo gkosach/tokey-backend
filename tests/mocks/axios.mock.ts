@@ -8,20 +8,19 @@ export const createAxiosMock = () => {
 
   // 🔧 ИСПРАВЛЕНО: создаем настоящие Error объекты, наследующие от Error
   const createAxiosErrorMock = (status: number, message: string) => {
-    const error = new Error(`Request failed with status code ${status}`) as AxiosError;
-
-    // Добавляем все необходимые свойства AxiosError
-    error.isAxiosError = true;
-    error.response = {
-      status,
-      statusText: status === 400 ? "Bad Request" : "Error",
-      data: { message },
-      headers: {},
-      config: {} as any,
-    };
-    error.config = {} as any;
-    error.code = "ERR_BAD_REQUEST";
-    error.name = "AxiosError";
+    const error = new AxiosError(
+      `Request failed with status code ${status}`,
+      "ERR_BAD_REQUEST",
+      {} as any,
+      {} as any,
+      {
+        status,
+        statusText: status === 400 ? "Bad Request" : "Error",
+        data: { message },
+        headers: {},
+        config: {} as any,
+      } as any,
+    );
 
     return error;
   };

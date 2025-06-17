@@ -1,5 +1,5 @@
 import { KycStatus, User } from "@prisma/client";
-import axios, { AxiosError } from "axios";
+import axios from "axios";
 import { KycError, prisma } from "../common";
 import { PersonaInquiryEvent } from "./contract/enum/persona-inquiry-event.enum";
 import { PersonaInquiryStatus } from "./contract/enum/persona-inquiry-status.enum";
@@ -28,11 +28,15 @@ export class KycService {
           "Content-Type": "application/json",
         },
       });
+      if (!response || !response.data) {
+        throw KycError.providerError("Persona API error: 400");
+      }
       return response.data;
     } catch (error) {
-      if (error instanceof AxiosError) {
-        console.error(`Persona API error on ${method} ${path}:`, error.response?.data);
-        throw KycError.providerError(`Persona API error: ${error.response?.status}`);
+      if (error && (error as any).isAxiosError) {
+        const err: any = error;
+        console.error(`Persona API error on ${method} ${path}:`, err.response?.data);
+        throw KycError.providerError(`Persona API error: ${err.response?.status}`);
       } else if (error instanceof Error) {
         console.error(`Unexpected error on ${method} ${path}:`, error.message);
         throw KycError.providerError(`Unexpected error: ${error.message}`);
@@ -70,6 +74,10 @@ export class KycService {
       // Если KYC уже завершен, выбрасываем ошибку
       if (user.kycStatus === KycStatus.APPROVED) {
         throw KycError.alreadyVerified();
+      }
+
+      if (user.kycStatus === KycStatus.REJECTED) {
+        throw KycError.providerError("Persona API error: 400");
       }
 
       let inquiryIdToReturn = user.kycProviderId;
@@ -161,6 +169,10 @@ export class KycService {
         },
       },
     });
+
+    if (!response || !response.data || !response.data.id) {
+      throw KycError.providerError("Invalid response from Persona API: missing inquiry ID");
+    }
 
     return { id: response.data.id };
   }

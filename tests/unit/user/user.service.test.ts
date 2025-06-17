@@ -18,7 +18,7 @@ describe("UserService - Critical Tests", () => {
       const mockCreatedUser = {
         id: "user-456",
         ...userData,
-        kycStatus: KycStatus.PENDING,
+        kycStatus: KycStatus.NOT_STARTED,
         referralLink: null,
         kycProviderId: null,
         kycCompletedAt: null,
@@ -33,10 +33,10 @@ describe("UserService - Critical Tests", () => {
         data: {
           cognitoId: "new-123",
           email: "new@tokey.com",
-          kycStatus: KycStatus.PENDING,
+          kycStatus: KycStatus.NOT_STARTED,
         },
       });
-      expect(result.kycStatus).toBe(KycStatus.PENDING);
+      expect(result.kycStatus).toBe(KycStatus.NOT_STARTED);
     });
 
     it("🔴 КРИТИЧНО: обрабатывает дублирование пользователей", async () => {
