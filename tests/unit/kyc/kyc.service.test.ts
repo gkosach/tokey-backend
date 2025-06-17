@@ -215,7 +215,7 @@ describe("KycService - Critical Tests", () => {
       expect(prisma.user.update).toHaveBeenCalledWith({
         where: { cognitoId: "cognito-123" },
         data: {
-          kycStatus: KycStatus.COMPLETED,
+          kycStatus: KycStatus.APPROVED,
           kycCompletedAt: expect.any(Date),
         },
       });
