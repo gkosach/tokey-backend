@@ -17,6 +17,18 @@ export class PropertyController {
   }
 
   /**
+   * Получает все доступные районы недвижимости
+   */
+  async getAvailableDistricts(req: Request, res: Response): Promise<void> {
+    const result = await this.propertyService.getAvailableDistricts();
+
+    res.json({
+      success: true,
+      data: result,
+    });
+  }
+
+  /**
    * Получает все объекты недвижимости с фильтрацией
    */
   async getAllProperties(req: Request, res: Response): Promise<void> {

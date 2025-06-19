@@ -1,5 +1,5 @@
 import { Prisma, Property, PropertyStatus } from "@prisma/client";
-import { prisma, PropertyError } from "../common";
+import { prisma, PropertyError, PropertyMaxPrice } from "../common";
 
 export class PropertyService {
   /**
@@ -57,7 +57,7 @@ export class PropertyService {
     const where: Prisma.PropertyWhereInput = {
       district: { contains: filters?.district || "" },
       roi: { gte: filters?.roi || 0 },
-      price: { gte: filters?.minPrice || 0, lte: filters?.maxPrice || 1e20 },
+      price: { gte: filters?.minPrice || 0, lte: filters?.maxPrice || PropertyMaxPrice },
     };
 
     if (filters?.status) where.status = filters.status;
@@ -74,6 +74,18 @@ export class PropertyService {
     ]);
 
     return { properties, total };
+  }
+
+  async getAvailableDistricts() {
+    const response = await prisma.property.findMany({ select: { district: true } });
+
+    return response.reduce<{ districts: string[] }>(
+      (acc, p) => {
+        acc.districts.push(p.district);
+        return acc;
+      },
+      { districts: [] },
+    );
   }
 
   /**
