@@ -130,12 +130,12 @@ describe("PropertyService - Critical Tests", () => {
 
   // 🟡 СРЕДНЯЯ КРИТИЧНОСТЬ: Фильтрация недвижимости (пользовательский опыт)
   describe("getAllProperties", () => {
-    it("🟡 СРЕДНЕ-КРИТИЧНО: фильтрует по статусу ACTIVE", async () => {
+    it("🟡 СРЕДНЕ-КРИТИЧНО: фильтрует по статусу COMING_SOON", async () => {
       const mockProperties = [
         {
           id: "prop-1",
           title: "ЖК Активный",
-          status: PropertyStatus.ACTIVE,
+          status: PropertyStatus.COMING_SOON,
           district: "ЦАО",
           availableTokens: 500000,
         },
@@ -145,13 +145,18 @@ describe("PropertyService - Critical Tests", () => {
       prisma.property.count.mockResolvedValue(1);
 
       const result = await propertyService.getAllProperties({
-        status: PropertyStatus.ACTIVE,
+        status: PropertyStatus.COMING_SOON,
         limit: 10,
         offset: 0,
       });
 
       expect(prisma.property.findMany).toHaveBeenCalledWith({
-        where: { status: PropertyStatus.ACTIVE },
+        where: {
+          status: PropertyStatus.COMING_SOON,
+          district: { contains: "" },
+          price: { gte: 0, lte: 100000000000000000000 },
+          roi: { gte: 0 },
+        },
         orderBy: { createdAt: "desc" },
         take: 10,
         skip: 0,
@@ -161,25 +166,26 @@ describe("PropertyService - Critical Tests", () => {
     });
 
     it("🟡 СРЕДНЕ-КРИТИЧНО: фильтрует по району", async () => {
-      const mockProperties = [
-        { id: "prop-1", district: "ЦАО", title: "ЖК Центральный" },
-        { id: "prop-2", district: "ЦАО", title: "ЖК Престижный" },
-      ];
+      const mockProperties = [{ id: "prop-1", district: "Forest Hill", title: "Forest Hill Mansion" }];
 
       prisma.property.findMany.mockResolvedValue(mockProperties);
-      prisma.property.count.mockResolvedValue(2);
+      prisma.property.count.mockResolvedValue(1);
 
       const result = await propertyService.getAllProperties({
-        district: "ЦАО",
+        district: "Forest Hill",
       });
 
       expect(prisma.property.findMany).toHaveBeenCalledWith({
-        where: { district: "ЦАО" },
+        where: {
+          district: { contains: "Forest Hill" },
+          price: { gte: 0, lte: 100000000000000000000 },
+          roi: { gte: 0 },
+        },
         orderBy: { createdAt: "desc" },
         take: 20,
         skip: 0,
       });
-      expect(result.properties).toHaveLength(2);
+      expect(result.properties).toHaveLength(1);
     });
   });
 
