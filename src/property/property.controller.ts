@@ -20,12 +20,15 @@ export class PropertyController {
    * Получает все объекты недвижимости с фильтрацией
    */
   async getAllProperties(req: Request, res: Response): Promise<void> {
-    const { district, status, developerId, limit, offset } = req.query;
+    const { district, status, roi, minPrice, maxPrice, limit, offset } = req.query;
 
     const filters = {
       district: district as string,
       status: status as any,
-      developerId: developerId as string,
+      roi: parseInt(roi as string),
+      minPrice: parseInt(minPrice as string),
+      maxPrice: parseInt(maxPrice as string),
+      // developerId: developerId as string,
       limit: limit ? parseInt(limit as string) : undefined,
       offset: offset ? parseInt(offset as string) : undefined,
     };

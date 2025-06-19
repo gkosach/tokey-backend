@@ -18,7 +18,7 @@
       "amenities": ["Fitness Center", "Underground Parking", "Rooftop Terrace", "Concierge"],
       "buildingType": "High-rise Residential Complex",
       "type": "apartment",
-      "yearBuilt": 2023,
+      "willBeReadyYear": 2027,
       "floors": 25,
       "apartments": 180
     },
@@ -43,7 +43,7 @@
       "amenities": ["Landscaped Park", "Sports Court", "Café", "Co-working Space"],
       "buildingType": "Business-class Residential Complex",
       "type": "apartment",
-      "yearBuilt": 2024,
+      "willBeReadyYear": 2027,
       "floors": 12,
       "apartments": 120
     },
@@ -68,7 +68,7 @@
       "amenities": ["Private Waterfront", "Spa Center", "Restaurant", "Wine Cellar", "Helipad"],
       "buildingType": "Elite Residential Complex",
       "type": "apartment",
-      "yearBuilt": 2023,
+      "willBeReadyYear": 2038,
       "floors": 35,
       "apartments": 95
     },
@@ -93,7 +93,7 @@
       "amenities": ["Private Garden", "Smart Home System", "Heated Driveway", "Private Elevator"],
       "buildingType": "Luxury Villa Complex",
       "type": "villa",
-      "yearBuilt": 2024,
+      "willBeReadyYear": 2028,
       "floors": 3,
       "apartments": 10
     },
@@ -118,7 +118,7 @@
       "amenities": ["Rooftop Patio", "Community BBQ Area", "Bike Storage", "Playground"],
       "buildingType": "Townhouse Community",
       "type": "townhouse",
-      "yearBuilt": 2025,
+      "willBeReadyYear": 2028,
       "floors": 3,
       "apartments": 40
     },
@@ -134,7 +134,7 @@
     "availableTokens": 180000,
     "status": "COMING_SOON",
     "description": "Sustainable living in a community of modern tiny homes. Each home is built with eco-friendly materials and features solar panels and rainwater harvesting systems.",
-    "address": "1 Bluffers Park, Scarborough, ON M1M 3W3",
+    "address": "1 Bluffers Park, Toronto, ON M1M 3W3",
     "roi": 7.5,
     "price": 95000.0,
     "metadata": {
@@ -143,7 +143,7 @@
       "amenities": ["Solar Panels", "Community Garden", "Composting Area", "EV Charging"],
       "buildingType": "Tiny Home Community",
       "type": "tinyhouse",
-      "yearBuilt": 2023,
+      "willBeReadyYear": 2028,
       "floors": 1,
       "apartments": 25
     },
@@ -159,7 +159,7 @@
     "availableTokens": 220000,
     "status": "COMING_SOON",
     "description": "Classic Muskoka cottages with private lake access. Perfect for seasonal getaways or year-round living. Enjoy boating, fishing, and stunning natural surroundings.",
-    "address": "123 Cottage Lane, Bracebridge, ON P1L 1A9",
+    "address": "123 Cottage Lane, Toronto, ON P1L 1A9",
     "roi": 6.2,
     "price": 120000.0,
     "metadata": {
@@ -168,7 +168,7 @@
       "amenities": ["Private Dock", "Fire Pit", "Boat House", "Hiking Trails"],
       "buildingType": "Cottage Community",
       "type": "cottage",
-      "yearBuilt": 2020,
+      "willBeReadyYear": 2028,
       "floors": 2,
       "apartments": 15
     },
@@ -193,7 +193,7 @@
       "amenities": ["All-inclusive Utilities", "High-speed Wi-Fi", "Study Lounge", "On-site Laundry", "Gym"],
       "buildingType": "Student Housing",
       "type": "rooms",
-      "yearBuilt": 2022,
+      "willBeReadyYear": 2028,
       "floors": 5,
       "apartments": 80
     },
@@ -218,7 +218,7 @@
       "amenities": ["Private Entrance", "Terrace", "Underground Parking", "Pet-friendly"],
       "buildingType": "Stacked Townhouse Complex",
       "type": "townhouse",
-      "yearBuilt": 2022,
+      "willBeReadyYear": 2028,
       "floors": 4,
       "apartments": 60
     },
@@ -243,7 +243,7 @@
       "amenities": ["Rooftop Pool", "Concierge", "Art Gallery Lobby", "Freight Elevator"],
       "buildingType": "Loft Conversion",
       "type": "apartment",
-      "yearBuilt": 2023,
+      "willBeReadyYear": 2028,
       "floors": 8,
       "apartments": 110
     },
@@ -259,7 +259,7 @@
     "availableTokens": 250000,
     "status": "COMING_SOON",
     "description": "Secluded, luxurious cottages nestled within the Haliburton Forest. An off-grid experience with all the modern comforts. Perfect for nature lovers seeking privacy and tranquility.",
-    "address": "25 Forest Trail, Haliburton, ON K0M 1S0",
+    "address": "25 Forest Trail, Toronto, ON K0M 1S0",
     "roi": 6.0,
     "price": 140000.0,
     "metadata": {
@@ -268,7 +268,7 @@
       "amenities": ["Off-grid Power", "Wood Stove", "Sauna", "Private Trail Access"],
       "buildingType": "Luxury Cottage",
       "type": "cottage",
-      "yearBuilt": 2025,
+      "willBeReadyYear": 2028,
       "floors": 1,
       "apartments": 8
     },
@@ -293,7 +293,7 @@
       "amenities": ["Landscaped Gardens", "Swimming Pool", "Wine Cellar", "Gated Community"],
       "buildingType": "Detached Luxury Villa",
       "type": "villa",
-      "yearBuilt": 2023,
+      "willBeReadyYear": 2028,
       "floors": 3,
       "apartments": 5
     },
@@ -318,7 +318,7 @@
       "amenities": ["LEED Gold Certification", "Fitness Centre", "Rooftop Terrace", "Party Room", "Bike Paths"],
       "buildingType": "Modern Condominium",
       "type": "apartment",
-      "yearBuilt": 2022,
+      "willBeReadyYear": 2028,
       "floors": 15,
       "apartments": 250
     },
@@ -343,7 +343,7 @@
       "amenities": ["Private Backyard", "Finished Basement", "Garage", "Close to Transit"],
       "buildingType": "Freehold Townhouse",
       "type": "townhouse",
-      "yearBuilt": 2021,
+      "willBeReadyYear": 2028,
       "floors": 3,
       "apartments": 22
     },
@@ -359,7 +359,7 @@
     "availableTokens": 180000,
     "status": "COMING_SOON",
     "description": "A secluded, architect-designed tiny house overlooking a vineyard on the Niagara Escarpment. An ideal retreat for wine lovers and hikers, offering a unique, minimalist luxury experience.",
-    "address": "4040 Vineland Road, Beamsville, ON L0R 1B3",
+    "address": "4040 Vineland Road, Toronto, ON L0R 1B3",
     "roi": 7.8,
     "price": 110000.0,
     "metadata": {
@@ -368,7 +368,7 @@
       "amenities": ["Vineyard Views", "Fire Pit", "Proximity to Wineries", "Hiking Trail Access"],
       "buildingType": "Luxury Tiny House",
       "type": "tinyhouse",
-      "yearBuilt": 2025,
+      "willBeReadyYear": 2028,
       "floors": 1,
       "apartments": 1
     },
@@ -393,7 +393,7 @@
       "amenities": ["Shared Kitchen", "Rooftop Deck", "Bi-weekly Cleaning", "All Utilities Included"],
       "buildingType": "Co-living House",
       "type": "rooms",
-      "yearBuilt": 2019,
+      "willBeReadyYear": 2030,
       "floors": 3,
       "apartments": 12
     },
@@ -409,7 +409,7 @@
     "availableTokens": 950000,
     "status": "COMING_SOON",
     "description": "Soaring new condominium at the heart of the new downtown Vaughan. Direct subway access, state-of-the-art amenities, and unparalleled convenience outside of Toronto.",
-    "address": "100 New Park Place, Vaughan, ON L4K 0H9",
+    "address": "100 New Park Place, Toronto, ON L4K 0H9",
     "roi": 8.9,
     "price": 260000.0,
     "metadata": {
@@ -418,7 +418,7 @@
       "amenities": ["Direct Subway Access", "Indoor Pool", "Basketball Court", "24/7 Concierge", "Golf Simulator"],
       "buildingType": "High-rise Condominium",
       "type": "apartment",
-      "yearBuilt": 2024,
+      "willBeReadyYear": 2027,
       "floors": 55,
       "apartments": 600
     },
@@ -434,7 +434,7 @@
     "availableTokens": 350000,
     "status": "COMING_SOON",
     "description": "A beautifully restored 19th-century farmhouse on 5 acres of land. Modern amenities meet rustic charm, complete with a large barn, ideal for events or a studio.",
-    "address": "888 County Road 1, Picton, ON K0K 2T0",
+    "address": "888 County Road 1, Toronto, ON K0K 2T0",
     "roi": 7.1,
     "price": 190000.0,
     "metadata": {
@@ -443,7 +443,7 @@
       "amenities": ["Acreage", "Restored Barn", "Vegetable Garden", "Chef's Kitchen", "Fireplace"],
       "buildingType": "Farmhouse Estate",
       "type": "cottage",
-      "yearBuilt": 2025,
+      "willBeReadyYear": 2038,
       "floors": 2,
       "apartments": 1
     },
@@ -459,7 +459,7 @@
     "availableTokens": 720000,
     "status": "COMING_SOON",
     "description": "A gated community of luxury villas with unobstructed views of Lake Ontario and the Toronto skyline. Private boat slips and an exclusive residents' clubhouse.",
-    "address": "1 Lake Shore Blvd West, Etobicoke, ON M8V 3X9",
+    "address": "1 Lake Shore Blvd West, Toronto, ON M8V 3X9",
     "roi": 10.2,
     "price": 680000.0,
     "metadata": {
@@ -468,7 +468,7 @@
       "amenities": ["Private Boat Slips", "Residents' Clubhouse", "Tennis Courts", "Indoor/Outdoor Pool"],
       "buildingType": "Waterfront Villa Community",
       "type": "villa",
-      "yearBuilt": 2023,
+      "willBeReadyYear": 2028,
       "floors": 2,
       "apartments": 18
     },
@@ -493,7 +493,7 @@
       "amenities": ["Exposed Brick", "12-foot Ceilings", "Radiant Floor Heating", "Artisan Community"],
       "buildingType": "Heritage Loft Conversion",
       "type": "apartment",
-      "yearBuilt": 2022,
+      "willBeReadyYear": 2028,
       "floors": 6,
       "apartments": 90
     },
@@ -509,7 +509,7 @@
     "availableTokens": 550000,
     "status": "COMING_SOON",
     "description": "A new development of contemporary townhouses, featuring clean lines, open-concept interiors, and energy-efficient designs. Close to Shops at Don Mills and the DVP.",
-    "address": "1090 Don Mills Road, North York, ON M3C 3R6",
+    "address": "1090 Don Mills Road, Toronto, ON M3C 3R6",
     "roi": 7.3,
     "price": 185000.0,
     "metadata": {
@@ -518,7 +518,7 @@
       "amenities": ["Energy Star Appliances", "Green Roof", "Private Garage", "Smart Thermostat"],
       "buildingType": "Modern Townhouse",
       "type": "townhouse",
-      "yearBuilt": 2026,
+      "willBeReadyYear": 2028,
       "floors": 3,
       "apartments": 35
     },
@@ -543,7 +543,7 @@
       "amenities": ["Co-working Space", "Weekly Social Events", "Professional Cleaning", "Fitness Studio"],
       "buildingType": "Co-living Apartment",
       "type": "rooms",
-      "yearBuilt": 2023,
+      "willBeReadyYear": 2028,
       "floors": 30,
       "apartments": 150
     },
@@ -559,7 +559,7 @@
     "availableTokens": 210000,
     "status": "COMING_SOON",
     "description": "A cozy, four-season cottage on the shores of Sturgeon Lake. Features a large deck, private dock, and a classic wood-burning fireplace. Excellent for fishing, swimming, and snowmobiling.",
-    "address": "45 Lakeside Drive, Bobcaygeon, ON K0M 1A0",
+    "address": "45 Lakeside Drive, Toronto, ON K0M 1A0",
     "roi": 6.4,
     "price": 135000.0,
     "metadata": {
@@ -568,7 +568,7 @@
       "amenities": ["Waterfront", "Private Dock", "Wood-burning Fireplace", "Bunkie"],
       "buildingType": "Year-round Cottage",
       "type": "cottage",
-      "yearBuilt": 2018,
+      "willBeReadyYear": 2028,
       "floors": 2,
       "apartments": 1
     },
@@ -584,7 +584,7 @@
     "availableTokens": 450000,
     "status": "COMING_SOON",
     "description": "Spacious executive townhomes backing onto the Glen Abbey Golf Course. Premium finishes, double car garages, and serene, private settings in a highly sought-after community.",
-    "address": "1570 Dorval Drive, Oakville, ON L6M 4M1",
+    "address": "1570 Dorval Drive, Toronto, ON L6M 4M1",
     "roi": 8.0,
     "price": 275000.0,
     "metadata": {
@@ -593,7 +593,7 @@
       "amenities": ["Golf Course Views", "Double Garage", "Gourmet Kitchen", "Community Centre"],
       "buildingType": "Executive Townhouse",
       "type": "townhouse",
-      "yearBuilt": 2022,
+      "willBeReadyYear": 2028,
       "floors": 2,
       "apartments": 50
     },
@@ -618,7 +618,7 @@
       "amenities": ["Indoor Pool & Spa", "Home Theatre", "10-Car Garage", "Tennis Court", "Staff Quarters"],
       "buildingType": "Luxury Mansion",
       "type": "villa",
-      "yearBuilt": 2025,
+      "willBeReadyYear": 2028,
       "floors": 3,
       "apartments": 1
     },
@@ -643,7 +643,7 @@
       "amenities": ["Murphy Bed", "Smart Storage", "Communal Workspace", "Bike Room"],
       "buildingType": "Micro-Loft Building",
       "type": "tinyhouse",
-      "yearBuilt": 2024,
+      "willBeReadyYear": 2028,
       "floors": 4,
       "apartments": 40
     },

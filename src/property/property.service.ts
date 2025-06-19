@@ -47,15 +47,21 @@ export class PropertyService {
   async getAllProperties(filters?: {
     district?: string;
     status?: PropertyStatus;
-    developerId?: string;
+    roi?: number;
+    minPrice?: number;
+    maxPrice?: number;
+    // developerId?: string;
     limit?: number;
     offset?: number;
   }): Promise<{ properties: Property[]; total: number }> {
-    const where: Prisma.PropertyWhereInput = {};
+    const where: Prisma.PropertyWhereInput = {
+      district: { contains: filters?.district || "" },
+      roi: { gte: filters?.roi || 0 },
+      price: { gte: filters?.minPrice || 0, lte: filters?.maxPrice || 1e20 },
+    };
 
-    if (filters?.district) where.district = filters.district;
     if (filters?.status) where.status = filters.status;
-    if (filters?.developerId) where.developerId = filters.developerId;
+    // if (filters?.developerId) where.developerId = filters.developerId;
 
     const [properties, total] = await Promise.all([
       prisma.property.findMany({
