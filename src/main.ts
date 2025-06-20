@@ -34,7 +34,7 @@ if (process.env.NODE_ENV === "production") {
 app.use(
   express.json({
     verify: (req, _, buf) => {
-      (req as any).rawBody = buf;
+      (req as any).rawBody = buf.toString("utf8");
     },
   }),
 );
@@ -103,6 +103,16 @@ app.use("*", (req: Request, res: Response): void => {
 
 /** Error handler */
 app.use((error: any, req: Request, res: Response, next: NextFunction): void => {
+  if (error.statusCode && error.message) {
+    console.error(`❌ ${req.method} ${req.path} - ${error.message}`);
+    res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
   const errorResponse = handlePrismaError(error);
   console.error(`❌ ${req.method} ${req.path} - ${error.message}`);
 
@@ -116,7 +126,9 @@ app.use((error: any, req: Request, res: Response, next: NextFunction): void => {
   });
 });
 
-/** Graceful error handling */
+/**
+ * Graceful error handling
+ */
 process.on("unhandledRejection", (reason, promise) => {
   console.error("⚠️ Unhandled Rejection:", reason);
 });
@@ -125,7 +137,9 @@ process.on("uncaughtException", (error) => {
   console.error("⚠️ Uncaught Exception:", error);
 });
 
-/** Запуск сервера */
+/**
+ * Запуск сервера
+ */
 const port = Number(process.env.PORT) || 3002;
 app.listen(port, "0.0.0.0", (): void => {
   console.log(`🚀 Server started on port ${port} | Environment: ${process.env.NODE_ENV || "unknown"}`);

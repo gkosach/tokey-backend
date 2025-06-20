@@ -1,9 +1,29 @@
 import { PropertyStatus } from "@prisma/client";
-import { prisma, TokenError } from "../common";
+import { HttpError, prisma } from "../common";
+import { PropertyService } from "../property/property.service";
+import { UserService } from "../user/user.service";
 
+/**
+ * Сервис для управления токенами недвижимости
+ *
+ * ОТВЕТСТВЕННОСТЬ:
+ * - Расчет балансов токенов пользователей по всем Property
+ * - Обработка покупки токенов и создание транзакций
+ * - Получение истории транзакций и статистики
+ * - Обновление доступных токенов в Property
+ */
 export class TokenService {
+  private userService: UserService;
+  private propertyService: PropertyService;
+
+  constructor() {
+    this.userService = new UserService();
+    this.propertyService = new PropertyService();
+  }
+
   /**
-   * Получает балансы токенов пользователя
+   * Получает балансы токенов пользователя по всем Property
+   * Каждая Property = отдельный смарт-контракт
    */
   async getUserTokenBalances(cognitoId: string) {
     const user = await prisma.user.findUnique({
@@ -12,7 +32,7 @@ export class TokenService {
     });
 
     if (!user) {
-      throw TokenError.userNotFound();
+      throw new HttpError("User not found", 404);
     }
 
     const transactions = await prisma.tokenTransaction.findMany({
@@ -24,9 +44,11 @@ export class TokenService {
             title: true,
             contractAddress: true,
             district: true,
+            type: true,
           },
         },
       },
+      orderBy: { createdAt: "desc" },
     });
 
     const balanceMap = new Map();
@@ -36,11 +58,27 @@ export class TokenService {
       if (existing) {
         existing.totalTokens += tx.tokensAmount;
         existing.transactionCount += 1;
+        existing.transactions.push({
+          id: tx.id,
+          tokensAmount: tx.tokensAmount,
+          txHash: tx.txHash,
+          createdAt: tx.createdAt,
+          transactionType: tx.transactionType,
+        });
       } else {
         balanceMap.set(tx.propertyId, {
           property: tx.property,
           totalTokens: tx.tokensAmount,
           transactionCount: 1,
+          transactions: [
+            {
+              id: tx.id,
+              tokensAmount: tx.tokensAmount,
+              txHash: tx.txHash,
+              createdAt: tx.createdAt,
+              transactionType: tx.transactionType,
+            },
+          ],
         });
       }
     });
@@ -49,9 +87,18 @@ export class TokenService {
   }
 
   /**
-   * Получает транзакции по недвижимости
+   * Получает транзакции по конкретной недвижимости
    */
   async getPropertyTransactions(propertyId: string) {
+    const property = await prisma.property.findUnique({
+      where: { id: propertyId },
+      select: { id: true },
+    });
+
+    if (!property) {
+      throw new HttpError("Property not found", 404);
+    }
+
     return prisma.tokenTransaction.findMany({
       where: { propertyId },
       include: {
@@ -64,7 +111,7 @@ export class TokenService {
   }
 
   /**
-   * Получает историю транзакций пользователя (ЕДИНСТВЕННЫЙ метод)
+   * Получает историю транзакций пользователя (ledger)
    */
   async getTransactionHistory(cognitoId: string, limit: number = 20, offset: number = 0) {
     const user = await prisma.user.findUnique({
@@ -73,7 +120,7 @@ export class TokenService {
     });
 
     if (!user) {
-      throw TokenError.userNotFound();
+      throw new HttpError("User not found", 404);
     }
 
     const [transactions, total] = await Promise.all([
@@ -113,40 +160,39 @@ export class TokenService {
         where: { id: propertyId },
       });
 
-      if (!property || property.availableTokens < purchasedTokens) {
-        throw TokenError.insufficientTokens();
+      if (!property) {
+        throw new HttpError("Property not found", 404);
       }
+
+      if (property.availableTokens < purchasedTokens) {
+        throw new HttpError("Insufficient tokens available", 400);
+      }
+
+      const newAvailableTokens = property.availableTokens - purchasedTokens;
+      const newStatus = newAvailableTokens === 0 ? PropertyStatus.SOLD_OUT : property.status;
 
       return tx.property.update({
         where: { id: propertyId },
         data: {
-          availableTokens: { decrement: purchasedTokens },
-          status: property.availableTokens - purchasedTokens === 0 ? PropertyStatus.SOLD_OUT : property.status,
+          availableTokens: newAvailableTokens,
+          status: newStatus,
         },
       });
     });
   }
 
   /**
-   * Покупает токены недвижимости
+   * Покупает токены недвижимости (упрощенная версия)
    */
-  async purchaseTokens(cognitoId: string, propertyId: string, tokensAmount: number, paymentData: any) {
-    const user = await prisma.user.findUnique({
-      where: { cognitoId },
-      select: { id: true, kycStatus: true, wallet: true },
-    });
-
-    if (!user || !user.wallet) {
-      throw TokenError.userNotFound();
-    }
-
-    if (user.kycStatus !== "COMPLETED") {
-      throw TokenError.kycRequired();
-    }
-
-    // TODO: Интеграция с Tatum для подписания транзакции
-    const txHash = `0x${Math.random().toString(16).substring(2, 66).padStart(64, "0")}`;
-
+  async purchaseTokens(
+    cognitoId: string,
+    propertyId: string,
+    tokensAmount: number,
+    paymentData: { amount: number; currency: string },
+  ) {
+    const user = await this.userService.validateUserForPurchase(cognitoId);
+    const property = await this.propertyService.validatePropertyForPurchase(propertyId, tokensAmount);
+    const txHash = this.generateTxHash();
     return prisma.$transaction(async (tx) => {
       const transaction = await tx.tokenTransaction.create({
         data: {
@@ -155,7 +201,7 @@ export class TokenService {
           tokensAmount,
           txHash,
           fromAddress: "0x0000000000000000000000000000000000000000",
-          toAddress: user.wallet!.walletAddress,
+          toAddress: user.wallet.walletAddress,
           paymentAmount: paymentData.amount,
           paymentCurrency: paymentData.currency,
           transactionType: "PURCHASE",
@@ -166,6 +212,7 @@ export class TokenService {
         where: { id: propertyId },
         data: {
           availableTokens: { decrement: tokensAmount },
+          status: property.availableTokens - tokensAmount === 0 ? PropertyStatus.SOLD_OUT : property.status,
         },
       });
 
@@ -174,15 +221,51 @@ export class TokenService {
   }
 
   /**
+   * Генерирует хеш транзакции (временная заглушка)
+   */
+  generateTxHash(): string {
+    return `0x${Math.random().toString(16).substring(2, 66).padStart(64, "0")}`;
+  }
+
+  /**
+   * В будущем здесь будет интеграция с Tatum
+   */
+  async executeBlockchainTransaction(
+    fromAddress: string,
+    toAddress: string,
+    tokensAmount: number,
+    contractAddress: string,
+  ): Promise<string> {
+    // TODO: Интеграция с Tatum для реальной блокчейн транзакции
+    return this.generateTxHash();
+  }
+
+  /**
    * Статистика по токенам недвижимости
    */
   async getPropertyTokenStats(propertyId: string) {
+    const property = await prisma.property.findUnique({
+      where: { id: propertyId },
+      select: { id: true },
+    });
+
+    if (!property) {
+      throw new HttpError("Property not found", 404);
+    }
+
     const transactions = await prisma.tokenTransaction.findMany({
       where: { propertyId },
-      select: { tokensAmount: true, createdAt: true },
+      select: {
+        tokensAmount: true,
+        createdAt: true,
+        paymentAmount: true,
+        paymentCurrency: true,
+      },
+      orderBy: { createdAt: "desc" },
     });
 
     const totalSold = transactions.reduce((sum, tx) => sum + tx.tokensAmount, 0);
+    const totalVolume = transactions.reduce((sum, tx) => sum + tx.paymentAmount, 0);
 
     const uniqueInvestors = await prisma.tokenTransaction.groupBy({
       by: ["userId"],
@@ -193,6 +276,7 @@ export class TokenService {
     return {
       totalTokensSold: totalSold,
       totalInvestors: uniqueInvestors.length,
+      totalVolume,
       recentTransactions: transactions.slice(0, 10),
     };
   }

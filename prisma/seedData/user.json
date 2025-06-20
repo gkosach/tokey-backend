@@ -14,7 +14,7 @@
     "cognitoId": "11a8a4e8-3001-70ea-71e0-b577a78107e0",
     "email": "user2@example.com",
     "referralLink": "REF002-USER2",
-    "kycStatus": "PENDING",
+    "kycStatus": null,
     "kycProviderId": null,
     "kycCompletedAt": null,
     "createdAt": "2024-03-12T14:30:00.000Z"
@@ -24,7 +24,7 @@
     "cognitoId": "22b9b5f9-4002-81fb-82f1-c688b89218f1",
     "email": "developer@tokey.com",
     "referralLink": "REF003-DEV",
-    "kycStatus": "COMPLETED",
+    "kycStatus": "APPROVED",
     "kycProviderId": "persona_verification_456",
     "kycCompletedAt": "2024-03-08T09:00:00.000Z",
     "createdAt": "2024-03-08T08:00:00.000Z"

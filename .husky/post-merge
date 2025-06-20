@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔄 Auto-syncing database after git pull..."
+npm run db:sync
+echo "✅ Database synchronized automatically"

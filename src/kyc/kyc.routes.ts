@@ -1,4 +1,5 @@
 import express from "express";
+import "express-async-errors";
 import { authMiddleware } from "../middleware/auth.middleware";
 import { personaWebhookMiddleware } from "../middleware/persona-webhook.middleware";
 import { kycController } from "./kyc.controller";
@@ -10,16 +11,12 @@ import { kycController } from "./kyc.controller";
  */
 const router = express.Router();
 
-router.get("/status", authMiddleware(), (req, res, next) => {
-  return kycController.getKycStatus(req, res, next);
-});
+router.get("/status", authMiddleware(), kycController.getKycStatus.bind(kycController));
 
-router.post("/verificate", authMiddleware(), (req, res, next) => {
-  return kycController.startVerification(req, res, next);
-});
+router.post("/verificate", authMiddleware(), kycController.startVerification.bind(kycController));
 
-router.post("/webhook", personaWebhookMiddleware, (req, res, next) => {
-  return kycController.handleWebhook(req, res, next);
-});
+router.post("/webhook", personaWebhookMiddleware, kycController.handleWebhook.bind(kycController));
+
+router.get("/details", authMiddleware(), kycController.getKycDetails.bind(kycController));
 
 export default router;
