@@ -1,8 +1,20 @@
-# compiled output
-/dist
-/node_modules
-.development.env
+# Environment variables
 .env
+.env.local
+.env.*.local
+.development.env
+.production.env
+!.example.env
+
+# Dependencies
+/node_modules
+
+# Build output
+/dist
+/build
+dist/
+build/
+
 # Logs
 logs
 *.log
@@ -12,9 +24,13 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
-# Tests - игнорируем coverage, НО НЕ badges
+# Testing
 /coverage
 /.nyc_output
+report
+junit.xml
+test-report.xml
+# НЕ игнорируем coverage badges
 !assets/coverage/*.svg
 
 # IDEs and editors
@@ -26,42 +42,23 @@ lerna-debug.log*
 .settings/
 *.sublime-workspace
 
-# IDE - VSCode
+# VSCode
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# Storage configs
-.env
-.development.env
-.production.env
-.env.local
-.env.*.local
-!.example.env
-
-# Temporary
-report
-junit.xml
-test-report.xml
-.commit
-
-# Build
-dist/
-build/
-
-# OS
+# OS files
 .DS_Store
 Thumbs.db
 
-# Prisma
-prisma/migrations/dev.db*
-!/.development.env
-!/.env
+# Temporary files
+.commit
 
 # Husky
 .husky/_
-!/.development.env
 
-!/.env
+# Prisma - НЕ игнорируем migrations и schema!
+# prisma/migrations/ - должно быть в Git
+# prisma/schema.prisma - должно быть в Git

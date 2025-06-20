@@ -1,3 +1,10 @@
 #!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🧪 Running tests before push..."
+npm run test
+
+echo "🗄️ Final database check..."
+npx prisma validate
 
 echo "🚀 Push authorized - tests will run in CI"

@@ -3,4 +3,15 @@
 echo "🔍 Code quality check..."
 npm run lint:fix
 npx tsc --noEmit
+
+echo "🗄️ Database schema validation..."
+npx prisma validate
+
+echo "🔄 Checking for unsaved schema changes..."
+npx prisma migrate diff --exit-code || {
+  echo "❌ ОШИБКА: Есть несохраненные изменения схемы БД!"
+  echo "Выполни: npm run db:migrate -- --name 'описание_изменения'"
+  exit 1
+}
+
 echo "✅ Ready to commit"

@@ -1,7 +1,7 @@
 import axios from "axios";
 import crypto from "crypto";
 import { TATUM_API_URL } from "../../constants";
-import { TatumError } from "../../error";
+import { HttpError } from "../../error";
 import { ITatumKMSProvider, TatumWallet } from "./index";
 
 /**
@@ -62,14 +62,16 @@ export class TatumKMSProvider implements ITatumKMSProvider {
 
       if (axios.isAxiosError(error)) {
         const message = error.response?.data?.message || error.message;
-        throw TatumError.walletCreationFailed(`KMS API error: ${message}`);
+        throw new HttpError(`KMS API error: ${message}`, 500);
       }
 
-      throw TatumError.walletCreationFailed("Unknown KMS error");
+      const message = error instanceof Error ? error.message : "Unknown KMS error";
+      throw new HttpError(`KMS API error: ${message}`, 500);
     }
   }
 
   /**
+   * TODO: заменить
    * Создает mock кошелек для разработки
    */
   private createMockWallet(userId: string): TatumWallet {
@@ -106,7 +108,7 @@ export class TatumKMSProvider implements ITatumKMSProvider {
       return response.data;
     } catch (error) {
       console.error("❌ Failed to get wallet address:", error);
-      throw new Error("Failed to retrieve wallet address from KMS");
+      throw new HttpError("Failed to retrieve wallet address from KMS", 500);
     }
   }
 
@@ -139,7 +141,7 @@ export class TatumKMSProvider implements ITatumKMSProvider {
       };
     } catch (error) {
       console.error("❌ Failed to get wallet info:", error);
-      throw TatumError.walletCreationFailed("Failed to get wallet info from KMS");
+      throw new HttpError("Failed to get wallet info from KMS", 500);
     }
   }
 
@@ -201,7 +203,7 @@ export class TatumKMSProvider implements ITatumKMSProvider {
       return response.data.result;
     } catch (error) {
       console.error("❌ Failed to get balance:", error);
-      throw new Error("Failed to get wallet balance");
+      throw new HttpError("Failed to get wallet balance", 500);
     }
   }
 }

@@ -8,7 +8,10 @@
     "prestart": "npm run build",
     "start": "node dist/main.js",
     "format:prettier": "prettier . --write",
-    "seed": "ts-node prisma/seed.ts",
+    "db:seed": "ts-node prisma/seed.ts",
+    "db:migrate": "prisma migrate dev",
+    "db:reset": "prisma migrate reset",
+    "db:sync": "npm run db:migrate && npm run db:seed",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "jest --coverage",
@@ -17,7 +20,7 @@
     "test:full": "node non-bll-scripts/test-with-badges.js",
     "generate:badges": "node non-bll-scripts/generate-badges.js",
     "prepare": "husky || true",
-    "postinstall": "husky || true",
+    "postinstall": "prisma generate",
     "ngrok": "node non-bll-scripts/start-ngrok.js"
   },
   "repository": {

@@ -88,7 +88,7 @@ export const mockUsers = {
     id: "user-123",
     cognitoId: "cognito-123",
     email: "test@tokey.com",
-    kycStatus: KycStatus.PENDING,
+    kycStatus: KycStatus.CREATED,
     kycProviderId: null,
     createdAt: new Date(),
   },

@@ -1,5 +1,5 @@
 import { Response } from "express";
-import { AuthRequest } from "../common/types/auth-request.types";
+import { AuthRequest } from "../common";
 import { TokenService } from "./token.service";
 
 export class TokenController {

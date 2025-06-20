@@ -1,6 +1,15 @@
 import { Prisma, Property, PropertyStatus } from "@prisma/client";
-import { prisma, PropertyError, PropertyMaxPrice } from "../common";
+import { HttpError, prisma } from "../common";
 
+/**
+ * Сервис для управления объектами недвижимости
+ *
+ * ОТВЕТСТВЕННОСТЬ:
+ * - CRUD операции с Property entity
+ * - Фильтрация и поиск недвижимости
+ * - Управление токенами и статусами
+ * - Валидация данных недвижимости
+ */
 export class PropertyService {
   /**
    * Создает объект недвижимости БЕЗ файлов
@@ -8,26 +17,14 @@ export class PropertyService {
   async createProperty(data: Prisma.PropertyCreateInput): Promise<Property> {
     return prisma.property.create({
       data: {
-        title: data.title,
-        contractAddress: data.contractAddress,
-        developerId: data.developerId,
-        district: data.district,
-        type: data.type,
-        totalTokens: data.totalTokens,
-        availableTokens: data.availableTokens,
+        ...data,
         status: PropertyStatus.COMING_SOON,
-        description: data.description,
-        address: data.address,
-        roi: data.roi,
-        price: data.price,
       },
     });
   }
 
   /**
    * Получает объект недвижимости по ID
-   * @param id - Идентификатор объекта
-   * @returns Объект недвижимости
    */
   async getPropertyById(id: string): Promise<Property> {
     this.validateUuid(id);
@@ -36,14 +33,15 @@ export class PropertyService {
       where: { id },
     });
 
-    if (!property) throw PropertyError.notFound();
+    if (!property) {
+      throw new HttpError("Property not found", 404);
+    }
+
     return property;
   }
 
   /**
    * Получает все объекты недвижимости с фильтрацией
-   * @param filters - Фильтры поиска
-   * @returns Массив объектов недвижимости
    */
   async getAllProperties(filters?: {
     districts?: string[];
@@ -51,27 +49,36 @@ export class PropertyService {
     roi?: number;
     minPrice?: number;
     maxPrice?: number;
-    // developerId?: string;
     limit?: number;
     offset?: number;
   }): Promise<{ properties: Property[]; total: number }> {
-    const where: Prisma.PropertyWhereInput = {
-      district: filters?.districts ? { in: filters?.districts } : undefined,
-      roi: { gte: filters?.roi || 0 },
-      price: { gte: filters?.minPrice || 0, lte: filters?.maxPrice || PropertyMaxPrice },
-    };
+    const where: Prisma.PropertyWhereInput = {};
 
-    console.log("WHERE", where);
+    if (filters?.districts && filters.districts.length > 0) {
+      where.district = { in: filters.districts };
+    }
 
-    if (filters?.status) where.status = filters.status;
-    // if (filters?.developerId) where.developerId = filters.developerId;
+    if (filters?.roi !== undefined) {
+      where.roi = { gte: filters.roi };
+    }
+
+    if (filters?.minPrice !== undefined || filters?.maxPrice !== undefined) {
+      where.price = {
+        ...(filters.minPrice !== undefined && { gte: filters.minPrice }),
+        ...(filters.maxPrice !== undefined && { lte: filters.maxPrice }),
+      };
+    }
+
+    if (filters?.status) {
+      where.status = filters.status;
+    }
 
     const [properties, total] = await Promise.all([
       prisma.property.findMany({
         where,
         orderBy: { createdAt: "desc" },
-        take: filters?.limit || 20,
-        skip: filters?.offset || 0,
+        take: filters?.limit ?? 20,
+        skip: filters?.offset ?? 0,
       }),
       prisma.property.count({ where }),
     ]);
@@ -79,23 +86,22 @@ export class PropertyService {
     return { properties, total };
   }
 
-  async getAvailableDistricts() {
-    const response = await prisma.property.findMany({ select: { district: true } });
+  /**
+   * Получает уникальные районы
+   */
+  async getAvailableDistricts(): Promise<{ districts: string[] }> {
+    const response = await prisma.property.findMany({
+      select: { district: true },
+      distinct: ["district"],
+    });
 
-    return response.reduce<{ districts: string[] }>(
-      (acc, p) => {
-        acc.districts.push(p.district);
-        return acc;
-      },
-      { districts: [] },
-    );
+    return {
+      districts: response.map((p) => p.district),
+    };
   }
 
   /**
    * Обновляет статус объекта недвижимости
-   * @param id - Идентификатор объекта
-   * @param status - Новый статус
-   * @returns Обновленный объект
    */
   async updatePropertyStatus(id: string, status: PropertyStatus): Promise<Property> {
     this.validateUuid(id);
@@ -107,12 +113,71 @@ export class PropertyService {
   }
 
   /**
-   * Валидация UUID
+   * Валидация UUID (принимает любую версию UUID)
    */
   private validateUuid(id: string): void {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[4][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(id)) {
-      throw new Error("Invalid ID format");
+      throw new HttpError("Invalid ID format", 400);
     }
+  }
+
+  /**
+   * Проверяет недвижимость и доступность токенов
+   */
+  async validatePropertyForPurchase(propertyId: string, tokensAmount: number) {
+    if (tokensAmount <= 0) {
+      throw new HttpError("Tokens amount must be positive", 400);
+    }
+
+    this.validateUuid(propertyId);
+
+    const property = await prisma.property.findUnique({
+      where: { id: propertyId },
+    });
+
+    if (!property) {
+      throw new HttpError("Property not found", 404);
+    }
+
+    if (property.status !== PropertyStatus.ACTIVE) {
+      throw new HttpError("Property is not available for purchase", 400);
+    }
+
+    if (property.availableTokens < tokensAmount) {
+      throw new HttpError("Insufficient tokens available", 400);
+    }
+
+    return property;
+  }
+
+  /**
+   * Обновляет доступные токены после покупки
+   */
+  async updateTokensAfterPurchase(propertyId: string, tokensAmount: number) {
+    return prisma.$transaction(async (tx) => {
+      const property = await tx.property.findUnique({
+        where: { id: propertyId },
+        select: { availableTokens: true, status: true },
+      });
+
+      if (!property) {
+        throw new HttpError("Property not found", 404);
+      }
+      if (property.availableTokens < tokensAmount) {
+        throw new HttpError("Insufficient tokens available", 400);
+      }
+
+      const newAvailableTokens = property.availableTokens - tokensAmount;
+      const newStatus = newAvailableTokens === 0 ? PropertyStatus.SOLD_OUT : property.status;
+
+      return tx.property.update({
+        where: { id: propertyId },
+        data: {
+          availableTokens: newAvailableTokens,
+          status: newStatus,
+        },
+      });
+    });
   }
 }

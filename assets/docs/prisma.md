@@ -1,47 +1,57 @@
-# База данных и Prisma
+# 🗄️ База данных - Простые правила
 
-## Локальная разработка
+## 📝 Что нужно знать
+
+### Получил изменения из Git?
 
 ```bash
-# Создание миграции
-dotenv -e .development.env -- npx prisma migrate dev --name <название>
-
-# Применение миграций
-dotenv -e .development.env -- npx prisma migrate dev
-
-# Генерация клиента
-npx prisma generate
-
-# Заполнение данными
-dotenv -e .development.env -- npm run seed
+git pull
 ```
 
-Просмотр данных
+_БД синхронизируется автоматически через post-merge хук!_
+
+### Изменил схему БД?
 
 ```bash
-dotenv -e .development.env -- npx prisma studio
+npm run db:migrate
+```
+
+### Что-то сломалось?
+
+```bash
+npm run db:reset
+```
+
+### Посмотреть данные
+
+```bash
+npx prisma studio
 ```
 
 ---
 
-## Продакшн
+## 🤖 Автоматизация
+
+- **Post-merge**: БД синхронизируется после каждого `git pull`
+- **Pre-commit**: Проверяет что миграции созданы
+- **Pre-push**: Валидирует схему БД
+- **CI/CD**: Блокирует некорректные PR
+
+## ❌ Запрещено
+
+- Изменять БД через SQL-клиенты
+- Удалять файлы миграций
+- `db:reset` на продакшене
+
+**Всё остальное делают хуки автоматически!**
+
+---
+
+## 🚀 Продакшн (только CI/CD)
 
 ```bash
-# Применение миграций
 npx prisma migrate deploy
-
-# Генерация клиента
 npx prisma generate
-
-# Запуск приложения
-npm run start
 ```
 
----
-
-## Emergency
-
-```bash
-# Сброс БД (если нужно)
-dotenv -e .development.env -- npx prisma migrate reset --force
-```
+## 🚨 Нарушение правил = блокировка PR

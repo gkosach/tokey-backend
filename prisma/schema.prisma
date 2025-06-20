@@ -9,11 +9,10 @@ datasource db {
 }
 
 enum KycStatus {
-  NOT_STARTED @map("not_started")
-  PENDING     @map("pending")
-  COMPLETED   @map("completed")
-  APPROVED    @map("approved")
-  REJECTED    @map("rejected")
+  CREATED   @map("inquiry.created")
+  COMPLETED @map("inquiry.completed")
+  APPROVED  @map("inquiry.approved")
+  DECLINED  @map("inquiry.declined")
 }
 
 enum PropertyStatus {
@@ -24,14 +23,14 @@ enum PropertyStatus {
 }
 
 model User {
-  id             String    @id @default(uuid()) @db.Uuid
-  cognitoId      String    @unique @map("cognito_id") @db.VarChar(128)
-  email          String    @unique @db.VarChar(255)
-  referralLink   String?   @unique @map("referral_link") @db.VarChar(50)
-  kycStatus      KycStatus @default(PENDING) @map("kyc_status")
-  kycProviderId  String?   @map("kyc_provider_id") @db.VarChar(100)
-  kycCompletedAt DateTime? @map("kyc_completed_at") @db.Timestamptz(3)
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  id             String     @id @default(uuid()) @db.Uuid
+  cognitoId      String     @unique @map("cognito_id") @db.VarChar(128)
+  email          String     @unique @db.VarChar(255)
+  referralLink   String?    @unique @map("referral_link") @db.VarChar(50)
+  kycStatus      KycStatus? @map("kyc_status")
+  kycProviderId  String?    @map("kyc_provider_id") @db.VarChar(100)
+  kycCompletedAt DateTime?  @map("kyc_completed_at") @db.Timestamptz(3)
+  createdAt      DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
 
   transactions TokenTransaction[]
   wallet       Wallet?

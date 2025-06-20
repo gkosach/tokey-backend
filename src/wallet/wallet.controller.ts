@@ -1,5 +1,5 @@
 import { Response } from "express";
-import { AuthRequest } from "../common";
+import { AuthRequest, HttpError } from "../common";
 import { KycService } from "../kyc/kyc.service";
 import { UserService } from "../user/user.service";
 import { WalletService } from "./wallet.service";
@@ -19,7 +19,9 @@ export class WalletController {
    * Создает кошелек
    */
   async createWallet(req: AuthRequest, res: Response): Promise<void> {
-    if (!req.user) throw new Error("Unauthorized");
+    if (!req.user) {
+      throw new HttpError("Unauthorized", 401);
+    }
 
     const user = await this.userService.getUserByCognitoId(req.user.id);
     const walletAddress = await this.walletService.createWalletForUser(user.id);
@@ -35,12 +37,12 @@ export class WalletController {
    * Получает полный профиль пользователя (KYC + Wallet)
    */
   async getUserProfile(req: AuthRequest, res: Response): Promise<void> {
-    if (!req.user) throw new Error("Unauthorized");
+    if (!req.user) {
+      throw new HttpError("Unauthorized", 401);
+    }
 
-    // req.user.id содержит cognitoId, используем его везде последовательно
     const user = await this.userService.getUserByCognitoId(req.user.id);
     const kycDetails = await this.kycService.getKycDetails(req.user.id);
-
     const hasWallet = await this.walletService.hasWallet(user.id);
 
     let walletInfo = null;
@@ -58,7 +60,7 @@ export class WalletController {
         },
         kyc: kycDetails,
         wallet: walletInfo,
-        canCreateWallet: kycDetails.walletEnabled && !hasWallet,
+        canCreateWallet: kycDetails.canCreateWallet && !hasWallet,
       },
     });
   }
@@ -67,7 +69,9 @@ export class WalletController {
    * Получает информацию только о кошельке
    */
   async getWalletInfo(req: AuthRequest, res: Response): Promise<void> {
-    if (!req.user) throw new Error("Unauthorized");
+    if (!req.user) {
+      throw new HttpError("Unauthorized", 401);
+    }
 
     const user = await this.userService.getUserByCognitoId(req.user.id);
     const wallet = await this.walletService.getWalletByUserId(user.id);
@@ -82,11 +86,13 @@ export class WalletController {
    * Получает баланс кошелька
    */
   async getWalletBalance(req: AuthRequest, res: Response): Promise<void> {
-    if (!req.user) throw new Error("Unauthorized");
+    if (!req.user) {
+      throw new HttpError("Unauthorized", 401);
+    }
 
     const canPerformOperations = await this.kycService.canPerformOperations(req.user.id);
     if (!canPerformOperations) {
-      throw new Error("KYC verification required for balance operations");
+      throw new HttpError("KYC verification required for balance operations", 403);
     }
 
     const user = await this.userService.getUserByCognitoId(req.user.id);
