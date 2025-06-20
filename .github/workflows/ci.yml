@@ -7,9 +7,9 @@ on:
     branches: [main, testnet, production]
 
 jobs:
-  # Блокируем прямые push
+  # Блокируем только прямые push (НЕ через PR)
   block-direct-push:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && !github.event.pull_request
     runs-on: ubuntu-latest
     steps:
       - name: Block direct push to protected branches
@@ -70,7 +70,7 @@ jobs:
       - name: Run tests with coverage
         run: npm run test:badges
 
-  # Обновляем badges только при push в main (через merge)
+  # Обновляем badges при успешном мердже в main
   update-badges:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
