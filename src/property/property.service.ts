@@ -12,6 +12,7 @@ export class PropertyService {
         contractAddress: data.contractAddress,
         developerId: data.developerId,
         district: data.district,
+        type: data.type,
         totalTokens: data.totalTokens,
         availableTokens: data.availableTokens,
         status: PropertyStatus.COMING_SOON,
@@ -45,7 +46,7 @@ export class PropertyService {
    * @returns Массив объектов недвижимости
    */
   async getAllProperties(filters?: {
-    district?: string;
+    districts?: string[];
     status?: PropertyStatus;
     roi?: number;
     minPrice?: number;
@@ -55,10 +56,12 @@ export class PropertyService {
     offset?: number;
   }): Promise<{ properties: Property[]; total: number }> {
     const where: Prisma.PropertyWhereInput = {
-      district: { contains: filters?.district || "" },
+      district: filters?.districts ? { in: filters?.districts } : undefined,
       roi: { gte: filters?.roi || 0 },
       price: { gte: filters?.minPrice || 0, lte: filters?.maxPrice || PropertyMaxPrice },
     };
+
+    console.log("WHERE", where);
 
     if (filters?.status) where.status = filters.status;
     // if (filters?.developerId) where.developerId = filters.developerId;

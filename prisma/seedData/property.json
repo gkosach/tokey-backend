@@ -12,12 +12,12 @@
     "address": "123 Bay Street, Toronto, ON M5J 2R8",
     "roi": 8.5,
     "price": 250000.0,
+    "type": "apartment",
     "metadata": {
       "photos": ["https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800", "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800", "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800", "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800"],
       "videos": ["https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4"],
       "amenities": ["Fitness Center", "Underground Parking", "Rooftop Terrace", "Concierge"],
       "buildingType": "High-rise Residential Complex",
-      "type": "apartment",
       "willBeReadyYear": 2027,
       "floors": 25,
       "apartments": 180
@@ -37,12 +37,12 @@
     "address": "456 Queens Quay West, Toronto, ON M5V 3A8",
     "roi": 7.2,
     "price": 180000.0,
+    "type": "apartment",
     "metadata": {
       "photos": ["https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800", "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800", "https://images.unsplash.com/photo-1600607687644-aac4c3eac7f4?w=800", "https://images.unsplash.com/photo-1600566752355-35792bedcfea?w=800"],
       "videos": ["https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_2mb.mp4"],
       "amenities": ["Landscaped Park", "Sports Court", "Café", "Co-working Space"],
       "buildingType": "Business-class Residential Complex",
-      "type": "apartment",
       "willBeReadyYear": 2027,
       "floors": 12,
       "apartments": 120
@@ -62,12 +62,12 @@
     "address": "789 Front Street West, Toronto, ON M5V 1B5",
     "roi": 9.1,
     "price": 320000.0,
+    "type": "apartment",
     "metadata": {
       "photos": ["https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=800", "https://images.unsplash.com/photo-1600566752229-450a5ba3b5a3?w=800", "https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800", "https://images.unsplash.com/photo-1600607688969-a5bfcd646154?w=800"],
       "videos": ["https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_5mb.mp4"],
       "amenities": ["Private Waterfront", "Spa Center", "Restaurant", "Wine Cellar", "Helipad"],
       "buildingType": "Elite Residential Complex",
-      "type": "apartment",
       "willBeReadyYear": 2038,
       "floors": 35,
       "apartments": 95
@@ -87,12 +87,12 @@
     "address": "100 Yorkville Avenue, Toronto, ON M5R 1C1",
     "roi": 11.5,
     "price": 750000.0,
+    "type": "villa",
     "metadata": {
       "photos": ["https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800", "https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=800", "https://images.unsplash.com/photo-1598228723793-52759bba239c?w=800"],
       "videos": [],
       "amenities": ["Private Garden", "Smart Home System", "Heated Driveway", "Private Elevator"],
       "buildingType": "Luxury Villa Complex",
-      "type": "villa",
       "willBeReadyYear": 2028,
       "floors": 3,
       "apartments": 10
@@ -112,12 +112,12 @@
     "address": "2500 Queen Street East, Toronto, ON M4L 1J2",
     "roi": 6.8,
     "price": 150000.0,
+    "type": "townhouse",
     "metadata": {
       "photos": ["https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800", "https://images.unsplash.com/photo-1570129477492-45c003edd2e7?w=800", "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800"],
       "videos": [],
       "amenities": ["Rooftop Patio", "Community BBQ Area", "Bike Storage", "Playground"],
       "buildingType": "Townhouse Community",
-      "type": "townhouse",
       "willBeReadyYear": 2028,
       "floors": 3,
       "apartments": 40
@@ -137,12 +137,12 @@
     "address": "1 Bluffers Park, Toronto, ON M1M 3W3",
     "roi": 7.5,
     "price": 95000.0,
+    "type": "tinyhouse",
     "metadata": {
       "photos": ["https://images.unsplash.com/photo-1523425088922-83741c61512f?w=800", "https://images.unsplash.com/photo-1623616612853-746b5a3f125a?w=800", "https://images.unsplash.com/photo-1593856133423-386f91361284?w=800"],
       "videos": ["https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4"],
       "amenities": ["Solar Panels", "Community Garden", "Composting Area", "EV Charging"],
       "buildingType": "Tiny Home Community",
-      "type": "tinyhouse",
       "willBeReadyYear": 2028,
       "floors": 1,
       "apartments": 25
@@ -162,12 +162,12 @@
     "address": "123 Cottage Lane, Toronto, ON P1L 1A9",
     "roi": 6.2,
     "price": 120000.0,
+    "type": "cottage",
     "metadata": {
       "photos": ["https://images.unsplash.com/photo-1558969446-6c1016d9b521?w=800", "https://images.unsplash.com/photo-1542314831-068cd1dbb563?w=800", "https://images.unsplash.com/photo-1572120360610-d971b9d7767c?w=800"],
       "videos": [],
       "amenities": ["Private Dock", "Fire Pit", "Boat House", "Hiking Trails"],
       "buildingType": "Cottage Community",
-      "type": "cottage",
       "willBeReadyYear": 2028,
       "floors": 2,
       "apartments": 15
@@ -187,12 +187,12 @@
     "address": "455 Spadina Avenue, Toronto, ON M5S 2G8",
     "roi": 5.9,
     "price": 75000.0,
+    "type": "rooms",
     "metadata": {
       "photos": ["https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=800", "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?w=800", "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800"],
       "videos": [],
       "amenities": ["All-inclusive Utilities", "High-speed Wi-Fi", "Study Lounge", "On-site Laundry", "Gym"],
       "buildingType": "Student Housing",
-      "type": "rooms",
       "willBeReadyYear": 2028,
       "floors": 5,
       "apartments": 80
@@ -212,12 +212,12 @@
     "address": "125 East Liberty Street, Toronto, ON M6K 3K4",
     "roi": 8.1,
     "price": 210000.0,
+    "type": "townhouse",
     "metadata": {
       "photos": ["https://images.unsplash.com/photo-1575517111478-7f6afd0973db?w=800", "https://images.unsplash.com/photo-1605276374104-5de67d42b240?w=800", "https://images.unsplash.com/photo-1605146769289-440113cc3d00?w=800"],
       "videos": [],
       "amenities": ["Private Entrance", "Terrace", "Underground Parking", "Pet-friendly"],
       "buildingType": "Stacked Townhouse Complex",
-      "type": "townhouse",
       "willBeReadyYear": 2028,
       "floors": 4,
       "apartments": 60
@@ -237,12 +237,12 @@
     "address": "700 King Street West, Toronto, ON M5V 2Y6",
     "roi": 9.3,
     "price": 280000.0,
+    "type": "apartment",
     "metadata": {
       "photos": ["https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800", "https://images.unsplash.com/photo-1560185893-a55cbc8c57e8?w=800", "https://images.unsplash.com/photo-1631049382583-77d018a14918?w=800"],
       "videos": [],
       "amenities": ["Rooftop Pool", "Concierge", "Art Gallery Lobby", "Freight Elevator"],
       "buildingType": "Loft Conversion",
-      "type": "apartment",
       "willBeReadyYear": 2028,
       "floors": 8,
       "apartments": 110
@@ -262,12 +262,12 @@
     "address": "25 Forest Trail, Toronto, ON K0M 1S0",
     "roi": 6.0,
     "price": 140000.0,
+    "type": "cottage",
     "metadata": {
       "photos": ["https://images.unsplash.com/photo-1502005229762-cf1b2da7c5d6?w=800", "https://images.unsplash.com/photo-1449158743716-0a902a4d2d83?w=800", "https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=800"],
       "videos": [],
       "amenities": ["Off-grid Power", "Wood Stove", "Sauna", "Private Trail Access"],
       "buildingType": "Luxury Cottage",
-      "type": "cottage",
       "willBeReadyYear": 2028,
       "floors": 1,
       "apartments": 8
@@ -287,12 +287,12 @@
     "address": "50 Cluny Drive, Toronto, ON M4W 2P7",
     "roi": 12.0,
     "price": 850000.0,
+    "type": "villa",
     "metadata": {
       "photos": ["https://images.unsplash.com/photo-1576941089067-2de3c901e126?w=800", "https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=800", "https://images.unsplash.com/photo-1600585152915-d208bec867a1?w=800"],
       "videos": ["https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_2mb.mp4"],
       "amenities": ["Landscaped Gardens", "Swimming Pool", "Wine Cellar", "Gated Community"],
       "buildingType": "Detached Luxury Villa",
-      "type": "villa",
       "willBeReadyYear": 2028,
       "floors": 3,
       "apartments": 5
@@ -312,12 +312,12 @@
     "address": "455 Front Street East, Toronto, ON M5A 1H7",
     "roi": 8.8,
     "price": 235000.0,
+    "type": "apartment",
     "metadata": {
       "photos": ["https://images.unsplash.com/photo-1493809842344-ab4029da33d0?w=800", "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800", "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800"],
       "videos": [],
       "amenities": ["LEED Gold Certification", "Fitness Centre", "Rooftop Terrace", "Party Room", "Bike Paths"],
       "buildingType": "Modern Condominium",
-      "type": "apartment",
       "willBeReadyYear": 2028,
       "floors": 15,
       "apartments": 250
@@ -337,12 +337,12 @@
     "address": "500 Sterling Road, Toronto, ON M6R 2B2",
     "roi": 7.0,
     "price": 165000.0,
+    "type": "townhouse",
     "metadata": {
       "photos": ["https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800", "https://images.unsplash.com/photo-1600585153492-3a5b9b3da5b7?w=800", "https://images.unsplash.com/photo-1628744448842-1b836434a50a?w=800"],
       "videos": [],
       "amenities": ["Private Backyard", "Finished Basement", "Garage", "Close to Transit"],
       "buildingType": "Freehold Townhouse",
-      "type": "townhouse",
       "willBeReadyYear": 2028,
       "floors": 3,
       "apartments": 22
@@ -362,12 +362,12 @@
     "address": "4040 Vineland Road, Toronto, ON L0R 1B3",
     "roi": 7.8,
     "price": 110000.0,
+    "type": "tinyhouse",
     "metadata": {
       "photos": ["https://images.unsplash.com/photo-1606232537443-a4c1b183658f?w=800", "https://images.unsplash.com/photo-1619443219483-3c9c99e7d413?w=800", "https://images.unsplash.com/photo-1596423237599-22a849d47244?w=800"],
       "videos": [],
       "amenities": ["Vineyard Views", "Fire Pit", "Proximity to Wineries", "Hiking Trail Access"],
       "buildingType": "Luxury Tiny House",
-      "type": "tinyhouse",
       "willBeReadyYear": 2028,
       "floors": 1,
       "apartments": 1
@@ -387,12 +387,12 @@
     "address": "200 Augusta Avenue, Toronto, ON M5T 2L6",
     "roi": 6.5,
     "price": 65000.0,
+    "type": "rooms",
     "metadata": {
       "photos": ["https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=800", "https://images.unsplash.com/photo-1567016376408-0226e4d0c1ea?w=800", "https://images.unsplash.com/photo-1618221195710-dd6b41fa2247?w=800"],
       "videos": [],
       "amenities": ["Shared Kitchen", "Rooftop Deck", "Bi-weekly Cleaning", "All Utilities Included"],
       "buildingType": "Co-living House",
-      "type": "rooms",
       "willBeReadyYear": 2030,
       "floors": 3,
       "apartments": 12
@@ -412,12 +412,12 @@
     "address": "100 New Park Place, Toronto, ON L4K 0H9",
     "roi": 8.9,
     "price": 260000.0,
+    "type": "apartment",
     "metadata": {
       "photos": ["https://images.unsplash.com/photo-1582719508461-905c673771fd?w=800", "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800", "https://images.unsplash.com/photo-1596436889106-be35e843f974?w=800"],
       "videos": [],
       "amenities": ["Direct Subway Access", "Indoor Pool", "Basketball Court", "24/7 Concierge", "Golf Simulator"],
       "buildingType": "High-rise Condominium",
-      "type": "apartment",
       "willBeReadyYear": 2027,
       "floors": 55,
       "apartments": 600
@@ -437,12 +437,12 @@
     "address": "888 County Road 1, Toronto, ON K0K 2T0",
     "roi": 7.1,
     "price": 190000.0,
+    "type": "cottage",
     "metadata": {
       "photos": ["https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800", "https://images.unsplash.com/photo-1499696010180-025ef6e1a8f9?w=800", "https://images.unsplash.com/photo-1506377295352-e3154d43ea9e?w=800"],
       "videos": [],
       "amenities": ["Acreage", "Restored Barn", "Vegetable Garden", "Chef's Kitchen", "Fireplace"],
       "buildingType": "Farmhouse Estate",
-      "type": "cottage",
       "willBeReadyYear": 2038,
       "floors": 2,
       "apartments": 1
@@ -462,12 +462,12 @@
     "address": "1 Lake Shore Blvd West, Toronto, ON M8V 3X9",
     "roi": 10.2,
     "price": 680000.0,
+    "type": "villa",
     "metadata": {
       "photos": ["https://images.unsplash.com/photo-1599809275661-457a5c43da43?w=800", "https://images.unsplash.com/photo-1622015694828-40141a415494?w=800", "https://images.unsplash.com/photo-1584738766473-61c083de6f9c?w=800"],
       "videos": [],
       "amenities": ["Private Boat Slips", "Residents' Clubhouse", "Tennis Courts", "Indoor/Outdoor Pool"],
       "buildingType": "Waterfront Villa Community",
-      "type": "villa",
       "willBeReadyYear": 2028,
       "floors": 2,
       "apartments": 18
@@ -487,12 +487,12 @@
     "address": "33 Mill Street, Toronto, ON M5A 3R3",
     "roi": 9.5,
     "price": 310000.0,
+    "type": "apartment",
     "metadata": {
       "photos": ["https://images.unsplash.com/photo-1616594418293-1b9b1b1b1b1b?w=800", "https://images.unsplash.com/photo-1533090481723-88c7f92a3a5f?w=800", "https://images.unsplash.com/photo-1631049382583-77d018a14918?w=800"],
       "videos": ["https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_5mb.mp4"],
       "amenities": ["Exposed Brick", "12-foot Ceilings", "Radiant Floor Heating", "Artisan Community"],
       "buildingType": "Heritage Loft Conversion",
-      "type": "apartment",
       "willBeReadyYear": 2028,
       "floors": 6,
       "apartments": 90
@@ -512,12 +512,12 @@
     "address": "1090 Don Mills Road, Toronto, ON M3C 3R6",
     "roi": 7.3,
     "price": 185000.0,
+    "type": "townhouse",
     "metadata": {
       "photos": ["https://images.unsplash.com/photo-1600585152915-d208bec867a1?w=800", "https://images.unsplash.com/photo-1605146769289-440113cc3d00?w=800", "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800"],
       "videos": [],
       "amenities": ["Energy Star Appliances", "Green Roof", "Private Garage", "Smart Thermostat"],
       "buildingType": "Modern Townhouse",
-      "type": "townhouse",
       "willBeReadyYear": 2028,
       "floors": 3,
       "apartments": 35
@@ -537,12 +537,12 @@
     "address": "2221 Yonge Street, Toronto, ON M4S 2B4",
     "roi": 6.8,
     "price": 88000.0,
+    "type": "rooms",
     "metadata": {
       "photos": ["https://images.unsplash.com/photo-1615874959474-d609969a20ed?w=800", "https://images.unsplash.com/photo-1594493744929-54a8e0183b56?w=800", "https://images.unsplash.com/photo-1595526114035-0d45ed16da33?w=800"],
       "videos": [],
       "amenities": ["Co-working Space", "Weekly Social Events", "Professional Cleaning", "Fitness Studio"],
       "buildingType": "Co-living Apartment",
-      "type": "rooms",
       "willBeReadyYear": 2028,
       "floors": 30,
       "apartments": 150
@@ -562,12 +562,12 @@
     "address": "45 Lakeside Drive, Toronto, ON K0M 1A0",
     "roi": 6.4,
     "price": 135000.0,
+    "type": "cottage",
     "metadata": {
       "photos": ["https://images.unsplash.com/photo-1587061949409-02df43d8452f?w=800", "https://images.unsplash.com/photo-1604014237800-1c9102c219da?w=800", "https://images.unsplash.com/photo-1570793625055-3e23854a3634?w=800"],
       "videos": [],
       "amenities": ["Waterfront", "Private Dock", "Wood-burning Fireplace", "Bunkie"],
       "buildingType": "Year-round Cottage",
-      "type": "cottage",
       "willBeReadyYear": 2028,
       "floors": 2,
       "apartments": 1
@@ -587,12 +587,12 @@
     "address": "1570 Dorval Drive, Toronto, ON L6M 4M1",
     "roi": 8.0,
     "price": 275000.0,
+    "type": "townhouse",
     "metadata": {
       "photos": ["https://images.unsplash.com/photo-1628624747234-874885a73040?w=800", "https://images.unsplash.com/photo-1512915922686-57c11dde9b6b?w=800", "https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800"],
       "videos": ["https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4"],
       "amenities": ["Golf Course Views", "Double Garage", "Gourmet Kitchen", "Community Centre"],
       "buildingType": "Executive Townhouse",
-      "type": "townhouse",
       "willBeReadyYear": 2028,
       "floors": 2,
       "apartments": 50
@@ -612,12 +612,12 @@
     "address": "200 The Bridle Path, Toronto, ON M3B 2A7",
     "roi": 12.5,
     "price": 1200000.0,
+    "type": "villa",
     "metadata": {
       "photos": ["https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800", "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800", "https://images.unsplash.com/photo-1605146769289-440113cc3d00?w=800"],
       "videos": ["https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_2mb.mp4"],
       "amenities": ["Indoor Pool & Spa", "Home Theatre", "10-Car Garage", "Tennis Court", "Staff Quarters"],
       "buildingType": "Luxury Mansion",
-      "type": "villa",
       "willBeReadyYear": 2028,
       "floors": 3,
       "apartments": 1
@@ -637,12 +637,12 @@
     "address": "1356 Queen Street West, Toronto, ON M6K 1L4",
     "roi": 7.2,
     "price": 105000.0,
+    "type": "tinyhouse",
     "metadata": {
       "photos": ["https://images.unsplash.com/photo-1505693416388-ac5ce0687954?w=800", "https://images.unsplash.com/photo-1617104642839-a657879fb143?w=800", "https://images.unsplash.com/photo-1631049382583-77d018a14918?w=800"],
       "videos": [],
       "amenities": ["Murphy Bed", "Smart Storage", "Communal Workspace", "Bike Room"],
       "buildingType": "Micro-Loft Building",
-      "type": "tinyhouse",
       "willBeReadyYear": 2028,
       "floors": 4,
       "apartments": 40

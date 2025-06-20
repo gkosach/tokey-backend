@@ -60,6 +60,7 @@ model Property {
   developerId     String         @map("developer_id") @db.Uuid
   title           String         @db.VarChar(255)
   district        String         @db.VarChar(20)
+  type            String         @db.VarChar(20)
   totalTokens     Int            @map("total_tokens")
   availableTokens Int            @map("available_tokens")
   status          PropertyStatus @default(COMING_SOON)

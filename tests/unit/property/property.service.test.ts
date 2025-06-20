@@ -31,6 +31,7 @@ describe("PropertyService - Critical Tests", () => {
         contractAddress: "0x1234567890123456789012345678901234567890",
         developerId: "dev-123",
         district: "САО",
+        type: "villa",
         totalTokens: 1000000,
         availableTokens: 1000000,
         description: "Элитный ЖК",
@@ -76,6 +77,7 @@ describe("PropertyService - Critical Tests", () => {
           contractAddress: "0x1234567890123456789012345678901234567890",
           developerId: "dev-123",
           district: "ЦАО",
+          type: "villa",
           totalTokens: 500000,
           availableTokens: 500000,
         }),
@@ -153,8 +155,7 @@ describe("PropertyService - Critical Tests", () => {
       expect(prisma.property.findMany).toHaveBeenCalledWith({
         where: {
           status: PropertyStatus.COMING_SOON,
-          district: { contains: "" },
-          price: { gte: 0, lte: 100000000000000000000 },
+          price: { gte: 0, lte: 2e6 },
           roi: { gte: 0 },
         },
         orderBy: { createdAt: "desc" },
@@ -172,13 +173,13 @@ describe("PropertyService - Critical Tests", () => {
       prisma.property.count.mockResolvedValue(1);
 
       const result = await propertyService.getAllProperties({
-        district: "Forest Hill",
+        districts: ["Forest Hill"],
       });
 
       expect(prisma.property.findMany).toHaveBeenCalledWith({
         where: {
-          district: { contains: "Forest Hill" },
-          price: { gte: 0, lte: 100000000000000000000 },
+          district: { in: ["Forest Hill"] },
+          price: { gte: 0, lte: 2e6 },
           roi: { gte: 0 },
         },
         orderBy: { createdAt: "desc" },
