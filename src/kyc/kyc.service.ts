@@ -44,7 +44,7 @@ export class KycService {
 
     return {
       status: user.kycStatus,
-      canStart: user.kycStatus === null,
+      canStart: await this.canStartKyc(cognitoId),
     };
   }
 
@@ -53,21 +53,27 @@ export class KycService {
    */
   async initiateVerification(cognitoId: string): Promise<{ inquiryId: string; sessionToken: string }> {
     const user = await this.userService.getUserByCognitoId(cognitoId);
+
     if (user.kycStatus === KycStatus.APPROVED) {
       throw new HttpError("User is already verified", 409);
     }
 
-    if (user.kycStatus === KycStatus.DECLINED) {
-      throw new HttpError("KYC already rejected", 409);
+    if (user.kycStatus === KycStatus.COMPLETED) {
+      throw new HttpError("KYC verification is being processed", 409);
     }
 
+    if (user.kycStatus === KycStatus.DECLINED) {
+      const inquiry = await this.createPersonaInquiry(user);
+      const sessionToken = await this.getInquirySessionToken(inquiry.id);
+      await this.userService.updateKycStatusByCognitoId(cognitoId, KycStatus.CREATED, inquiry.id);
+      return { inquiryId: inquiry.id, sessionToken };
+    }
     if (user.kycStatus === KycStatus.CREATED && user.kycProviderId) {
       const sessionToken = await this.getInquirySessionToken(user.kycProviderId);
       return { inquiryId: user.kycProviderId, sessionToken };
     }
     const inquiry = await this.createPersonaInquiry(user);
     const sessionToken = await this.getInquirySessionToken(inquiry.id);
-
     await this.userService.updateKycStatusByCognitoId(cognitoId, KycStatus.CREATED, inquiry.id);
 
     return { inquiryId: inquiry.id, sessionToken };
@@ -89,13 +95,40 @@ export class KycService {
       await this.triggerWalletCreation(user.cognitoId);
     }
   }
-
   /**
    * Проверка бизнес-правил KYC
    */
   async canStartKyc(cognitoId: string): Promise<boolean> {
-    const user = await this.userService.getUserByCognitoId(cognitoId);
-    return user.kycStatus === null;
+    try {
+      const user = await this.userService.getUserByCognitoId(cognitoId);
+      return user.kycStatus === null || user.kycStatus === KycStatus.DECLINED;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Проверка возможности создания кошелька
+   */
+  async canCreateWallet(cognitoId: string): Promise<boolean> {
+    try {
+      const user = await this.userService.getUserByCognitoId(cognitoId);
+      return user.kycStatus === KycStatus.APPROVED;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Проверка возможности выполнения операций
+   */
+  async canPerformOperations(cognitoId: string): Promise<boolean> {
+    try {
+      const user = await this.userService.getUserByCognitoId(cognitoId);
+      return user.kycStatus === KycStatus.APPROVED;
+    } catch {
+      return false;
+    }
   }
 
   async isKycApproved(cognitoId: string): Promise<boolean> {
@@ -115,22 +148,6 @@ export class KycService {
       completedAt: user.kycCompletedAt,
       canCreateWallet: user.kycStatus === KycStatus.APPROVED,
     };
-  }
-
-  /**
-   * Проверка возможности создания кошелька
-   */
-  async canCreateWallet(cognitoId: string): Promise<boolean> {
-    const user = await this.userService.getUserByCognitoId(cognitoId);
-    return user.kycStatus === KycStatus.APPROVED;
-  }
-
-  /**
-   * Проверка возможности выполнения операций
-   */
-  async canPerformOperations(cognitoId: string): Promise<boolean> {
-    const user = await this.userService.getUserByCognitoId(cognitoId);
-    return user.kycStatus === KycStatus.APPROVED;
   }
 
   private async _callPersonaApi<T>(method: "get" | "post", path: string, data?: any): Promise<T> {
@@ -188,22 +205,6 @@ export class KycService {
     return { id: response.data.id };
   }
 
-  // TODO: если не используется удалить
-  async getInquiryData(inquiryId: string): Promise<{ status: string }> {
-    const { data } = await this._callPersonaApi<{
-      data: {
-        attributes: {
-          status: string;
-        };
-        id: string;
-      };
-    }>("get", `inquiries/${inquiryId}`);
-
-    return {
-      status: data.attributes.status,
-    };
-  }
-
   private async getInquirySessionToken(inquiryId: string): Promise<string> {
     const response = await this._callPersonaApi<{ meta: { "session-token": string } }>(
       "post",
@@ -235,6 +236,11 @@ export class KycService {
     try {
       const walletService = new WalletService();
       const user = await this.userService.getUserByCognitoId(cognitoId);
+      if (!user?.id) {
+        console.error(`❌ User not found or missing ID for cognitoId: ${cognitoId}`);
+        return;
+      }
+
       const hasWallet = await walletService.hasWallet(user.id);
 
       if (!hasWallet) {

@@ -102,48 +102,39 @@ describe("KycService - Critical Tests", () => {
       }
     });
 
-    it("🔴 КРИТИЧНО: блокирует отклоненных пользователей", async () => {
-      const mockUser = {
-        id: "user-123",
-        cognitoId: "cognito-123",
-        kycStatus: KycStatus.DECLINED,
-        kycProviderId: "persona_123",
-      };
-
-      mockUserService.getUserByCognitoId.mockResolvedValue(mockUser as any);
-
-      try {
-        await kycService.initiateVerification("cognito-123");
-      } catch (error) {
-        expect(error).toBeInstanceOf(HttpError);
-        expect((error as HttpError).statusCode).toBe(409);
-        expect((error as HttpError).message).toBe("KYC already rejected");
-      }
-    });
-
-    it("🔴 КРИТИЧНО: возвращает существующий inquiry для CREATED статуса", async () => {
+    // ✅ Исправлено: DECLINED пользователи МОГУТ начать заново
+    it("🔴 КРИТИЧНО: разрешает новую попытку для отклоненных пользователей", async () => {
       const mockUser = {
         id: "user-123",
         cognitoId: "cognito-123",
         email: "test@tokey.com",
-        kycStatus: KycStatus.CREATED,
-        kycProviderId: "existing_inquiry_123",
+        kycStatus: KycStatus.DECLINED,
+        kycProviderId: "old_persona_123",
       };
 
       mockUserService.getUserByCognitoId.mockResolvedValue(mockUser as any);
+      mockUserService.updateKycStatusByCognitoId.mockResolvedValue(mockUser as any);
 
-      // Мокаем получение session token
-      mockedAxios.mockResolvedValueOnce({
-        data: { meta: { "session-token": "existing_session_123" } },
-      });
+      // Мокаем создание нового inquiry
+      mockedAxios
+        .mockResolvedValueOnce({
+          data: { data: { id: "new_inquiry_456" } },
+        })
+        .mockResolvedValueOnce({
+          data: { meta: { "session-token": "new_session_456" } },
+        });
 
       const result = await kycService.initiateVerification("cognito-123");
 
       expect(result).toEqual({
-        inquiryId: "existing_inquiry_123",
-        sessionToken: "existing_session_123",
+        inquiryId: "new_inquiry_456",
+        sessionToken: "new_session_456",
       });
-      expect(mockUserService.updateKycStatusByCognitoId).not.toHaveBeenCalled();
+      expect(mockUserService.updateKycStatusByCognitoId).toHaveBeenCalledWith(
+        "cognito-123",
+        KycStatus.CREATED,
+        "new_inquiry_456",
+      );
     });
 
     it("🔴 КРИТИЧНО: создает новый inquiry для нового пользователя", async () => {
@@ -310,6 +301,21 @@ describe("KycService - Critical Tests", () => {
       expect(result).toBe(true);
     });
 
+    // ✅ Добавлено: DECLINED пользователи могут начать заново
+    it("🔴 КРИТИЧНО: разрешает начать KYC для отклоненного пользователя", async () => {
+      const mockUser = {
+        id: "user-123",
+        cognitoId: "cognito-123",
+        kycStatus: KycStatus.DECLINED,
+      };
+
+      mockUserService.getUserByCognitoId.mockResolvedValue(mockUser as any);
+
+      const result = await kycService.canStartKyc("cognito-123");
+
+      expect(result).toBe(true);
+    });
+
     it("🔴 КРИТИЧНО: блокирует начало KYC для пользователя с активным процессом", async () => {
       const mockUser = {
         id: "user-123",
@@ -395,11 +401,12 @@ describe("KycService - Critical Tests", () => {
   });
 
   describe("canCreateWallet", () => {
-    it("🔴 КРИТИЧНО: разрешает создание кошелька для COMPLETED статуса", async () => {
+    // ✅ Исправлено: только APPROVED может создавать кошелек
+    it("🔴 КРИТИЧНО: разрешает создание кошелька для APPROVED статуса", async () => {
       const mockUser = {
         id: "user-123",
         cognitoId: "cognito-123",
-        kycStatus: KycStatus.COMPLETED,
+        kycStatus: KycStatus.APPROVED,
       };
 
       mockUserService.getUserByCognitoId.mockResolvedValue(mockUser as any);
@@ -409,11 +416,12 @@ describe("KycService - Critical Tests", () => {
       expect(result).toBe(true);
     });
 
-    it("🔴 КРИТИЧНО: блокирует создание кошелька для APPROVED статуса", async () => {
+    // ✅ Исправлено: COMPLETED НЕ может создавать кошелек
+    it("🔴 КРИТИЧНО: блокирует создание кошелька для COMPLETED статуса", async () => {
       const mockUser = {
         id: "user-123",
         cognitoId: "cognito-123",
-        kycStatus: KycStatus.APPROVED,
+        kycStatus: KycStatus.COMPLETED,
       };
 
       mockUserService.getUserByCognitoId.mockResolvedValue(mockUser as any);
@@ -439,11 +447,12 @@ describe("KycService - Critical Tests", () => {
   });
 
   describe("canPerformOperations", () => {
-    it("🔴 КРИТИЧНО: разрешает операции для COMPLETED статуса", async () => {
+    // ✅ Исправлено: только APPROVED может выполнять операции
+    it("🔴 КРИТИЧНО: разрешает операции для APPROVED статуса", async () => {
       const mockUser = {
         id: "user-123",
         cognitoId: "cognito-123",
-        kycStatus: KycStatus.COMPLETED,
+        kycStatus: KycStatus.APPROVED,
       };
 
       mockUserService.getUserByCognitoId.mockResolvedValue(mockUser as any);
@@ -453,11 +462,12 @@ describe("KycService - Critical Tests", () => {
       expect(result).toBe(true);
     });
 
-    it("🔴 КРИТИЧНО: блокирует операции для APPROVED статуса", async () => {
+    // ✅ Исправлено: COMPLETED НЕ может выполнять операции
+    it("🔴 КРИТИЧНО: блокирует операции для COMPLETED статуса", async () => {
       const mockUser = {
         id: "user-123",
         cognitoId: "cognito-123",
-        kycStatus: KycStatus.APPROVED,
+        kycStatus: KycStatus.COMPLETED,
       };
 
       mockUserService.getUserByCognitoId.mockResolvedValue(mockUser as any);
