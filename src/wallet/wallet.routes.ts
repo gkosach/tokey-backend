@@ -6,9 +6,6 @@ import { walletController } from "./wallet.controller";
 
 const router = express.Router();
 
-/** Получение полного профиля пользователя */
-router.get("/profile", authMiddleware(), walletController.getUserProfile.bind(walletController));
-
 /** Получение информации только о кошельке */
 router.get("/info", authMiddleware(), walletController.getWalletInfo.bind(walletController));
 

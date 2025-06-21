@@ -1,3 +1,11 @@
+import dotenv from "dotenv";
+
+if (!process.env.DATABASE_URL) {
+  const envFile = process.env.NODE_ENV === "production" ? ".env" : ".development.env";
+  dotenv.config({ path: envFile });
+}
+export {};
+
 /** Конфигурация переменных окружения с валидацией */
 export const envConfig = {
   /** Порт сервера */
@@ -28,8 +36,16 @@ export const envConfig = {
     TEMPLATE_ID: process.env.PERSONA_TEMPLATE_ID!,
     SHA: process.env.NEXT_PERSONA_SHA!,
   },
+
+  /** Turnkey настройки */
+  TURNKEY: {
+    API_PUBLIC: process.env.TURNKEY_API_PUBLIC!,
+    SECRET: process.env.TURNKEY_SECRET!,
+    ORGANIZATION_ID: process.env.TURNKEY_ORGANIZATION_ID!,
+  },
 };
 
+/** Валидация обязательных переменных */
 /** Валидация обязательных переменных */
 export function validateEnvConfig(): void {
   const requiredVars = [
@@ -44,9 +60,11 @@ export function validateEnvConfig(): void {
     "POSTGRES_DB",
     "POSTGRES_USER",
     "POSTGRES_PASSWORD",
-    "TATUM_API_KEY",
-    "TATUM_API_URL",
+    "TURNKEY_API_PUBLIC",
+    "TURNKEY_SECRET",
+    "TURNKEY_ORGANIZATION_ID",
   ];
+
   const missingVars = requiredVars.filter((varName) => !process.env[varName]);
 
   if (missingVars.length > 0) {
