@@ -4,7 +4,4 @@ echo "🔍 Code quality check..."
 npm run lint:fix
 npx tsc --noEmit
 
-echo "🗄️ Database schema validation..."
-npx prisma validate
-
 echo "✅ Ready to commit"

@@ -52,12 +52,7 @@ npm run dev
 | [Конфигурация](assets/docs/configuration.md)              | Настройка окружения и переменных           |
 | [Модульная архитектура](assets/docs/development-guide.md) | Гайд по архитектуре и поддержке приложения |
 | [База данных & Prisma](assets/docs/prisma.md)             | Скрипты миграциq к Prisma                  |
-| [API Endpoints](assets/docs/api.md)                       | REST API эндпоинты                         |
-| [Аутентификация](assets/docs/authentication.md)           | AWS Cognito и JWT токены                   |
-| [KYC интеграция](assets/docs/kyc.md)                      | Persona API и верификация                  |
-| [HSM интеграция](assets/docs/hsm.md)                      | Управление кошельками и ключами            |
-| [Развертывание](assets/docs/deployment.md)                | Docker и production деплой                 |
-| [Безопасность](assets/docs/security.md)                   | Политики безопасности и GDPR               |
+| [KYC интеграция](assets/docs/persona.md)                  | Persona API и верификация                  |
 | [CI/CD Process](assets/docs/cicd.md)                      | Git hooks и автоматизация                  |
 
 ## Требования к окружению
