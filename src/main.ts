@@ -1,17 +1,14 @@
+/* eslint-disable import/first */
+import "./common/config/env.config";
+/* eslint-enable import/first */
+
 import cors from "cors";
-import dotenv from "dotenv";
 import express, { NextFunction, Request, Response, Router } from "express";
 import "express-async-errors";
 import helmet from "helmet";
 import morgan from "morgan";
 import { handlePrismaError, validateEnvConfig } from "./common";
 import { APP_ROUTES } from "./index";
-
-/** Загрузка переменных окружения */
-if (!process.env.DATABASE_URL) {
-  const envFile = process.env.NODE_ENV === "production" ? ".env" : ".development.env";
-  dotenv.config({ path: envFile });
-}
 
 /** Валидация переменных окружения */
 try {

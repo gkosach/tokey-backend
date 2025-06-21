@@ -1,67 +1,32 @@
 import { Response } from "express";
 import { AuthRequest, HttpError } from "../common";
-import { KycService } from "../kyc/kyc.service";
 import { UserService } from "../user/user.service";
 import { WalletService } from "./wallet.service";
 
 export class WalletController {
-  private kycService: KycService;
   private walletService: WalletService;
   private userService: UserService;
 
   constructor() {
-    this.kycService = new KycService();
     this.walletService = new WalletService();
     this.userService = new UserService();
   }
 
   /**
-   * Создает кошелек
+   * Создает кошелек (использует пользователя из KYC middleware)
    */
   async createWallet(req: AuthRequest, res: Response): Promise<void> {
-    if (!req.user) {
-      throw new HttpError("Unauthorized", 401);
+    if (!req.user?.dbUser) {
+      throw new HttpError("User not found after KYC verification", 404);
     }
 
-    const user = await this.userService.getUserByCognitoId(req.user.id);
-    const walletAddress = await this.walletService.createWalletForUser(user.id);
+    // ✅ Используем уже полученного пользователя из middleware
+    const walletAddress = await this.walletService.createWalletForUser(req.user.dbUser.id);
 
     res.status(201).json({
       success: true,
       data: { walletAddress },
       message: "Wallet created successfully",
-    });
-  }
-
-  /**
-   * Получает полный профиль пользователя (KYC + Wallet)
-   */
-  async getUserProfile(req: AuthRequest, res: Response): Promise<void> {
-    if (!req.user) {
-      throw new HttpError("Unauthorized", 401);
-    }
-
-    const user = await this.userService.getUserByCognitoId(req.user.id);
-    const kycDetails = await this.kycService.getKycDetails(req.user.id);
-    const hasWallet = await this.walletService.hasWallet(user.id);
-
-    let walletInfo = null;
-    if (hasWallet) {
-      walletInfo = await this.walletService.getWalletByUserId(user.id);
-    }
-
-    res.json({
-      success: true,
-      data: {
-        user: {
-          id: user.id,
-          email: user.email,
-          createdAt: user.createdAt,
-        },
-        kyc: kycDetails,
-        wallet: walletInfo,
-        canCreateWallet: kycDetails.canCreateWallet && !hasWallet,
-      },
     });
   }
 
@@ -73,6 +38,7 @@ export class WalletController {
       throw new HttpError("Unauthorized", 401);
     }
 
+    // ✅ Этот endpoint не требует KYC, поэтому получаем пользователя здесь
     const user = await this.userService.getUserByCognitoId(req.user.id);
     const wallet = await this.walletService.getWalletByUserId(user.id);
 
@@ -83,20 +49,15 @@ export class WalletController {
   }
 
   /**
-   * Получает баланс кошелька
+   * Получает баланс кошелька (использует пользователя из KYC middleware)
    */
   async getWalletBalance(req: AuthRequest, res: Response): Promise<void> {
-    if (!req.user) {
-      throw new HttpError("Unauthorized", 401);
+    if (!req.user?.dbUser) {
+      throw new HttpError("User not found after KYC verification", 404);
     }
 
-    const canPerformOperations = await this.kycService.canPerformOperations(req.user.id);
-    if (!canPerformOperations) {
-      throw new HttpError("KYC verification required for balance operations", 403);
-    }
-
-    const user = await this.userService.getUserByCognitoId(req.user.id);
-    const wallet = await this.walletService.getWalletByUserId(user.id);
+    // ✅ Используем уже полученного пользователя из middleware
+    const wallet = await this.walletService.getWalletByUserId(req.user.dbUser.id);
     const balance = await this.walletService.getWalletBalance(wallet.walletAddress);
 
     res.json({

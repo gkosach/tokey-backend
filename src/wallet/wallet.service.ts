@@ -1,64 +1,68 @@
-import { HttpError, prisma } from "../common";
-import { TatumKMSProvider } from "../common/providers/tatum-kms/tatum-kms.provider";
+import { parseEther } from "viem";
+import { BlockchainService } from "../blockchain/blockchain.service";
+import { HttpError, prisma, TurnkeyWalletProvider } from "../common";
 
 /**
- * Сервис для управления кошельками пользователей
- *
- * ОТВЕТСТВЕННОСТЬ:
- * - CRUD операции с кошельками в базе данных
- * - Интеграция с Tatum KMS для создания кошельков
- * - Получение балансов через Tatum API
- *
- * ГРАНИЦЫ:
- * ✅ Создание и управление кошельками
- * ✅ Интеграция с Tatum KMS провайдером
- * ✅ Проверка существования кошельков
- * ❌ Бизнес-логика KYC (должна быть в KycService)
- * ❌ Управление пользователями (должно быть в UserService)
+ * Сервис для управления кошельками
+ * ОТВЕТСТВЕННОСТЬ: Бизнес-логика + координация между провайдерами
  */
 export class WalletService {
-  private tatumProvider: TatumKMSProvider;
+  private turnkeyProvider: TurnkeyWalletProvider;
+  private blockchainService: BlockchainService;
+  private readonly isTestnet = process.env.NODE_ENV !== "production";
 
   constructor() {
-    this.tatumProvider = new TatumKMSProvider();
+    this.turnkeyProvider = new TurnkeyWalletProvider();
+    this.blockchainService = new BlockchainService();
   }
 
   /**
-   * Создает кошелек для пользователя
+   * Создает кошелек через Turnkey
    */
   async createWalletForUser(userId: string): Promise<string> {
     try {
       const existing = await prisma.wallet.findUnique({ where: { userId } });
       if (existing) {
-        console.log(`⏭️ User ${userId} already has wallet: ${existing.walletAddress}`);
         return existing.walletAddress;
       }
 
-      const isHealthy = await this.tatumProvider.healthCheck();
+      const isHealthy = await this.turnkeyProvider.healthCheck();
       if (!isHealthy) {
-        throw new HttpError("KMS service is not available", 503);
+        throw new HttpError("Wallet service is temporarily unavailable", 503);
       }
 
-      const walletData = await this.tatumProvider.createManagedWallet(userId);
+      const signatureId = `wallet_${userId}_${Date.now()}`;
+      const walletData = await this.turnkeyProvider.createManagedWallet(signatureId);
+
       const wallet = await prisma.wallet.create({
         data: {
           userId,
-          tatumWalletId: walletData.signatureId,
+          turnkeyWalletId: walletData.id,
           walletAddress: walletData.address,
           status: "active",
         },
       });
 
-      console.log(`✅ KMS wallet created for user ${userId}: ${wallet.walletAddress}`);
+      console.log(`✅ Wallet created for user ${userId}: ${wallet.walletAddress}`);
       return wallet.walletAddress;
     } catch (error) {
       console.error(`❌ Wallet creation failed for user ${userId}:`, error);
-      if (error instanceof HttpError) {
-        throw error;
-      }
-
       throw new HttpError("Wallet creation failed", 500);
     }
+  }
+  /**
+   * Получает баланс (только блокчейн)
+   */
+  async getWalletBalance(walletAddress: string): Promise<string> {
+    return await this.blockchainService.getBalance(walletAddress);
+  }
+
+  /**
+   * Получает баланс токена (только блокчейн)
+   */
+  async getTokenBalance(userId: string, tokenContract: string): Promise<string> {
+    const wallet = await this.getWalletByUserId(userId);
+    return await this.blockchainService.getTokenBalance(wallet.walletAddress, tokenContract);
   }
 
   /**
@@ -74,32 +78,89 @@ export class WalletService {
 
     return {
       walletAddress: wallet.walletAddress,
-      tatumWalletId: wallet.tatumWalletId,
+      turnkeyWalletId: wallet.turnkeyWalletId,
       status: wallet.status,
       createdAt: wallet.createdAt,
     };
   }
 
   /**
-   * Получает баланс кошелька по адресу
+   * Отправляет транзакцию (координация Turnkey + Blockchain)
    */
-  async getWalletBalance(walletAddress: string): Promise<string> {
+  async sendFromWallet(userId: string, toAddress: string, amount: string): Promise<string> {
     try {
-      return await this.tatumProvider.getWalletBalance(walletAddress);
+      const wallet = await this.getWalletByUserId(userId);
+      const fromAddress = await this.turnkeyProvider.getWalletAddress(wallet.turnkeyWalletId!);
+      const [nonce, gasPrice, balance] = await Promise.all([
+        this.blockchainService.getNonce(fromAddress),
+        this.blockchainService.getGasPrice(),
+        this.blockchainService.getBalance(fromAddress),
+      ]);
+      const amountWei = parseEther(amount);
+      if (BigInt(balance) < amountWei) {
+        throw new HttpError("Insufficient balance", 400);
+      }
+      const transaction = {
+        from: fromAddress as `0x${string}`,
+        to: toAddress as `0x${string}`,
+        value: amountWei,
+        gas: 21000n,
+        gasPrice,
+        nonce,
+        chainId: this.isTestnet ? 80002 : 137,
+      };
+      await this.blockchainService.simulateTransaction(transaction);
+      const serializedTx = this.blockchainService.serializeTransaction(transaction);
+      const signedTx = await this.turnkeyProvider.signTransaction(wallet.turnkeyWalletId!, serializedTx);
+      return await this.blockchainService.broadcastTransaction(signedTx);
     } catch (error) {
-      console.error(`❌ Failed to get balance for wallet ${walletAddress}:`, error);
-      throw new HttpError("Failed to get wallet balance", 500);
+      throw error instanceof HttpError ? error : new HttpError("Transaction failed", 500);
+    }
+  }
+  /**
+   * Получает нативный баланс пользователя (удобный метод)
+   */
+  async getUserWalletBalance(userId: string): Promise<string> {
+    try {
+      const wallet = await this.getWalletByUserId(userId);
+      return await this.getWalletBalance(wallet.walletAddress);
+    } catch (error) {
+      console.error(`❌ Failed to get balance for user ${userId}:`, error);
+      throw new HttpError("Failed to get user wallet balance", 500);
     }
   }
 
   /**
-   * Проверяет существование кошелька
+   * Получает кошелек с информацией о пользователе
    */
-  async hasWallet(userId: string): Promise<boolean> {
+  async getWalletWithUser(userId: string) {
     const wallet = await prisma.wallet.findUnique({
       where: { userId },
-      select: { userId: true },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            kycStatus: true,
+          },
+        },
+      },
     });
-    return !!wallet;
+
+    if (!wallet) {
+      throw new HttpError("Wallet not found", 404);
+    }
+
+    return wallet;
+  }
+
+  /**
+   * Проверяет существование кошелька у пользователя
+   */
+  async hasWallet(userId: string): Promise<boolean> {
+    const count = await prisma.wallet.count({
+      where: { userId },
+    });
+    return count > 0;
   }
 }

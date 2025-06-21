@@ -122,7 +122,7 @@ export class KycService {
    */
   async canCreateWallet(cognitoId: string): Promise<boolean> {
     const user = await this.userService.getUserByCognitoId(cognitoId);
-    return user.kycStatus === KycStatus.COMPLETED;
+    return user.kycStatus === KycStatus.APPROVED;
   }
 
   /**
@@ -130,7 +130,7 @@ export class KycService {
    */
   async canPerformOperations(cognitoId: string): Promise<boolean> {
     const user = await this.userService.getUserByCognitoId(cognitoId);
-    return user.kycStatus === KycStatus.COMPLETED;
+    return user.kycStatus === KycStatus.APPROVED;
   }
 
   private async _callPersonaApi<T>(method: "get" | "post", path: string, data?: any): Promise<T> {

@@ -22,12 +22,6 @@ npm run db:migrate
 npm run db:reset
 ```
 
-**Посмотреть данные**
-
-```bash
-npx prisma studio
-```
-
 ## Автоматизация
 
 - **Post-merge**: БД синхронизируется после каждого `git pull`

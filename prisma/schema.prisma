@@ -40,15 +40,15 @@ model User {
 }
 
 model Wallet {
-  userId        String   @id @map("user_id") @db.Uuid
-  tatumWalletId String   @unique @map("tatum_wallet_id") @db.VarChar(100)
-  walletAddress String   @unique @map("wallet_address") @db.VarChar(42)
-  status        String   @default("active") @map("status") @db.VarChar(20)
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  userId          String   @id @map("user_id") @db.Uuid
+  turnkeyWalletId String   @unique @map("turnkey_wallet_id") @db.VarChar(100)
+  walletAddress   String   @unique @map("wallet_address") @db.VarChar(42)
+  status          String   @default("active") @map("status") @db.VarChar(20)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([tatumWalletId], map: "idx_wallet_tatum_id")
+  @@index([turnkeyWalletId], map: "idx_wallet_turnkey_id")
   @@index([walletAddress], map: "idx_wallet_wallet_address")
   @@map("wallets")
 }
