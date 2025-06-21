@@ -63,3 +63,4 @@ Thumbs.db
 # prisma/migrations/ - должно быть в Git
 # prisma/schema.prisma - должно быть в Git
 .development.env
+.env
