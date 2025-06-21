@@ -6,5 +6,7 @@
   "trailingComma": "all",
   "bracketSpacing": true,
   "arrowParens": "always",
+  "singleQuote": false,
+  "quoteProps": "as-needed",
   "plugins": ["prettier-plugin-organize-imports"]
 }

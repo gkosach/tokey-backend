@@ -231,10 +231,10 @@ export class TokenService {
    * В будущем здесь будет интеграция с Tatum
    */
   async executeBlockchainTransaction(
-    fromAddress: string,
-    toAddress: string,
-    tokensAmount: number,
-    contractAddress: string,
+    _fromAddress: string,
+    _toAddress: string,
+    _tokensAmount: number,
+    _contractAddress: string,
   ): Promise<string> {
     // TODO: Интеграция с Tatum для реальной блокчейн транзакции
     return this.generateTxHash();

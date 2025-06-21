@@ -102,7 +102,7 @@ app.use("*", (req: Request, res: Response): void => {
 });
 
 /** Error handler */
-app.use((error: any, req: Request, res: Response, next: NextFunction): void => {
+app.use((error: any, req: Request, res: Response): void => {
   if (error.statusCode && error.message) {
     console.error(`❌ ${req.method} ${req.path} - ${error.message}`);
     res.status(error.statusCode).json({
@@ -129,7 +129,7 @@ app.use((error: any, req: Request, res: Response, next: NextFunction): void => {
 /**
  * Graceful error handling
  */
-process.on("unhandledRejection", (reason, promise) => {
+process.on("unhandledRejection", (reason) => {
   console.error("⚠️ Unhandled Rejection:", reason);
 });
 
