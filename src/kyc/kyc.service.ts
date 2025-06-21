@@ -2,6 +2,7 @@ import { KycStatus, User } from "@prisma/client";
 import axios from "axios";
 import { HttpError } from "../common";
 import { UserService } from "../user/user.service";
+import { WalletService } from "../wallet/wallet.service";
 
 /**
  * Сервис для управления процессом верификации пользователей (KYC)
@@ -82,8 +83,11 @@ export class KycService {
     }
 
     const newStatus = this.mapPersonaStatusToKycStatus(eventName);
-
     await this.userService.updateKycStatusByCognitoId(user.cognitoId, newStatus);
+
+    if (newStatus === KycStatus.APPROVED) {
+      await this.triggerWalletCreation(user.cognitoId);
+    }
   }
 
   /**
@@ -142,7 +146,7 @@ export class KycService {
         },
       });
 
-      if (!response || !response.data) {
+      if (!response?.data) {
         throw new HttpError("Invalid response from Persona API", 500);
       }
       return response.data;
@@ -177,7 +181,7 @@ export class KycService {
       },
     });
 
-    if (!response || !response.data || !response.data.id) {
+    if (!response?.data?.id) {
       throw new HttpError("Invalid response from Persona API: missing inquiry ID", 500);
     }
 
@@ -221,6 +225,26 @@ export class KycService {
         return KycStatus.DECLINED;
       default:
         throw new HttpError(`Unknown Persona status: ${eventName}`, 500);
+    }
+  }
+  /**
+   * Триггерит создание кошелька для одобренного пользователя
+   * Это бизнес-логика KYC процесса
+   */
+  private async triggerWalletCreation(cognitoId: string): Promise<void> {
+    try {
+      const walletService = new WalletService();
+      const user = await this.userService.getUserByCognitoId(cognitoId);
+      const hasWallet = await walletService.hasWallet(user.id);
+
+      if (!hasWallet) {
+        await walletService.createWalletForUser(user.id);
+        console.log(`✅ Wallet auto-created for approved user: ${cognitoId}`);
+      } else {
+        console.log(`⏭️ User ${cognitoId} already has wallet`);
+      }
+    } catch (error) {
+      console.error(`❌ Failed to auto-create wallet for ${cognitoId}:`, error);
     }
   }
 }

@@ -28,23 +28,18 @@ export class WalletService {
    */
   async createWalletForUser(userId: string): Promise<string> {
     try {
-      // Проверяем существующий кошелек
       const existing = await prisma.wallet.findUnique({ where: { userId } });
       if (existing) {
         console.log(`⏭️ User ${userId} already has wallet: ${existing.walletAddress}`);
         return existing.walletAddress;
       }
 
-      // Проверяем доступность KMS
       const isHealthy = await this.tatumProvider.healthCheck();
       if (!isHealthy) {
         throw new HttpError("KMS service is not available", 503);
       }
 
-      // Создаем кошелек в Tatum
       const walletData = await this.tatumProvider.createManagedWallet(userId);
-
-      // Сохраняем в БД
       const wallet = await prisma.wallet.create({
         data: {
           userId,
@@ -58,13 +53,10 @@ export class WalletService {
       return wallet.walletAddress;
     } catch (error) {
       console.error(`❌ Wallet creation failed for user ${userId}:`, error);
-
-      // Если это уже HttpError, пробрасываем как есть
       if (error instanceof HttpError) {
         throw error;
       }
 
-      // Иначе оборачиваем в HttpError
       throw new HttpError("Wallet creation failed", 500);
     }
   }
@@ -76,7 +68,6 @@ export class WalletService {
     const wallet = await prisma.wallet.findUnique({
       where: { userId },
     });
-
     if (!wallet) {
       throw new HttpError("Wallet not found", 404);
     }
