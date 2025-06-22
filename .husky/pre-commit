@@ -3,4 +3,5 @@
 
 echo "🔍 Running lint and type checks..."
 npm run lint:fix
-npx tsc --noEmit
+npx tsc --noEmit --project tsconfig.json
+npx tsc --noEmit --project types/tsconfig.json

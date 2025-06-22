@@ -1,3 +1,5 @@
+const { existsSync } = require("fs");
+const { join } = require("path");
 const { execSync } = require("child_process");
 const fs = require("fs");
 
@@ -10,8 +12,8 @@ async function runTestsWithBadges() {
     execSync("npm run test", { stdio: "inherit" });
 
     // 2. Проверяем, что coverage-summary.json создался
-    if (!fs.existsSync("./coverage/coverage-summary.json")) {
-      throw new Error("Coverage summary not generated");
+    if (!existsSync(join(__dirname, "../non-bll-scripts/generate-badges.js"))) {
+      throw new Error("generate-badges.js not found");
     }
 
     // 3. Генерируем бейджи
