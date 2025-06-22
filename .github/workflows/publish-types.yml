@@ -3,11 +3,6 @@ name: Publish Types
 on:
   push:
     branches: [main]
-    paths:
-      - "prisma/schema.prisma"
-      - "types/package.json"
-    paths-ignore:
-      - "**/package-lock.json" # Игнорируем изменения в lock-файле
 
 jobs:
   publish:
@@ -19,15 +14,39 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Полный history для корректной работы с версиями
+          fetch-depth: 0
+
+      # Проверяем изменения файлов
+      - name: Check for relevant changes
+        id: check-changes
+        run: |
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          if echo "$CHANGED_FILES" | grep -q 'prisma/schema.prisma' || \
+             echo "$CHANGED_FILES" | grep -q 'types/package.json'; then
+             echo "changes_detected=true" >> $GITHUB_OUTPUT
+          else
+             echo "changes_detected=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Пропускаем публикацию если нет нужных изменений
+      - name: Skip if no relevant changes
+        if: steps.check-changes.outputs.changes_detected == 'false'
+        run: |
+          echo "⏭️ No changes in schema.prisma or package.json - skipping publish"
+          exit 0
 
       - name: Setup Node.js
+        if: steps.check-changes.outputs.changes_detected == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 20
           registry-url: https://npm.pkg.github.com
 
       - name: Install and publish
+        if: steps.check-changes.outputs.changes_detected == 'true'
         run: |
           cd types
           npm ci --ignore-scripts
