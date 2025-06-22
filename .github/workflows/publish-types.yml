@@ -1,0 +1,35 @@
+name: Publish Types
+on:
+  push:
+    branches: [main]
+    paths:
+      - "prisma/schema.prisma" # Триггер только при изменении схемы Prisma
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # Необходимо для публикации в GitHub Packages
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://npm.pkg.github.com
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma types
+        run: npm run generate:frontend-types
+
+      - name: Publish to GitHub Packages
+        run: |
+          cd types
+          npm publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,28 @@
+name: Coverage Badges
+on:
+  push:
+    branches: [main]
+
+jobs:
+  update-badges:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Для коммита бейджей
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Generate badges
+        run: |
+          npm ci
+          npm run test:badges
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git add assets/coverage/
+          git commit -m "📊 Update coverage badges [skip ci]" || echo "No changes to commit"
+          git push

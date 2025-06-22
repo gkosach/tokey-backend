@@ -1,101 +1,96 @@
 name: CI/CD Pipeline
 
 on:
-  pull_request:
-    branches: [main, testnet, production]
   push:
-    branches: [main, testnet, production]
+    branches: [main, testnet]
+    paths:
+      - "prisma/schema.prisma"
+      - "src/**"
+      - "tests/**"
+  pull_request:
+    branches: [main, testnet]
 
 jobs:
-  # Проверяем правила мерджа
-  check-merge-rules:
+  merge-rules:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - name: Check merge direction rules
+      - name: Validate branch rules
         run: |
           SOURCE="${{ github.head_ref }}"
           TARGET="${{ github.base_ref }}"
 
-          echo "Checking merge: $SOURCE → $TARGET"
-
-          if [[ "$TARGET" == "main" ]]; then
-            if [[ "$SOURCE" != "german" && "$SOURCE" != "nikita" ]]; then
-              echo "❌ Only german or nikita branches can merge to main!"
-              exit 1
-            fi
+          if [[ "$TARGET" == "main" && ! "$SOURCE" =~ ^(german|nikita)$ ]]; then
+            echo "❌ Only german/nikita branches can merge to main!"
+            exit 1
           fi
 
-          if [[ "$TARGET" == "testnet" || "$TARGET" == "production" ]]; then
-            if [[ "$SOURCE" != "main" ]]; then
-              echo "❌ Only main branch can merge to $TARGET!"
-              exit 1
-            fi
+          if [[ "$TARGET" =~ ^(testnet|production)$ && "$SOURCE" != "main" ]]; then
+            echo "❌ Only main can merge to $TARGET!"
+            exit 1
           fi
 
-          echo "✅ Merge rules passed"
+          echo "✅ Merge allowed: $SOURCE → $TARGET"
 
-  # Запускаем тесты с секретами
   test:
-    if: github.event_name == 'pull_request'
-    needs: check-merge-rules
+    needs: merge-rules
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      NODE_ENV: test
+      CI: true
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+      - run: npm ci
+      - run: npm run test:badges
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/
+
+  publish-types:
+    if: github.event_name == 'push' && contains(github.event.head_commit.modified, 'prisma/schema.prisma')
+    needs: test
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-    env:
-      # ✅ Секреты передаются как переменные окружения
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      PERSONA_API_KEY: ${{ secrets.PERSONA_API_KEY }}
-      TATUM_API_KEY: ${{ secrets.TATUM_API_KEY }}
-      NODE_ENV: test
+      packages: write
+      contents: read
+
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
+          node-version: 20
+          registry-url: https://npm.pkg.github.com
+      - run: npm ci
+      - run: npm run generate:frontend-types
+      - run: cd types && npm publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Validate Prisma schema
-        run: npx prisma validate
-
-      - name: Run tests with coverage
-        run: npm run test:badges
-
-  # Обновляем badges при push в main
   update-badges:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      PERSONA_API_KEY: ${{ secrets.PERSONA_API_KEY }}
-      TATUM_API_KEY: ${{ secrets.TATUM_API_KEY }}
-      NODE_ENV: test
+
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate coverage badges
-        run: npm run test:badges
-
-      - name: Update coverage badges
-        run: |
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
+          node-version: 20
+      - run: npm ci
+      - run: npm run test:badges
+      - run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
           git add assets/coverage/
-          git diff --staged --quiet || git commit -m "📊 Update coverage badges [skip ci]"
+          git commit -m "📊 Update coverage badges [skip ci]" || echo "No changes to commit"
           git push

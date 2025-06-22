@@ -1,0 +1,25 @@
+name: Merge Rules
+on:
+  pull_request:
+    branches: [main, testnet, production]
+
+jobs:
+  check-merge-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate branch rules
+        run: |
+          SOURCE="${{ github.head_ref }}"
+          TARGET="${{ github.base_ref }}"
+
+          if [[ "$TARGET" == "main" && ! "$SOURCE" =~ ^(german|nikita)$ ]]; then
+            echo "❌ Only german/nikita branches can merge to main!"
+            exit 1
+          fi
+
+          if [[ "$TARGET" =~ ^(testnet|production)$ && "$SOURCE" != "main" ]]; then
+            echo "❌ Only main can merge to $TARGET!"
+            exit 1
+          fi
+
+          echo "✅ Merge allowed: $SOURCE → $TARGET"

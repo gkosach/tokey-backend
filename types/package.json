@@ -1,0 +1,32 @@
+{
+  "name": "@gkosach/property-types",
+  "version": "1.0.2",
+  "description": "Shared TypeScript types for property tokenization platform",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build",
+    "dev": "tsc --watch"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gkosach/sona-backend.git"
+  },
+  "author": "German Kosach",
+  "license": "ISC",
+  "devDependencies": {
+    "eslint": "^9.29.0",
+    "multer": "^2.0.1",
+    "prisma-generator-typescript-interfaces": "^2.1.0",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.8.2"
+  }
+}

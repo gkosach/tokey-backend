@@ -5,6 +5,22 @@ module.exports = {
     tsconfigRootDir: __dirname,
     sourceType: "module",
   },
+  overrides: [
+    {
+      files: ["types/src/**/*.ts"],
+      parserOptions: {
+        project: "./types/tsconfig.json",
+        tsconfigRootDir: __dirname,
+      },
+      settings: {
+        "import/resolver": {
+          typescript: {
+            project: "./types/tsconfig.json",
+          },
+        },
+      },
+    },
+  ],
   plugins: ["@typescript-eslint/eslint-plugin", "prettier", "sort-class-members", "unused-imports", "import"],
   extends: [
     "plugin:@typescript-eslint/recommended",
@@ -28,6 +44,7 @@ module.exports = {
     "*.js",
     "jest.config.js",
     "setup-husky.js",
+    "types/dist/**/*",
   ],
   settings: {
     "import/resolver": {
