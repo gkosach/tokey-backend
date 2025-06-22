@@ -3,6 +3,11 @@ generator client {
   binaryTargets = ["native", "darwin-arm64", "linux-musl-arm64-openssl-3.0.x"]
 }
 
+generator typegen {
+  provider = "prisma-generator-typescript-interfaces"
+  output   = "../types"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
