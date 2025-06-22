@@ -28,15 +28,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Spacylion/sona-backend.git"
+    "url": "git+https://github.com/gkosach/sona-backend.git"
   },
   "keywords": [],
   "author": "German Kosach",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Spacylion/sona-backend/issues"
+    "url": "https://github.com/gkosach/sona-backend/issues"
   },
-  "homepage": "https://github.com/Spacylion/sona-backend#readme",
+  "homepage": "https://github.com/gkosach/sona-backend#readme",
   "description": "",
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.798.0",
