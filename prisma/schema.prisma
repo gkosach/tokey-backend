@@ -5,7 +5,7 @@ generator client {
 
 generator typegen {
   provider = "prisma-generator-typescript-interfaces"
-  output   = "../types"
+  output   = "../types/src/prismaTypes"
 }
 
 datasource db {
