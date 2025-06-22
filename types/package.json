@@ -10,8 +10,10 @@
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
-    "prepublishOnly": "npm run clean && npm run build",
-    "dev": "tsc --watch"
+    "postversion": "git push --follow-tags",
+    "prepublishOnly": "npm run build",
+    "dev": "tsc --watch",
+    "version": "npm run build && git add dist"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
