@@ -56,8 +56,7 @@ export class WalletController {
       throw new HttpError("User not found after KYC verification", 404);
     }
 
-    // ✅ Используем уже полученного пользователя из middleware
-    const wallet = await this.walletService.getWalletByUserId(req.user.dbUser.id);
+    const wallet = await this.walletService.requireWallet(req.user.dbUser.id);
     const balance = await this.walletService.getWalletBalance(wallet.walletAddress);
 
     res.json({

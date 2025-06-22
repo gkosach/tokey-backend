@@ -77,9 +77,7 @@ const routeMap = [
   "/api/users", // UserModule
   "/api/wallets", // WalletModule
   "/api/properties", // PropertyModule
-  "/api/kyc", // KycModule
   "/api/tokens", // TokenModule
-  "/api/files", // FileModule
 ];
 APP_ROUTES.forEach((route: Router, index: number) => {
   const routePath = routeMap[index] || `/api/module${index}`;

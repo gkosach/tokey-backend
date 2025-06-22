@@ -45,7 +45,6 @@
     "@aws-sdk/lib-storage": "^3.774.0",
     "@aws-sdk/s3-request-presigner": "^3.828.0",
     "@prisma/client": "^6.9.0",
-    "@tatumio/tatum": "^4.2.51",
     "@terraformer/wkt": "^2.2.1",
     "@turnkey/sdk-server": "^4.1.1",
     "@types/cors": "^2.8.19",

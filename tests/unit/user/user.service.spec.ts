@@ -111,6 +111,7 @@ describe("UserService - Critical Tests", () => {
 
       expect(prisma.user.findUniqueOrThrow).toHaveBeenCalledWith({
         where: { cognitoId: "cognito-123" },
+        include: { wallet: true },
       });
       expect(result).toEqual(mockUser);
     });
@@ -122,7 +123,10 @@ describe("UserService - Critical Tests", () => {
       });
       prisma.user.findUniqueOrThrow.mockRejectedValue(prismaError);
 
-      await expect(userService.getUserByCognitoId("nonexistent")).rejects.toThrow(Prisma.PrismaClientKnownRequestError);
+      await expect(userService.getUserByCognitoId("nonexistent")).rejects.toThrow(HttpError); // Ожидаем HttpError
+
+      // Дополнительно проверь сообщение:
+      await expect(userService.getUserByCognitoId("nonexistent")).rejects.toThrow("User not found");
     });
   });
 
@@ -198,7 +202,7 @@ describe("UserService - Critical Tests", () => {
 
       prisma.user.update.mockResolvedValue(mockUpdatedUser);
 
-      const result = await userService.updateKycStatusByCognitoId("cognito-123", KycStatus.CREATED, "persona_123");
+      const result = await userService.updateKycStatus("cognito-123", KycStatus.CREATED, "persona_123");
 
       expect(prisma.user.update).toHaveBeenCalledWith({
         where: { cognitoId: "cognito-123" },
@@ -227,7 +231,7 @@ describe("UserService - Critical Tests", () => {
 
       prisma.user.update.mockResolvedValue(mockUpdatedUser);
 
-      const result = await userService.updateKycStatusByCognitoId("cognito-123", KycStatus.COMPLETED, "persona_123");
+      const result = await userService.updateKycStatus("cognito-123", KycStatus.COMPLETED, "persona_123");
 
       expect(prisma.user.update).toHaveBeenCalledWith({
         where: { cognitoId: "cognito-123" },

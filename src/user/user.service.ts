@@ -1,5 +1,5 @@
-import { KycStatus, Prisma, User } from "@prisma/client";
-import { HttpError, prisma } from "../common";
+import { KycStatus, Prisma, User, Wallet } from "@prisma/client";
+import { HttpError, PersonaProvider, prisma } from "../common";
 
 /**
  * Сервис для управления данными пользователей (User Entity)
@@ -8,16 +8,10 @@ import { HttpError, prisma } from "../common";
  * - CRUD операции с пользователями в базе данных
  * - Валидация и обработка ошибок при работе с User entity
  * - Обновление всех полей пользователя (включая KYC поля)
- *
- * ГРАНИЦЫ:
- * ✅ Создание, чтение, обновление, удаление пользователей
- * ✅ Обновление KYC полей по запросу других сервисов
- * ✅ Поиск пользователей по различным критериям
- * ❌ Бизнес-логика KYC процесса
- * ❌ Интеграция с внешними API (Persona, Tatum)
- * ❌ Принятие решений о том, можно ли выполнять операции
  */
 export class UserService {
+  private kycProvider = new PersonaProvider();
+
   /**
    * Создает нового пользователя БЕЗ кошелька
    */
@@ -54,20 +48,20 @@ export class UserService {
   /**
    * Получает пользователя по Cognito ID
    */
-  async getUserByCognitoId(cognitoId: string): Promise<User> {
+  async getUserByCognitoId(cognitoId: string): Promise<User & { wallet: Wallet | null }> {
     console.log("🔍 UserService.getUserByCognitoId - searching for:", cognitoId);
 
     try {
       const user = await prisma.user.findUniqueOrThrow({
         where: { cognitoId },
+        include: { wallet: true },
       });
 
       console.log("✅ Found user:", { id: user.id, email: user.email });
       return user;
-    } catch (error) {
+    } catch {
       console.error("❌ User not found for cognitoId:", cognitoId);
-      console.error("💥 Error:", error);
-      throw error;
+      throw new HttpError("User not found", 404);
     }
   }
 
@@ -100,20 +94,6 @@ export class UserService {
 
       throw new HttpError("Email update failed", 500);
     }
-  }
-
-  /**
-   * Обновляет KYC поля в User entity
-   */
-  async updateKycStatusByCognitoId(cognitoId: string, status: KycStatus, providerId?: string): Promise<User> {
-    return prisma.user.update({
-      where: { cognitoId },
-      data: {
-        kycStatus: status,
-        kycProviderId: providerId,
-        kycCompletedAt: status === KycStatus.COMPLETED ? new Date() : undefined,
-      },
-    });
   }
 
   /**
@@ -150,5 +130,19 @@ export class UserService {
       kycStatus: user.kycStatus,
       wallet: user.wallet,
     };
+  }
+
+  /**
+   * Обновляет KYC поля в User entity
+   */
+  async updateKycStatus(cognitoId: string, status: KycStatus, providerId?: string): Promise<User> {
+    return prisma.user.update({
+      where: { cognitoId },
+      data: {
+        kycStatus: status,
+        kycProviderId: providerId,
+        kycCompletedAt: status === KycStatus.COMPLETED ? new Date() : undefined,
+      },
+    });
   }
 }
