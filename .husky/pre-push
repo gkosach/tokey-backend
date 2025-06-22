@@ -1,28 +1,2 @@
 #!/usr/bin/env sh
-
-# Пропускаем, если это merge или rebase
-if [ -f ".git/MERGE_HEAD" ] || [ -f ".git/rebase-merge" ]; then
-  echo "➡️ Merge/rebase detected - skipping version bump"
-  exit 0
-fi
-
-echo "🔍 Checking for schema.prisma changes..."
-CHANGED_FILES=$(git diff --name-only HEAD @{u} 2>/dev/null || git diff --name-only --cached)
-
-if echo "$CHANGED_FILES" | grep -q 'prisma/schema.prisma'; then
-  echo "🔄 Schema.prisma changed - bumping version..."
-  cd types || { echo "❌ Failed to enter types directory"; exit 1; }
-  OLD_VERSION=$(node -p "require('./package.json').version")
-  npm version patch -m "chore: bump version to %s [skip ci]"
-  NEW_VERSION=$(node -p "require('./package.json').version")
-  npm run build
-  git add dist package.json package-lock.json
-  git commit --amend --no-edit
-  echo "✅ Version bumped from $OLD_VERSION to $NEW_VERSION"
-  cd ..
-else
-  echo "➡️ No changes in prisma/schema.prisma - version remains unchanged"
-fi
-
-echo "🧪 Running tests..."
-npm run test:unit || exit 1
+npm run test:unit

@@ -3,53 +3,33 @@ name: Publish Types
 on:
   push:
     branches: [main]
+    paths:
+      - 'prisma/schema.prisma'  # Триггер только при изменении схемы
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-
-      # Проверяем изменения файлов
-      - name: Check for relevant changes
-        id: check-changes
-        run: |
-          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
-          echo "Changed files:"
-          echo "$CHANGED_FILES"
-
-          if echo "$CHANGED_FILES" | grep -q 'prisma/schema.prisma' || \
-             echo "$CHANGED_FILES" | grep -q 'types/package.json'; then
-             echo "changes_detected=true" >> $GITHUB_OUTPUT
-          else
-             echo "changes_detected=false" >> $GITHUB_OUTPUT
-          fi
-
-      # Пропускаем публикацию если нет нужных изменений
-      - name: Skip if no relevant changes
-        if: steps.check-changes.outputs.changes_detected == 'false'
-        run: |
-          echo "⏭️ No changes in schema.prisma or package.json - skipping publish"
-          exit 0
+          fetch-depth: 0  # Полная история коммитов
 
       - name: Setup Node.js
-        if: steps.check-changes.outputs.changes_detected == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 20
           registry-url: https://npm.pkg.github.com
 
-      - name: Install and publish
-        if: steps.check-changes.outputs.changes_detected == 'true'
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate types
+        run: npm run generate  # Используем новый скрипт
+
+      - name: Publish package
         run: |
           cd types
-          npm ci --ignore-scripts
+          npm version patch -m "chore: auto-bump version [skip ci]"
           npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
