@@ -1,19 +1,28 @@
 #!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
 
 echo "🔍 Checking for schema.prisma changes..."
 
-# Проверяем изменения в schema.prisma
-if git diff --name-only HEAD @{u} | grep -q 'prisma/schema.prisma'; then
-  echo "🔄 Schema changed - bumping version..."
-  # shellcheck disable=SC2164
-  cd types
-  npm version patch -m "Bump version to %s [skip ci]"
+# Получаем список измененных файлов
+CHANGED_FILES=$(git diff --name-only HEAD @{u} 2>/dev/null || git diff --name-only --cached)
+
+if echo "$CHANGED_FILES" | grep -q 'prisma/schema.prisma'; then
+  echo "🔄 Schema.prisma changed - bumping version..."
+
+  cd types || { echo "❌ Failed to enter types directory"; exit 1; }
+
+  OLD_VERSION=$(node -p "require('./package.json').version")
+  npm version patch -m "chore: bump version to %s [skip ci]"
+  NEW_VERSION=$(node -p "require('./package.json').version")
+
   npm run build
   git add dist package.json package-lock.json
   git commit --amend --no-edit
+
+  echo "✅ Version bumped from $OLD_VERSION to $NEW_VERSION"
   cd ..
+else
+  echo "➡️ No changes in prisma/schema.prisma - version remains unchanged"
 fi
 
 echo "🧪 Running tests..."
-npm run test:unit
+npm run test:unit || exit 1
