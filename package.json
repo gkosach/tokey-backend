@@ -12,7 +12,8 @@
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset",
     "db:sync": "npm run db:migrate && npm run db:seed",
-    "generate:frontend-types": "prisma-typegen ./types/src/prismaTypes.ts",
+    "generate:frontend-types": "prisma generate --schema=./prisma/schema.prisma && tsc -p types/tsconfig.json",
+    "postinstall": "prisma generate && npm run generate:frontend-types",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "jest --coverage",
@@ -21,7 +22,6 @@
     "test:full": "node non-bll-scripts/test-with-badges.js",
     "generate:badges": "node non-bll-scripts/generate-badges.js",
     "prepare": "husky || true",
-    "postinstall": "prisma generate && npm run generate:frontend-types",
     "ngrok": "node non-bll-scripts/start-ngrok.js"
   },
   "repository": {

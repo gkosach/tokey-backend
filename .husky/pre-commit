@@ -1,7 +1,6 @@
 #!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
 
-echo "🔍 Code quality check..."
+echo "🔍 Running lint and type checks..."
 npm run lint:fix
 npx tsc --noEmit
-
-echo "✅ Ready to commit"

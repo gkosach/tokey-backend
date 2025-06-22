@@ -23,6 +23,12 @@
   "author": "German Kosach",
   "license": "ISC",
   "devDependencies": {
+    "prisma-generator-typescript-interfaces": "^2.1.0",
     "typescript": "^5.8.2"
+  },
+  "dependencies": {
+    "eslint": "^9.29.0",
+    "multer": "^2.0.1",
+    "rimraf": "^6.0.1"
   }
 }
