@@ -1,6 +1,17 @@
 import { KycStatus, Prisma } from "@prisma/client";
 import { HttpError } from "../../../src/common";
 import { UserService } from "../../../src/user/user.service";
+process.env.PERSONA_API_KEY = "test-api-key";
+process.env.PERSONA_TEMPLATE_ID = "test-template-id";
+
+// Мокаем PersonaProvider
+jest.mock("../../../src/common/providers/persona/persona.provider", () => {
+  return {
+    PersonaProvider: jest.fn().mockImplementation(() => ({
+      initiateVerification: jest.fn(),
+    })),
+  };
+});
 
 const { prisma } = require("../../../src/common");
 

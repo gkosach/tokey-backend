@@ -6,6 +6,8 @@ on:
     paths:
       - "prisma/schema.prisma"
       - "types/package.json"
+    paths-ignore:
+      - "**/package-lock.json" # Игнорируем изменения в lock-файле
 
 jobs:
   publish:
@@ -16,6 +18,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Полный history для корректной работы с версиями
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -26,11 +30,7 @@ jobs:
       - name: Install and publish
         run: |
           cd types
-          # Сначала генерируем package-lock.json если его нет
-          if [ ! -f "package-lock.json" ]; then
-            npm install
-          fi
-          npm ci
+          npm ci --ignore-scripts
           npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
