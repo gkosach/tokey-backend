@@ -1,7 +1,7 @@
 import express from "express";
 import "express-async-errors";
-import { authMiddleware } from "../middleware/auth.middleware";
-import { personaWebhookMiddleware } from "../middleware/persona-webhook.middleware";
+import { authMiddleware } from "../../middleware/auth.middleware";
+import { personaWebhookMiddleware } from "../../middleware/persona-webhook.middleware";
 import { kycController } from "./kyc.controller";
 
 /**

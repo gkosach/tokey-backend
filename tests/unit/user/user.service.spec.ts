@@ -1,6 +1,17 @@
 import { KycStatus, Prisma } from "@prisma/client";
 import { HttpError } from "../../../src/common";
 import { UserService } from "../../../src/user/user.service";
+process.env.PERSONA_API_KEY = "test-api-key";
+process.env.PERSONA_TEMPLATE_ID = "test-template-id";
+
+// Мокаем PersonaProvider
+jest.mock("../../../src/common/providers/persona/persona.provider", () => {
+  return {
+    PersonaProvider: jest.fn().mockImplementation(() => ({
+      initiateVerification: jest.fn(),
+    })),
+  };
+});
 
 const { prisma } = require("../../../src/common");
 
@@ -111,6 +122,7 @@ describe("UserService - Critical Tests", () => {
 
       expect(prisma.user.findUniqueOrThrow).toHaveBeenCalledWith({
         where: { cognitoId: "cognito-123" },
+        include: { wallet: true },
       });
       expect(result).toEqual(mockUser);
     });
@@ -122,7 +134,10 @@ describe("UserService - Critical Tests", () => {
       });
       prisma.user.findUniqueOrThrow.mockRejectedValue(prismaError);
 
-      await expect(userService.getUserByCognitoId("nonexistent")).rejects.toThrow(Prisma.PrismaClientKnownRequestError);
+      await expect(userService.getUserByCognitoId("nonexistent")).rejects.toThrow(HttpError); // Ожидаем HttpError
+
+      // Дополнительно проверь сообщение:
+      await expect(userService.getUserByCognitoId("nonexistent")).rejects.toThrow("User not found");
     });
   });
 
@@ -198,7 +213,7 @@ describe("UserService - Critical Tests", () => {
 
       prisma.user.update.mockResolvedValue(mockUpdatedUser);
 
-      const result = await userService.updateKycStatusByCognitoId("cognito-123", KycStatus.CREATED, "persona_123");
+      const result = await userService.updateKycStatus("cognito-123", KycStatus.CREATED, "persona_123");
 
       expect(prisma.user.update).toHaveBeenCalledWith({
         where: { cognitoId: "cognito-123" },
@@ -227,7 +242,7 @@ describe("UserService - Critical Tests", () => {
 
       prisma.user.update.mockResolvedValue(mockUpdatedUser);
 
-      const result = await userService.updateKycStatusByCognitoId("cognito-123", KycStatus.COMPLETED, "persona_123");
+      const result = await userService.updateKycStatus("cognito-123", KycStatus.COMPLETED, "persona_123");
 
       expect(prisma.user.update).toHaveBeenCalledWith({
         where: { cognitoId: "cognito-123" },

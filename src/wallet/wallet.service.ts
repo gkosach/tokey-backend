@@ -1,33 +1,35 @@
+import { Wallet } from "@prisma/client";
 import { parseEther } from "viem";
 import { BlockchainService } from "../blockchain/blockchain.service";
 import { HttpError, prisma, TurnkeyWalletProvider } from "../common";
 
 /**
- * Сервис для управления кошельками
- * ОТВЕТСТВЕННОСТЬ: Бизнес-логика + координация между провайдерами
+ * Wallet management service.
+ * Responsibility: Business logic + provider coordination.
  */
 export class WalletService {
-  private turnkeyProvider: TurnkeyWalletProvider;
-  private blockchainService: BlockchainService;
+  private turnkeyProvider = new TurnkeyWalletProvider();
+  private blockchainService = new BlockchainService();
   private readonly isTestnet = process.env.NODE_ENV !== "production";
 
-  constructor() {
-    this.turnkeyProvider = new TurnkeyWalletProvider();
-    this.blockchainService = new BlockchainService();
+  /**
+   * Helper: Get wallet or throw 404.
+   */
+  async requireWallet(userId: string): Promise<Wallet> {
+    const wallet = await prisma.wallet.findUnique({ where: { userId } });
+    if (!wallet) throw new HttpError("Wallet not found for user", 404);
+    return wallet;
   }
 
   /**
-   * Создает кошелек через Turnkey
+   * Create wallet via Turnkey.
    */
   async createWalletForUser(userId: string): Promise<string> {
     try {
       const existing = await prisma.wallet.findUnique({ where: { userId } });
-      if (existing) {
-        return existing.walletAddress;
-      }
+      if (existing) return existing.walletAddress;
 
-      const isHealthy = await this.turnkeyProvider.healthCheck();
-      if (!isHealthy) {
+      if (!(await this.turnkeyProvider.healthCheck())) {
         throw new HttpError("Wallet service is temporarily unavailable", 503);
       }
 
@@ -50,56 +52,46 @@ export class WalletService {
       throw new HttpError("Wallet creation failed", 500);
     }
   }
+
   /**
-   * Получает баланс (только блокчейн)
+   * Get native balance (blockchain only).
    */
   async getWalletBalance(walletAddress: string): Promise<string> {
-    return await this.blockchainService.getBalance(walletAddress);
+    return this.blockchainService.getBalance(walletAddress);
   }
 
   /**
-   * Получает баланс токена (только блокчейн)
+   * Get token balance (blockchain only).
    */
   async getTokenBalance(userId: string, tokenContract: string): Promise<string> {
-    const wallet = await this.getWalletByUserId(userId);
-    return await this.blockchainService.getTokenBalance(wallet.walletAddress, tokenContract);
+    const wallet = await this.requireWallet(userId);
+    return this.blockchainService.getTokenBalance(wallet.walletAddress, tokenContract);
   }
 
   /**
-   * Получает кошелек по userId
+   * Get wallet by userId (nullable).
    */
-  async getWalletByUserId(userId: string) {
-    const wallet = await prisma.wallet.findUnique({
-      where: { userId },
-    });
-    if (!wallet) {
-      throw new HttpError("Wallet not found", 404);
-    }
-
-    return {
-      walletAddress: wallet.walletAddress,
-      turnkeyWalletId: wallet.turnkeyWalletId,
-      status: wallet.status,
-      createdAt: wallet.createdAt,
-    };
+  async getWalletByUserId(userId: string): Promise<Wallet | null> {
+    return prisma.wallet.findUnique({ where: { userId } });
   }
 
   /**
-   * Отправляет транзакцию (координация Turnkey + Blockchain)
+   * Send transaction (Turnkey + Blockchain).
    */
   async sendFromWallet(userId: string, toAddress: string, amount: string): Promise<string> {
     try {
-      const wallet = await this.getWalletByUserId(userId);
-      const fromAddress = await this.turnkeyProvider.getWalletAddress(wallet.turnkeyWalletId!);
+      const wallet = await this.requireWallet(userId);
+      const fromAddress = await this.turnkeyProvider.getWalletAddress(wallet.turnkeyWalletId);
+
       const [nonce, gasPrice, balance] = await Promise.all([
         this.blockchainService.getNonce(fromAddress),
         this.blockchainService.getGasPrice(),
         this.blockchainService.getBalance(fromAddress),
       ]);
+
       const amountWei = parseEther(amount);
-      if (BigInt(balance) < amountWei) {
-        throw new HttpError("Insufficient balance", 400);
-      }
+      if (BigInt(balance) < amountWei) throw new HttpError("Insufficient balance", 400);
+
       const transaction = {
         from: fromAddress as `0x${string}`,
         to: toAddress as `0x${string}`,
@@ -109,21 +101,23 @@ export class WalletService {
         nonce,
         chainId: this.isTestnet ? 80002 : 137,
       };
+
       await this.blockchainService.simulateTransaction(transaction);
       const serializedTx = this.blockchainService.serializeTransaction(transaction);
-      const signedTx = await this.turnkeyProvider.signTransaction(wallet.turnkeyWalletId!, serializedTx);
-      return await this.blockchainService.broadcastTransaction(signedTx);
+      const signedTx = await this.turnkeyProvider.signTransaction(wallet.turnkeyWalletId, serializedTx);
+      return this.blockchainService.broadcastTransaction(signedTx);
     } catch (error) {
       throw error instanceof HttpError ? error : new HttpError("Transaction failed", 500);
     }
   }
+
   /**
-   * Получает нативный баланс пользователя (удобный метод)
+   * Get user's native wallet balance.
    */
   async getUserWalletBalance(userId: string): Promise<string> {
     try {
-      const wallet = await this.getWalletByUserId(userId);
-      return await this.getWalletBalance(wallet.walletAddress);
+      const wallet = await this.requireWallet(userId);
+      return this.getWalletBalance(wallet.walletAddress);
     } catch (error) {
       console.error(`❌ Failed to get balance for user ${userId}:`, error);
       throw new HttpError("Failed to get user wallet balance", 500);
@@ -131,7 +125,7 @@ export class WalletService {
   }
 
   /**
-   * Получает кошелек с информацией о пользователе
+   * Get wallet with user info.
    */
   async getWalletWithUser(userId: string) {
     const wallet = await prisma.wallet.findUnique({
@@ -146,21 +140,14 @@ export class WalletService {
         },
       },
     });
-
-    if (!wallet) {
-      throw new HttpError("Wallet not found", 404);
-    }
-
+    if (!wallet) throw new HttpError("Wallet not found", 404);
     return wallet;
   }
 
   /**
-   * Проверяет существование кошелька у пользователя
+   * Check if user has wallet.
    */
   async hasWallet(userId: string): Promise<boolean> {
-    const count = await prisma.wallet.count({
-      where: { userId },
-    });
-    return count > 0;
+    return (await prisma.wallet.count({ where: { userId } })) > 0;
   }
 }
