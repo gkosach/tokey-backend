@@ -26,6 +26,10 @@ jobs:
       - name: Install and publish
         run: |
           cd types
+          # Сначала генерируем package-lock.json если его нет
+          if [ ! -f "package-lock.json" ]; then
+            npm install
+          fi
           npm ci
           npm publish --access public
         env:
