@@ -10,4 +10,4 @@ export const APP_MODULES = [UserModule, WalletModule, PropertyModule, TokenModul
 /**
  * Экспорт всех routes для app.ts
  */
-export const APP_ROUTES: Router[] = APP_MODULES.flatMap((module) => module.routes || []);
+export const APP_ROUTES: Router[][] = APP_MODULES.map((module) => module.routes || []);

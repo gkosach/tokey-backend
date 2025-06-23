@@ -1,10 +1,10 @@
 import { ModuleConfig } from "../common/interfaces/module.interface";
 import { TokenController } from "./token.controller";
-import tokenRoutes from "./token.routes";
+import tokenRouter from "./token.router";
 import { TokenService } from "./token.service";
 
 export const TokenModule: ModuleConfig = {
-  routes: [tokenRoutes],
+  routes: [tokenRouter],
   services: [TokenService],
   controllers: [TokenController],
 };

@@ -2,9 +2,7 @@ module.exports = {
   moduleFileExtensions: ["ts", "js"],
   rootDir: ".",
   verbose: true,
-  testEnvironment: "node",
   preset: "ts-jest",
-  testTimeout: 30000,
   clearMocks: true,
 
   transform: {
@@ -47,9 +45,11 @@ module.exports = {
 
   modulePathIgnorePatterns: ["<rootDir>/dist/"],
   setupFilesAfterEnv: ["<rootDir>/tests/setup/jest-setup.ts"],
+  testEnvironment: "node",
+  testTimeout: 10000,
+  maxWorkers: 2,
   testMatch: ["<rootDir>/tests/**/*.test.ts", "<rootDir>/tests/**/*.spec.ts"],
   resetMocks: true,
   restoreMocks: true,
-  maxWorkers: 1,
   transformIgnorePatterns: ["node_modules/(?!(axios|@tatum)/)"],
 };

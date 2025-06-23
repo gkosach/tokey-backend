@@ -42,6 +42,7 @@ export class PropertyService {
 
   /**
    * Получает все объекты недвижимости с фильтрацией
+   * // TODO: добавить ограничение для защиты от перегрузки
    */
   async getAllProperties(filters?: {
     districts?: string[];
@@ -54,21 +55,30 @@ export class PropertyService {
   }): Promise<{ properties: Property[]; total: number }> {
     const where: Prisma.PropertyWhereInput = {};
 
+    // Для roi
+    if (filters?.roi !== undefined && !isNaN(filters.roi)) {
+      where.roi = { gte: filters.roi };
+    }
+
+    // Для district
     if (filters?.districts && filters.districts.length > 0) {
       where.district = { in: filters.districts };
     }
 
-    if (filters?.roi !== undefined) {
-      where.roi = { gte: filters.roi };
-    }
-
+    // Для price
     if (filters?.minPrice !== undefined || filters?.maxPrice !== undefined) {
-      where.price = {
-        ...(filters.minPrice !== undefined && { gte: filters.minPrice }),
-        ...(filters.maxPrice !== undefined && { lte: filters.maxPrice }),
-      };
+      where.price = {};
+
+      if (filters.minPrice !== undefined && !isNaN(filters.minPrice)) {
+        where.price.gte = filters.minPrice;
+      }
+
+      if (filters.maxPrice !== undefined && !isNaN(filters.maxPrice)) {
+        where.price.lte = filters.maxPrice;
+      }
     }
 
+    // Status filter
     if (filters?.status) {
       where.status = filters.status;
     }

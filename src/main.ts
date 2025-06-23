@@ -3,7 +3,7 @@ import "./common/config/env.config";
 /* eslint-enable import/first */
 
 import cors from "cors";
-import express, { NextFunction, Request, Response, Router } from "express";
+import express, { NextFunction, Request, Response } from "express";
 import "express-async-errors";
 import helmet from "helmet";
 import morgan from "morgan";
@@ -74,16 +74,30 @@ app.get("/", (req: Request, res: Response): void => {
 
 /** Регистрация маршрутов */
 const routeMap = [
-  "/api/users", // UserModule
-  "/api/wallets", // WalletModule
-  "/api/properties", // PropertyModule
-  "/api/tokens", // TokenModule
+  { path: "/api/users", moduleIndex: 0 },
+  { path: "/api/wallets", moduleIndex: 1 },
+  { path: "/api/properties", moduleIndex: 2 },
+  { path: "/api/tokens", moduleIndex: 3 },
+  { path: "/api/blockchain", moduleIndex: 4 },
 ];
-APP_ROUTES.forEach((route: Router, index: number) => {
-  const routePath = routeMap[index] || `/api/module${index}`;
-  app.use(routePath, route);
-  if (process.env.NODE_ENV === "development") {
-    console.log(`📍 Registered route: ${routePath}`);
+
+routeMap.forEach(({ path, moduleIndex }) => {
+  const moduleRouters = APP_ROUTES[moduleIndex] || [];
+
+  moduleRouters.forEach((router) => {
+    app.use(path, router);
+    if (process.env.NODE_ENV === "development") {
+      const endpointCount = router.stack?.length || 0;
+      console.log(`📍 ${path} → ${endpointCount} endpoints`);
+    }
+  });
+});
+
+// TODO: исправить в дальнейшем
+console.log("🔍 Module Route Debug:");
+APP_ROUTES.forEach((routers, i) => {
+  if (routers.length === 0) {
+    console.warn(`⚠️ Module ${i} has no routers!`);
   }
 });
 
@@ -135,11 +149,11 @@ process.on("uncaughtException", (error) => {
 /**
  * Запуск сервера
  */
-const port = Number(process.env.PORT) || 3002;
-app.listen(port, "0.0.0.0", (): void => {
-  console.log(`🚀 Server started on port ${port} | Environment: ${process.env.NODE_ENV || "unknown"}`);
-  console.log(`📍 Health check: http://localhost:${port}/`);
-  console.log(`📦 Loaded ${APP_ROUTES.length} modules`);
-});
+if (process.env.NODE_ENV !== "test") {
+  const port = Number(process.env.PORT) || 3002;
+  app.listen(port, "0.0.0.0", () => {
+    console.log(`🚀 Server started on port ${port}`);
+  });
+}
 
 export default app;
