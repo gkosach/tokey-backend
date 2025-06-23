@@ -101,18 +101,6 @@ export class PropertyService {
   }
 
   /**
-   * Обновляет статус объекта недвижимости
-   */
-  async updatePropertyStatus(id: string, status: PropertyStatus): Promise<Property> {
-    this.validateUuid(id);
-
-    return prisma.property.update({
-      where: { id },
-      data: { status },
-    });
-  }
-
-  /**
    * Валидация UUID (принимает любую версию UUID)
    */
   private validateUuid(id: string): void {

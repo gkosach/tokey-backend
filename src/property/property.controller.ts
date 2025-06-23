@@ -81,21 +81,6 @@ export class PropertyController {
       data: property,
     });
   }
-
-  /**
-   * Обновляет статус объекта недвижимости
-   */
-  async updatePropertyStatus(req: Request, res: Response): Promise<void> {
-    const { id } = req.params;
-    const { status } = req.body;
-
-    const property = await this.propertyService.updatePropertyStatus(id, status);
-
-    res.json({
-      success: true,
-      data: property,
-    });
-  }
 }
 
 export const propertyController = new PropertyController();

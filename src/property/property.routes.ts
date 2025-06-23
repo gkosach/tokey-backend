@@ -13,9 +13,6 @@ const router = express.Router();
 /** Получение всех объектов недвижимости */
 router.get("/", propertyController.getAllProperties.bind(propertyController));
 
-/** Получение активных объектов */
-router.get("/active", propertyController.getActiveProperties.bind(propertyController));
-
 /** Получение доступных районов недвижимости */
 router.get("/districts", propertyController.getAvailableDistricts.bind(propertyController));
 
@@ -24,8 +21,5 @@ router.get("/:id", propertyController.getProperty.bind(propertyController));
 
 /** Создание объекта */
 router.post("/", authMiddleware(), propertyController.createProperty.bind(propertyController));
-
-/** Обновление статуса */
-router.patch("/:id/status", authMiddleware(), propertyController.updatePropertyStatus.bind(propertyController));
 
 export default router;

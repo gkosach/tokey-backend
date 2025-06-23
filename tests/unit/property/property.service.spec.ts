@@ -264,41 +264,6 @@ describe("PropertyService - Critical Tests", () => {
     });
   });
 
-  describe("updatePropertyStatus", () => {
-    it("🟡 СРЕДНЕ-КРИТИЧНО: обновляет статус для валидного UUID", async () => {
-      const mockUpdatedProperty = {
-        id: "550e8400-e29b-41d4-a716-446655440000",
-        title: "ЖК Северный",
-        status: PropertyStatus.SOLD_OUT,
-        availableTokens: 0,
-        totalTokens: 1000000,
-      };
-
-      prisma.property.update.mockResolvedValue(mockUpdatedProperty);
-
-      const result = await propertyService.updatePropertyStatus(
-        "550e8400-e29b-41d4-a716-446655440000",
-        PropertyStatus.SOLD_OUT,
-      );
-
-      expect(prisma.property.update).toHaveBeenCalledWith({
-        where: { id: "550e8400-e29b-41d4-a716-446655440000" },
-        data: { status: PropertyStatus.SOLD_OUT },
-      });
-      expect(result.status).toBe(PropertyStatus.SOLD_OUT);
-    });
-
-    it("🟡 СРЕДНЕ-КРИТИЧНО: валидирует UUID перед обновлением", async () => {
-      try {
-        await propertyService.updatePropertyStatus("invalid-uuid", PropertyStatus.ACTIVE);
-      } catch (error) {
-        expect(error).toBeInstanceOf(HttpError);
-        expect((error as HttpError).statusCode).toBe(400);
-        expect((error as HttpError).message).toBe("Invalid ID format");
-      }
-    });
-  });
-
   describe("validatePropertyForPurchase", () => {
     it("🔴 КРИТИЧНО: выбрасывает ошибку для отрицательного количества токенов", async () => {
       try {
