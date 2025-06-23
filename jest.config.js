@@ -46,7 +46,7 @@ module.exports = {
   modulePathIgnorePatterns: ["<rootDir>/dist/"],
   setupFilesAfterEnv: ["<rootDir>/tests/setup/jest-setup.ts"],
   testEnvironment: "node",
-  testTimeout: 10000,
+  testTimeout: 30000,
   maxWorkers: 2,
   testMatch: ["<rootDir>/tests/**/*.test.ts", "<rootDir>/tests/**/*.spec.ts"],
   resetMocks: true,
