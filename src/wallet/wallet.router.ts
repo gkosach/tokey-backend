@@ -1,7 +1,7 @@
 import express from "express";
 import "express-async-errors";
-import { authMiddleware } from "../middleware/auth.middleware";
-import { kycVerifiedMiddleware } from "../middleware/kyc.middleware";
+import { authMiddleware } from "../common/middleware/auth.middleware";
+import { kycVerifiedMiddleware } from "../common/middleware/kyc.middleware";
 import { walletController } from "./wallet.controller";
 
 const router = express.Router();

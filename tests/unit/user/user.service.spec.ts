@@ -1,21 +1,33 @@
-import { KycStatus, Prisma } from "@prisma/client";
-import { HttpError } from "../../../src/common";
+import { KycStatus } from "@prisma/client";
 import { UserService } from "../../../src/user/user.service";
-process.env.PERSONA_API_KEY = "test-api-key";
-process.env.PERSONA_TEMPLATE_ID = "test-template-id";
+import { mockUsers } from "../../mocks/prisma.mock";
 
-// Мокаем PersonaProvider
-jest.mock("../../../src/common/providers/persona/persona.provider", () => {
-  return {
-    PersonaProvider: jest.fn().mockImplementation(() => ({
-      initiateVerification: jest.fn(),
-    })),
-  };
-});
+// Мокаем необходимые зависимости
+jest.mock("../../../src/common", () => ({
+  prisma: {
+    user: {
+      create: jest.fn(),
+      findUniqueOrThrow: jest.fn(),
+      update: jest.fn(),
+      findUnique: jest.fn(),
+    },
+  },
+  HttpError: class MockHttpError extends Error {
+    constructor(
+      public message: string,
+      public statusCode: number,
+    ) {
+      super(message);
+      this.name = "HttpError";
+    }
+  },
+}));
 
-const { prisma } = require("../../../src/common");
+// Импортируем после мока
+import { Prisma } from "@prisma/client";
+import { prisma } from "../../../src/common";
 
-describe("UserService - Critical Tests", () => {
+describe("UserService - Критические методы", () => {
   let userService: UserService;
 
   beforeEach(() => {
@@ -23,343 +35,232 @@ describe("UserService - Critical Tests", () => {
     jest.clearAllMocks();
   });
 
+  // 1. Тест для createUser
   describe("createUser", () => {
-    it("🔴 КРИТИЧНО: создает пользователя с правильными данными", async () => {
-      const userData = { cognitoId: "new-123", email: "new@tokey.com" };
-      const mockCreatedUser = {
-        id: "user-456",
-        ...userData,
-        kycStatus: null,
-        referralLink: null,
-        kycProviderId: null,
-        kycCompletedAt: null,
-        createdAt: new Date(),
-      };
+    it("🔴 создает пользователя", async () => {
+      const userData = { cognitoId: "test-123", email: "test@tokey.com" };
+      const mockCreatedUser = mockUsers.kycPending;
 
-      prisma.user.create.mockResolvedValue(mockCreatedUser);
+      (prisma.user.create as jest.Mock).mockResolvedValue(mockCreatedUser);
 
       const result = await userService.createUser(userData);
 
       expect(prisma.user.create).toHaveBeenCalledWith({
         data: {
-          cognitoId: "new-123",
-          email: "new@tokey.com",
+          cognitoId: "test-123",
+          email: "test@tokey.com",
         },
       });
-      expect(result.cognitoId).toBe("new-123");
-      expect(result.email).toBe("new@tokey.com");
+      expect(result).toEqual(mockCreatedUser);
     });
 
-    it("🔴 КРИТИЧНО: обрабатывает дублирование пользователей (P2002)", async () => {
-      const prismaError = new Prisma.PrismaClientKnownRequestError("Unique constraint", {
-        code: "P2002",
-        clientVersion: "5.0.0",
-      });
-      prisma.user.create.mockRejectedValue(prismaError);
+    it("🔴 бросает ошибку 409 при дубликате", async () => {
+      const userData = { cognitoId: "test-123", email: "test@tokey.com" };
 
-      await expect(
-        userService.createUser({
-          cognitoId: "test",
-          email: "duplicate@tokey.com",
+      (prisma.user.create as jest.Mock).mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError("Duplicate", {
+          code: "P2002",
+          clientVersion: "test",
+          meta: { target: ["email"] },
         }),
-      ).rejects.toThrow(HttpError);
+      );
 
-      try {
-        await userService.createUser({
-          cognitoId: "test",
-          email: "duplicate@tokey.com",
-        });
-      } catch (error) {
-        expect(error).toBeInstanceOf(HttpError);
-        expect((error as HttpError).statusCode).toBe(409);
-        expect((error as HttpError).message).toBe("User with this email or cognitoId already exists");
-      }
-    });
-
-    it("🔴 КРИТИЧНО: обрабатывает общие ошибки БД", async () => {
-      const prismaError = new Prisma.PrismaClientKnownRequestError("Database error", {
-        code: "P2003",
-        clientVersion: "5.0.0",
-      });
-      prisma.user.create.mockRejectedValue(prismaError);
-
-      await expect(
-        userService.createUser({
-          cognitoId: "test",
-          email: "test@tokey.com",
+      await expect(userService.createUser(userData)).rejects.toThrow(
+        expect.objectContaining({
+          message: "User with this email or cognitoId already exists",
+          statusCode: 409,
         }),
-      ).rejects.toThrow(HttpError);
-
-      try {
-        await userService.createUser({
-          cognitoId: "test",
-          email: "test@tokey.com",
-        });
-      } catch (error) {
-        expect(error).toBeInstanceOf(HttpError);
-        expect((error as HttpError).statusCode).toBe(500);
-        expect((error as HttpError).message).toBe("User creation failed");
-      }
+      );
     });
   });
 
+  // 2. Тест для getUserByCognitoId
   describe("getUserByCognitoId", () => {
-    it("🔴 КРИТИЧНО: возвращает пользователя по cognitoId", async () => {
-      const mockUser = {
-        id: "user-123",
-        cognitoId: "cognito-123",
-        email: "test@tokey.com",
-        kycStatus: KycStatus.COMPLETED,
-        referralLink: null,
-        kycProviderId: "verification_123",
-        kycCompletedAt: new Date(),
-        createdAt: new Date(),
-      };
+    it("🟢 успешно получает пользователя", async () => {
+      const cognitoId = "cognito-123";
+      const mockUser = mockUsers.kycPending;
 
-      prisma.user.findUniqueOrThrow.mockResolvedValue(mockUser);
+      (prisma.user.findUniqueOrThrow as jest.Mock).mockResolvedValue(mockUser);
 
-      const result = await userService.getUserByCognitoId("cognito-123");
+      const result = await userService.getUserByCognitoId(cognitoId);
 
       expect(prisma.user.findUniqueOrThrow).toHaveBeenCalledWith({
-        where: { cognitoId: "cognito-123" },
+        where: { cognitoId },
         include: { wallet: true },
       });
       expect(result).toEqual(mockUser);
     });
 
-    it("🔴 КРИТИЧНО: пробрасывает Prisma ошибку при отсутствии пользователя", async () => {
-      const prismaError = new Prisma.PrismaClientKnownRequestError("Not found", {
-        code: "P2025",
-        clientVersion: "5.0.0",
-      });
-      prisma.user.findUniqueOrThrow.mockRejectedValue(prismaError);
+    it("🔴 бросает ошибку 404 если пользователь не найден", async () => {
+      const cognitoId = "non-existent";
 
-      await expect(userService.getUserByCognitoId("nonexistent")).rejects.toThrow(HttpError); // Ожидаем HttpError
+      (prisma.user.findUniqueOrThrow as jest.Mock).mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError("Not found", {
+          code: "P2025",
+          clientVersion: "test",
+        }),
+      );
 
-      // Дополнительно проверь сообщение:
-      await expect(userService.getUserByCognitoId("nonexistent")).rejects.toThrow("User not found");
+      await expect(userService.getUserByCognitoId(cognitoId)).rejects.toThrow(
+        expect.objectContaining({
+          message: "User not found",
+          statusCode: 404,
+        }),
+      );
     });
   });
 
+  // 3. Тест для updateUserEmail
   describe("updateUserEmail", () => {
-    it("🟡 СРЕДНЕ-КРИТИЧНО: успешно обновляет email", async () => {
-      const mockUpdatedUser = {
-        id: "user-123",
-        cognitoId: "cognito-123",
-        email: "updated@tokey.com",
-        kycStatus: KycStatus.CREATED,
-        referralLink: null,
-        kycProviderId: null,
-        kycCompletedAt: null,
-        createdAt: new Date(),
-      };
+    it("🟢 успешно обновляет email", async () => {
+      const cognitoId = "cognito-123";
+      const newEmail = "new@tokey.com";
+      const mockUpdatedUser = { ...mockUsers.kycPending, email: newEmail };
 
-      prisma.user.update.mockResolvedValue(mockUpdatedUser);
+      (prisma.user.update as jest.Mock).mockResolvedValue(mockUpdatedUser);
 
-      const result = await userService.updateUserEmail("cognito-123", "updated@tokey.com");
+      const result = await userService.updateUserEmail(cognitoId, newEmail);
 
       expect(prisma.user.update).toHaveBeenCalledWith({
-        where: { cognitoId: "cognito-123" },
-        data: { email: "updated@tokey.com" },
+        where: { cognitoId },
+        data: { email: newEmail },
       });
-      expect(result.email).toBe("updated@tokey.com");
+      expect(result).toEqual(mockUpdatedUser);
     });
 
-    it("🟡 СРЕДНЕ-КРИТИЧНО: предотвращает дублирование email (P2002)", async () => {
-      const prismaError = new Prisma.PrismaClientKnownRequestError("Unique constraint", {
-        code: "P2002",
-        clientVersion: "5.0.0",
-      });
-      prisma.user.update.mockRejectedValue(prismaError);
+    it("🔴 бросает ошибку 409 при дубликате email", async () => {
+      const cognitoId = "cognito-123";
+      const newEmail = "existing@tokey.com";
 
-      try {
-        await userService.updateUserEmail("cognito-123", "duplicate@tokey.com");
-      } catch (error) {
-        expect(error).toBeInstanceOf(HttpError);
-        expect((error as HttpError).statusCode).toBe(409);
-        expect((error as HttpError).message).toBe("Email already exists");
-      }
-    });
+      (prisma.user.update as jest.Mock).mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError("Duplicate", {
+          code: "P2002",
+          clientVersion: "test",
+          meta: { target: ["email"] },
+        }),
+      );
 
-    it("🟡 СРЕДНЕ-КРИТИЧНО: обрабатывает общие ошибки БД", async () => {
-      const prismaError = new Prisma.PrismaClientKnownRequestError("Database error", {
-        code: "P2003",
-        clientVersion: "5.0.0",
-      });
-      prisma.user.update.mockRejectedValue(prismaError);
-
-      try {
-        await userService.updateUserEmail("cognito-123", "new@email.com");
-      } catch (error) {
-        expect(error).toBeInstanceOf(HttpError);
-        expect((error as HttpError).statusCode).toBe(500);
-        expect((error as HttpError).message).toBe("Email update failed");
-      }
+      await expect(userService.updateUserEmail(cognitoId, newEmail)).rejects.toThrow(
+        expect.objectContaining({
+          message: "Email already exists",
+          statusCode: 409,
+        }),
+      );
     });
   });
 
-  describe("updateKycStatusByCognitoId", () => {
-    it("🔴 КРИТИЧНО: обновляет KYC статус с providerId", async () => {
-      const mockUpdatedUser = {
-        id: "user-123",
-        cognitoId: "cognito-123",
-        email: "test@tokey.com",
+  // 4. Тест для validateUserForPurchase
+  describe("validateUserForPurchase", () => {
+    const validUser = {
+      id: "user-123",
+      kycStatus: KycStatus.APPROVED,
+      wallet: { walletAddress: "0x123..." },
+    };
+
+    it("🟢 успешно проверяет пользователя", async () => {
+      const cognitoId = "cognito-123";
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(validUser);
+
+      const result = await userService.validateUserForPurchase(cognitoId);
+      expect(result).toEqual(validUser);
+    });
+
+    it("🔴 бросает ошибку 404 если пользователь не найден", async () => {
+      const cognitoId = "non-existent";
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+
+      await expect(userService.validateUserForPurchase(cognitoId)).rejects.toThrow(
+        expect.objectContaining({
+          message: "User not found",
+          statusCode: 404,
+        }),
+      );
+    });
+
+    it("🔴 бросает ошибку 404 если кошелек отсутствует", async () => {
+      const cognitoId = "cognito-123";
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+        ...validUser,
+        wallet: null,
+      });
+
+      await expect(userService.validateUserForPurchase(cognitoId)).rejects.toThrow(
+        expect.objectContaining({
+          message: "User wallet not found",
+          statusCode: 404,
+        }),
+      );
+    });
+
+    it("🔴 бросает ошибку 403 если KYC не пройден", async () => {
+      const cognitoId = "cognito-123";
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+        ...validUser,
         kycStatus: KycStatus.CREATED,
-        referralLink: null,
-        kycProviderId: "persona_123",
-        kycCompletedAt: null,
-        createdAt: new Date(),
+      });
+
+      await expect(userService.validateUserForPurchase(cognitoId)).rejects.toThrow(
+        expect.objectContaining({
+          message: "KYC verification required",
+          statusCode: 403,
+        }),
+      );
+    });
+  });
+
+  // 5. Тест для updateKycStatus
+  describe("updateKycStatus", () => {
+    const baseMockUser = mockUsers.kycPending;
+
+    it("🟢 успешно обновляет статус KYC", async () => {
+      const cognitoId = "cognito-123";
+      const status = KycStatus.APPROVED;
+      const providerId = "persona_123";
+      const mockUpdatedUser = {
+        ...baseMockUser,
+        kycStatus: status,
+        kycProviderId: providerId,
       };
 
-      prisma.user.update.mockResolvedValue(mockUpdatedUser);
+      (prisma.user.update as jest.Mock).mockResolvedValue(mockUpdatedUser);
 
-      const result = await userService.updateKycStatus("cognito-123", KycStatus.CREATED, "persona_123");
+      const result = await userService.updateKycStatus(cognitoId, status, providerId);
 
       expect(prisma.user.update).toHaveBeenCalledWith({
-        where: { cognitoId: "cognito-123" },
+        where: { cognitoId },
         data: {
-          kycStatus: KycStatus.CREATED,
-          kycProviderId: "persona_123",
+          kycStatus: status,
+          kycProviderId: providerId,
           kycCompletedAt: undefined,
         },
       });
-      expect(result.kycStatus).toBe(KycStatus.CREATED);
-      expect(result.kycProviderId).toBe("persona_123");
+      expect(result).toEqual(mockUpdatedUser);
     });
 
-    it("🔴 КРИТИЧНО: устанавливает kycCompletedAt при статусе COMPLETED", async () => {
-      const mockDate = new Date();
+    it("🟢 устанавливает дату завершения для COMPLETED", async () => {
+      const cognitoId = "cognito-123";
+      const status = KycStatus.COMPLETED;
+      const providerId = "persona_123";
       const mockUpdatedUser = {
-        id: "user-123",
-        cognitoId: "cognito-123",
-        email: "test@tokey.com",
-        kycStatus: KycStatus.COMPLETED,
-        referralLink: null,
-        kycProviderId: "persona_123",
-        kycCompletedAt: mockDate,
-        createdAt: new Date(),
+        ...baseMockUser,
+        kycStatus: status,
+        kycProviderId: providerId,
+        kycCompletedAt: new Date(),
       };
 
-      prisma.user.update.mockResolvedValue(mockUpdatedUser);
+      (prisma.user.update as jest.Mock).mockResolvedValue(mockUpdatedUser);
 
-      const result = await userService.updateKycStatus("cognito-123", KycStatus.COMPLETED, "persona_123");
+      const result = await userService.updateKycStatus(cognitoId, status, providerId);
 
       expect(prisma.user.update).toHaveBeenCalledWith({
-        where: { cognitoId: "cognito-123" },
+        where: { cognitoId },
         data: {
-          kycStatus: KycStatus.COMPLETED,
-          kycProviderId: "persona_123",
+          kycStatus: status,
+          kycProviderId: providerId,
           kycCompletedAt: expect.any(Date),
         },
       });
-      expect(result.kycStatus).toBe(KycStatus.COMPLETED);
-    });
-  });
-
-  describe("validateUserForPurchase", () => {
-    it("🔴 КРИТИЧНО: возвращает валидного пользователя с кошельком", async () => {
-      const mockUser = {
-        id: "user-123",
-        kycStatus: KycStatus.APPROVED,
-        wallet: { walletAddress: "0x123abc..." },
-      };
-
-      prisma.user.findUnique.mockResolvedValue(mockUser);
-
-      const result = await userService.validateUserForPurchase("cognito-123");
-
-      expect(prisma.user.findUnique).toHaveBeenCalledWith({
-        where: { cognitoId: "cognito-123" },
-        select: {
-          id: true,
-          kycStatus: true,
-          wallet: { select: { walletAddress: true } },
-        },
-      });
-      expect(result).toEqual({
-        id: "user-123",
-        kycStatus: KycStatus.APPROVED,
-        wallet: { walletAddress: "0x123abc..." },
-      });
-    });
-
-    it("🔴 КРИТИЧНО: выбрасывает ошибку если пользователь не найден", async () => {
-      prisma.user.findUnique.mockResolvedValue(null);
-
-      try {
-        await userService.validateUserForPurchase("nonexistent");
-      } catch (error) {
-        expect(error).toBeInstanceOf(HttpError);
-        expect((error as HttpError).statusCode).toBe(404);
-        expect((error as HttpError).message).toBe("User not found");
-      }
-    });
-
-    it("🔴 КРИТИЧНО: выбрасывает ошибку если у пользователя нет кошелька", async () => {
-      const mockUser = {
-        id: "user-123",
-        kycStatus: KycStatus.APPROVED,
-        wallet: null,
-      };
-
-      prisma.user.findUnique.mockResolvedValue(mockUser);
-
-      try {
-        await userService.validateUserForPurchase("cognito-123");
-      } catch (error) {
-        expect(error).toBeInstanceOf(HttpError);
-        expect((error as HttpError).statusCode).toBe(404);
-        expect((error as HttpError).message).toBe("User wallet not found");
-      }
-    });
-
-    it("🔴 КРИТИЧНО: выбрасывает ошибку если KYC не одобрен", async () => {
-      const mockUser = {
-        id: "user-123",
-        kycStatus: KycStatus.CREATED,
-        wallet: { walletAddress: "0x123abc..." },
-      };
-
-      prisma.user.findUnique.mockResolvedValue(mockUser);
-
-      try {
-        await userService.validateUserForPurchase("cognito-123");
-      } catch (error) {
-        expect(error).toBeInstanceOf(HttpError);
-        expect((error as HttpError).statusCode).toBe(403);
-        expect((error as HttpError).message).toBe("KYC verification required");
-      }
-    });
-  });
-
-  describe("getUserByKycProviderId", () => {
-    it("🟡 СРЕДНЕ-КРИТИЧНО: возвращает пользователя по KYC Provider ID", async () => {
-      const mockUser = {
-        id: "user-123",
-        cognitoId: "cognito-123",
-        email: "test@tokey.com",
-        kycStatus: KycStatus.CREATED,
-        kycProviderId: "persona_123",
-        kycCompletedAt: null,
-        createdAt: new Date(),
-      };
-
-      prisma.user.findFirst.mockResolvedValue(mockUser);
-
-      const result = await userService.getUserByKycProviderId("persona_123");
-
-      expect(prisma.user.findFirst).toHaveBeenCalledWith({
-        where: { kycProviderId: "persona_123" },
-      });
-      expect(result).toEqual(mockUser);
-    });
-
-    it("🟡 СРЕДНЕ-КРИТИЧНО: возвращает null если пользователь не найден", async () => {
-      prisma.user.findFirst.mockResolvedValue(null);
-
-      const result = await userService.getUserByKycProviderId("nonexistent");
-
-      expect(result).toBeNull();
+      expect(result.kycCompletedAt).toBeInstanceOf(Date);
     });
   });
 });

@@ -1,6 +1,6 @@
 import { ModuleConfig } from "../common/interfaces/module.interface";
 import { PropertyController } from "./property.controller";
-import propertyRoutes from "./property.routes";
+import propertyRouter from "./property.router";
 import { PropertyService } from "./property.service";
 
 /**
@@ -8,7 +8,7 @@ import { PropertyService } from "./property.service";
  * ТОЛЬКО недвижимость - файлы обрабатываются в FileModule
  */
 export const PropertyModule: ModuleConfig = {
-  routes: [propertyRoutes],
+  routes: [propertyRouter],
   services: [PropertyService],
   controllers: [PropertyController],
 };

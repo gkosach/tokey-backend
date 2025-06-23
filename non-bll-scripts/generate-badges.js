@@ -61,6 +61,7 @@ async function generateBadges() {
     fs.mkdirSync(COVERAGE_DIR, { recursive: true });
   }
 
+  // Check if coverage file exists
   if (!fs.existsSync(COVERAGE_SUMMARY)) {
     matrixLog("COVERAGE DATA NOT FOUND - RUN TESTS FIRST", "error");
     process.exit(1);

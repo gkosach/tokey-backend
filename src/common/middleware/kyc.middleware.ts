@@ -1,7 +1,7 @@
 import { KycStatus } from "@prisma/client";
 import { NextFunction, RequestHandler, Response } from "express";
-import { AuthRequest } from "../common";
-import { UserService } from "../user/user.service";
+import { AuthRequest } from "../index";
+import { UserService } from "../../user/user.service";
 
 export const kycVerifiedMiddleware = (): RequestHandler => {
   return async (req: AuthRequest, res: Response, next: NextFunction) => {

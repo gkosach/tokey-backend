@@ -1,6 +1,6 @@
 import express from "express";
 import "express-async-errors";
-import { authMiddleware } from "../middleware/auth.middleware";
+import { authMiddleware } from "../common";
 import { userController } from "./user.controller";
 
 const router = express.Router();
