@@ -1,6 +1,6 @@
 import express from "express";
 import "express-async-errors";
-import { authMiddleware } from "../common";
+import { authMiddleware, getAllPropertyMiddleware } from "../common";
 import { propertyController } from "./property.controller";
 
 /**
@@ -11,7 +11,7 @@ import { propertyController } from "./property.controller";
 const router = express.Router();
 
 /** Получение всех объектов недвижимости */
-router.get("/", propertyController.getAllProperties.bind(propertyController));
+router.get("/", getAllPropertyMiddleware(), propertyController.getAllProperties.bind(propertyController));
 
 /** Получение доступных районов недвижимости */
 router.get("/districts", propertyController.getAvailableDistricts.bind(propertyController));

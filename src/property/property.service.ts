@@ -52,8 +52,11 @@ export class PropertyService {
     maxPrice?: number;
     limit?: number;
     offset?: number;
+    type?: string;
+    sort?: "title_asc" | "title_desc" | "price_asc" | "price_desc";
   }): Promise<{ properties: Property[]; total: number }> {
     const where: Prisma.PropertyWhereInput = {};
+    const orderBy: Prisma.PropertyOrderByWithRelationInput = {};
 
     // Для roi
     if (filters?.roi !== undefined && !isNaN(filters.roi)) {
@@ -83,10 +86,38 @@ export class PropertyService {
       where.status = filters.status;
     }
 
+    // Type filter
+    if (filters?.type) {
+      where.type = filters.type;
+    }
+
+    // Sorting
+    if (filters?.sort) {
+      switch (filters.sort) {
+        case "title_asc":
+          orderBy.title = "asc";
+          break;
+        case "title_desc":
+          orderBy.title = "desc";
+          break;
+        case "price_asc":
+          orderBy.price = "asc";
+          break;
+        case "price_desc":
+          orderBy.price = "desc";
+          break;
+        default:
+          orderBy.createdAt = "desc";
+          break;
+      }
+    } else {
+      orderBy.createdAt = "desc";
+    }
+
     const [properties, total] = await Promise.all([
       prisma.property.findMany({
         where,
-        orderBy: { createdAt: "desc" },
+        orderBy,
         take: filters?.limit ?? 20,
         skip: filters?.offset ?? 0,
       }),

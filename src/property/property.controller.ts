@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { GetPropertiesRequest } from "src/common";
 import { PropertyService } from "./property.service";
 
 export class PropertyController {
@@ -31,23 +32,10 @@ export class PropertyController {
   /**
    * Получает все объекты недвижимости с фильтрацией
    */
-  async getAllProperties(req: Request, res: Response): Promise<void> {
-    const { districts, status, roi, minPrice, maxPrice, limit, offset } = req.query;
+  async getAllProperties(req: GetPropertiesRequest, res: Response): Promise<void> {
+    const query = req.properties?.query || {};
 
-    const preparedDistricts = typeof districts === "string" ? districts.split("|") : undefined;
-
-    const filters = {
-      districts: preparedDistricts,
-      status: status as any,
-      roi: parseInt(roi as string),
-      minPrice: parseInt(minPrice as string),
-      maxPrice: parseInt(maxPrice as string),
-      // developerId: developerId as string,
-      limit: limit ? parseInt(limit as string) : undefined,
-      offset: offset ? parseInt(offset as string) : undefined,
-    };
-
-    const result = await this.propertyService.getAllProperties(filters);
+    const result = await this.propertyService.getAllProperties(query);
 
     res.json({
       success: true,
