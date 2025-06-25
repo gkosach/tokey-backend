@@ -5,9 +5,6 @@ type PartialMockData = {
   property?: Partial<MockTransactionClient["property"]>;
 };
 
-/**
- * Интерфейс для транзакции с нужными методами
- */
 export interface MockTransactionClient {
   user: {
     findUniqueOrThrow: jest.MockedFunction<any>;
@@ -47,9 +44,8 @@ export const createTransactionMock = (mockData: PartialMockData = {}) => {
     return await callback(mockTx);
   };
 };
-/**
- * Базовые моки для Prisma
- */
+
+// Fixed Prisma mock structure
 export const createPrismaMock = () => ({
   user: {
     findUniqueOrThrow: jest.fn(),
@@ -68,7 +64,15 @@ export const createPrismaMock = () => ({
     delete: jest.fn(),
     count: jest.fn(),
   },
-  transaction: {
+  wallet: {
+    // Added wallet model
+    findUnique: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+  tokenTransaction: {
+    // Renamed from 'transaction'
     findMany: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
@@ -80,9 +84,6 @@ export const createPrismaMock = () => ({
   $disconnect: jest.fn(),
 });
 
-/**
- * Готовые данные для тестов
- */
 export const mockUsers = {
   kycPending: {
     id: "user-123",
@@ -104,3 +105,5 @@ export const mockUsers = {
     },
   },
 };
+
+export const prismaMock = createPrismaMock();

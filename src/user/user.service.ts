@@ -1,5 +1,5 @@
 import { KycStatus, Prisma, User, Wallet } from "@prisma/client";
-import { HttpError, PersonaProvider, prisma } from "../common";
+import { HttpError, prisma } from "../common";
 
 /**
  * Сервис для управления данными пользователей (User Entity)
@@ -10,8 +10,6 @@ import { HttpError, PersonaProvider, prisma } from "../common";
  * - Обновление всех полей пользователя (включая KYC поля)
  */
 export class UserService {
-  private kycProvider = new PersonaProvider();
-
   /**
    * Создает нового пользователя БЕЗ кошелька
    */
