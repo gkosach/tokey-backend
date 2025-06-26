@@ -2,6 +2,7 @@ import { PropertyStatus } from "@prisma/client";
 import { Request } from "express";
 import { z } from "zod";
 import { GetPropertiesDTO } from "../validators/property.validator";
+import { AllowedFileTypes } from "./storage-service";
 
 export interface GetPropertiesProcessedQuery {
   offset?: number;
@@ -19,3 +20,5 @@ export interface GetPropertiesRequest extends Request {
 }
 
 export type GetPropertiesRawQuery = z.infer<typeof GetPropertiesDTO>;
+
+export type FilesPathsRecord = Record<AllowedFileTypes, string[] | undefined>;

@@ -59,3 +59,6 @@ Thumbs.db
 # Husky
 .husky/_
 !/types/.env
+
+# Property files
+/src/property/files/uploads
