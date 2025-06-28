@@ -15,10 +15,18 @@ export interface GetPropertiesProcessedQuery {
   sort?: "title_asc" | "title_desc" | "price_asc" | "price_desc";
 }
 
-export interface GetPropertiesRequest extends Request {
+export type GetPropertiesRequest = Request & {
   properties?: { query?: GetPropertiesProcessedQuery };
-}
+};
 
 export type GetPropertiesRawQuery = z.infer<typeof GetPropertiesDTO>;
+
+export type UploadFilesRequest = Request & {
+  files?: {
+    images?: Express.Multer.File[];
+    videos?: Express.Multer.File[];
+    "application/pdf"?: Express.Multer.File[];
+  };
+};
 
 export type FilesPathsRecord = Record<AllowedFileTypes, string[] | undefined>;

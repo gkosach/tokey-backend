@@ -1,19 +1,10 @@
-import { NextFunction, Request, Response } from "express";
-import { GetPropertiesProcessedQuery } from "../types";
+import { NextFunction, Response } from "express";
+import { GetPropertiesRequest } from "../types";
 import { parsePropertiesQuery } from "../utils";
 import { GetPropertiesDTO } from "../validators";
 
-/**
- * Расширение типов Express для добавления объекта property в объект запроса
- */
-declare module "express-serve-static-core" {
-  interface Request {
-    properties?: { query?: GetPropertiesProcessedQuery };
-  }
-}
-
 export const getAllPropertyMiddleware = () => {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: GetPropertiesRequest, res: Response, next: NextFunction) => {
     try {
       const result = GetPropertiesDTO.safeParse(req.query);
       const validatedQuery = result.error ? {} : result.data;
