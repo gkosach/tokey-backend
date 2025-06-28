@@ -1,6 +1,12 @@
 import { createHash } from "node:crypto";
 import path from "node:path";
-import { AllowedFileTypes, FileLike, FilesPathsRecord, SUPPORTED_PROPERTY_FILE_TYPES } from "../../common";
+import {
+  AllowedFileTypes,
+  FileLike,
+  FilesPathsRecord,
+  PROPERTY_FILE_LIMITS,
+  SUPPORTED_PROPERTY_FILE_TYPES,
+} from "../../common";
 import { FileStorageService } from "../../file-storage/file-storage.service";
 
 const storageRoot = path.join(__dirname, "uploads", "units");
@@ -10,13 +16,10 @@ const storageRoot = path.join(__dirname, "uploads", "units");
  *
  */
 export class FilesService {
-  private readonly limits: Record<AllowedFileTypes, number>;
-  constructor(private readonly storage = new FileStorageService(storageRoot)) {
-    this.limits = { "application/pdf": 10, image: 20, video: 1 };
-  }
+  constructor(private readonly storage = new FileStorageService(storageRoot)) {}
 
   async canUploadFile(unitId: string, type: AllowedFileTypes) {
-    const limit = this.limits[type];
+    const limit = PROPERTY_FILE_LIMITS[type];
     const pathsObj = await this.listFilesPathsByType(unitId, type);
     return !pathsObj[type] || pathsObj[type].length < limit;
   }
@@ -41,9 +44,9 @@ export class FilesService {
 
   async listFilesPaths(unitId: string): Promise<FilesPathsRecord> {
     const initialRecord: FilesPathsRecord = {
-      "application/pdf": undefined,
-      image: undefined,
-      video: undefined,
+      "application/pdf": [],
+      image: [],
+      video: [],
     };
 
     const filesPathsPromises = SUPPORTED_PROPERTY_FILE_TYPES.map((t) => this.listFilesPathsByType(unitId, t));
@@ -54,11 +57,11 @@ export class FilesService {
     return filesPathsRecord;
   }
 
-  async getFile(relativePath: string) {
+  async getFileByPath(relativePath: string) {
     return await this.storage.getFile(relativePath);
   }
 
-  getShortBufferId(buffer: Buffer): string {
+  private getShortBufferId(buffer: Buffer): string {
     return createHash("sha256").update(buffer).digest().subarray(0, 12).toString("base64url");
   }
 }

@@ -28,7 +28,7 @@ export class FileStorageService {
     await fsp.writeFile(filePath, file.buffer);
 
     const meta: FileMeta = {
-      mimetype: file.mimetype || "application/octet-stream",
+      mimetype: this.detectMimeTypeFromExtension(filePath) ?? "application/octet-stream",
       originalname: file.originalname || path.basename(filePath),
     };
 
@@ -103,6 +103,38 @@ export class FileStorageService {
       return true;
     } catch {
       return false;
+    }
+  }
+
+  detectMimeTypeFromExtension(filePath: string): string | null {
+    const ext = path.extname(filePath).toLowerCase();
+
+    switch (ext) {
+      // Изображения
+      case ".jpg":
+      case ".jpeg":
+        return "image/jpeg";
+      case ".png":
+        return "image/png";
+      case ".gif":
+        return "image/gif";
+      case ".bmp":
+        return "image/bmp";
+      case ".webp":
+        return "image/webp";
+      case ".svg":
+        return "image/svg+xml";
+
+      // PDF
+      case ".pdf":
+        return "application/pdf";
+
+      // Видео
+      case ".mp4":
+        return "video/mp4";
+
+      default:
+        return null;
     }
   }
 }
