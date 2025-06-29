@@ -6,13 +6,12 @@ export class TokenController {
   constructor(readonly tokenService: TokenService = new TokenService()) {}
 
   /**
-   * Получает балансы токенов
+   * Получает балансы токенов пользователя
    */
   async getTokenBalances(req: AuthRequest, res: Response): Promise<void> {
     if (!req.user) throw new Error("Unauthorized");
 
     const balances = await this.tokenService.getUserTokenBalances(req.user.id);
-
     res.json({
       success: true,
       data: balances,
@@ -25,12 +24,8 @@ export class TokenController {
   async purchaseTokens(req: AuthRequest, res: Response): Promise<void> {
     if (!req.user) throw new Error("Unauthorized");
 
-    const { propertyId, tokensAmount, paymentAmount, paymentCurrency } = req.body;
-
-    const transaction = await this.tokenService.purchaseTokens(req.user.id, propertyId, tokensAmount, {
-      amount: paymentAmount,
-      currency: paymentCurrency,
-    });
+    const { tierId, tokensAmount, userAddress } = req.body;
+    const transaction = await this.tokenService.purchaseTokens(req.user.id, tierId, tokensAmount, userAddress);
 
     res.json({
       success: true,
@@ -45,7 +40,6 @@ export class TokenController {
     if (!req.user) throw new Error("Unauthorized");
 
     const { limit = 20, offset = 0 } = req.query;
-
     const history = await this.tokenService.getTransactionHistory(req.user.id, Number(limit), Number(offset));
 
     res.json({

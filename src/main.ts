@@ -7,7 +7,10 @@ import express, { NextFunction, Request, Response } from "express";
 import "express-async-errors";
 import helmet from "helmet";
 import morgan from "morgan";
+import swaggerJSDoc from "swagger-jsdoc";
+import swaggerUi from "swagger-ui-express";
 import { handlePrismaError, validateEnvConfig } from "./common";
+import swaggerDefinition from "./common/config/swagger.config";
 import { APP_ROUTES } from "./index";
 
 /** Валидация переменных окружения */
@@ -19,6 +22,14 @@ try {
 }
 
 const app = express();
+
+/** Инициализация Swagger */
+const swaggerOptions: swaggerJSDoc.Options = {
+  swaggerDefinition,
+  apis: ["./src/routes/**/*.ts", "./src/**/*.controller.ts"],
+};
+
+const swaggerSpec = swaggerJSDoc(swaggerOptions);
 
 /** Middleware */
 app.use(helmet());
@@ -48,6 +59,8 @@ app.use(
   }),
 );
 
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 /** Development логирование (оптимизированное) */
 if (process.env.NODE_ENV === "development") {
   app.use((req: Request, res: Response, next: NextFunction): void => {
@@ -74,11 +87,11 @@ app.get("/", (req: Request, res: Response): void => {
 
 /** Регистрация маршрутов */
 const routeMap = [
-  { path: "/api/users", moduleIndex: 0 },
-  { path: "/api/wallets", moduleIndex: 1 },
-  { path: "/api/properties", moduleIndex: 2 },
-  { path: "/api/tokens", moduleIndex: 3 },
-  { path: "/api/blockchain", moduleIndex: 4 },
+  { path: "/api/users", moduleIndex: 0 }, // UserModule
+  { path: "/api/kyc", moduleIndex: 1 }, // KycModule
+  { path: "/api/wallets", moduleIndex: 2 }, // WalletModule
+  { path: "/api/properties", moduleIndex: 3 }, // PropertyModule
+  { path: "/api/tokens", moduleIndex: 4 }, // TokenModule
 ];
 
 routeMap.forEach(({ path, moduleIndex }) => {
