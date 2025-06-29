@@ -9,7 +9,8 @@ module.exports = {
     "^.+\\.ts$": [
       "ts-jest",
       {
-        tsconfig: "./tsconfig.test.json",
+        tsconfig: "tsconfig.test.json",
+        diagnostics: true,
       },
     ],
   },
@@ -51,5 +52,5 @@ module.exports = {
   testMatch: ["<rootDir>/tests/**/*.test.ts", "<rootDir>/tests/**/*.spec.ts"],
   resetMocks: true,
   restoreMocks: true,
-  transformIgnorePatterns: ["node_modules/(?!(axios|@tatum)/)"],
+  testPathIgnorePatterns: ["/node_modules/", "/dist/", "/tests/integration/"],
 };

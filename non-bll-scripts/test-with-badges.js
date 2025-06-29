@@ -7,17 +7,13 @@ async function runTestsWithBadges() {
   console.log("\x1b[36m🚀 Starting automated test & badge generation...\x1b[0m\n");
 
   try {
-    // 1. Run tests with coverage
     console.log("\x1b[33m📊 Running tests with coverage...\x1b[0m");
     execSync("npm run test", { stdio: "inherit" });
-
-    // 2. Check if coverage file exists
     const coveragePath = path.join(__dirname, "../coverage/coverage-summary.json");
     if (!fs.existsSync(coveragePath)) {
       throw new Error("Coverage summary not found");
     }
 
-    // 3. Generate badges
     console.log("\n\x1b[33m🎨 Generating coverage badges...\x1b[0m");
     execSync("node non-bll-scripts/generate-badges.js", { stdio: "inherit" });
 
