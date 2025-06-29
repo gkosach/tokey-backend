@@ -16,9 +16,6 @@ router.get("/", propertyController.getAllProperties.bind(propertyController));
 /** Получение активных объектов */
 router.get("/active", propertyController.getActiveProperties.bind(propertyController));
 
-/** Получение доступных районов недвижимости */
-router.get("/districts", propertyController.getAvailableDistricts.bind(propertyController));
-
 /** Получение объекта по ID */
 router.get("/:id", propertyController.getProperty.bind(propertyController));
 

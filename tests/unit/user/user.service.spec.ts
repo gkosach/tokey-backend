@@ -7,9 +7,9 @@ jest.mock("../../../src/common", () => ({
   prisma: {
     user: {
       create: jest.fn(),
-      findUniqueOrThrow: jest.fn(),
-      update: jest.fn(),
       findUnique: jest.fn(),
+      update: jest.fn(),
+      findFirst: jest.fn(),
     },
   },
   HttpError: class MockHttpError extends Error {
@@ -37,7 +37,7 @@ describe("UserService - Критические методы", () => {
 
   // 1. Тест для createUser
   describe("createUser", () => {
-    it("🔴 создает пользователя", async () => {
+    it("🟢 создает пользователя", async () => {
       const userData = { cognitoId: "test-123", email: "test@tokey.com" };
       const mockCreatedUser = mockUsers.kycPending;
 
@@ -80,13 +80,12 @@ describe("UserService - Критические методы", () => {
       const cognitoId = "cognito-123";
       const mockUser = mockUsers.kycPending;
 
-      (prisma.user.findUniqueOrThrow as jest.Mock).mockResolvedValue(mockUser);
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
 
       const result = await userService.getUserByCognitoId(cognitoId);
 
-      expect(prisma.user.findUniqueOrThrow).toHaveBeenCalledWith({
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
         where: { cognitoId },
-        include: { wallet: true },
       });
       expect(result).toEqual(mockUser);
     });
@@ -94,12 +93,7 @@ describe("UserService - Критические методы", () => {
     it("🔴 бросает ошибку 404 если пользователь не найден", async () => {
       const cognitoId = "non-existent";
 
-      (prisma.user.findUniqueOrThrow as jest.Mock).mockRejectedValue(
-        new Prisma.PrismaClientKnownRequestError("Not found", {
-          code: "P2025",
-          clientVersion: "test",
-        }),
-      );
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
 
       await expect(userService.getUserByCognitoId(cognitoId)).rejects.toThrow(
         expect.objectContaining({
@@ -154,7 +148,6 @@ describe("UserService - Критические методы", () => {
     const validUser = {
       id: "user-123",
       kycStatus: KycStatus.APPROVED,
-      wallet: { walletAddress: "0x123..." },
     };
 
     it("🟢 успешно проверяет пользователя", async () => {
@@ -162,7 +155,10 @@ describe("UserService - Критические методы", () => {
       (prisma.user.findUnique as jest.Mock).mockResolvedValue(validUser);
 
       const result = await userService.validateUserForPurchase(cognitoId);
-      expect(result).toEqual(validUser);
+      expect(result).toEqual({
+        id: validUser.id,
+        kycStatus: validUser.kycStatus,
+      });
     });
 
     it("🔴 бросает ошибку 404 если пользователь не найден", async () => {
@@ -172,21 +168,6 @@ describe("UserService - Критические методы", () => {
       await expect(userService.validateUserForPurchase(cognitoId)).rejects.toThrow(
         expect.objectContaining({
           message: "User not found",
-          statusCode: 404,
-        }),
-      );
-    });
-
-    it("🔴 бросает ошибку 404 если кошелек отсутствует", async () => {
-      const cognitoId = "cognito-123";
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
-        ...validUser,
-        wallet: null,
-      });
-
-      await expect(userService.validateUserForPurchase(cognitoId)).rejects.toThrow(
-        expect.objectContaining({
-          message: "User wallet not found",
           statusCode: 404,
         }),
       );
@@ -261,6 +242,32 @@ describe("UserService - Критические методы", () => {
         },
       });
       expect(result.kycCompletedAt).toBeInstanceOf(Date);
+    });
+  });
+
+  // 6. Тест для getUserByKycProviderId
+  describe("getUserByKycProviderId", () => {
+    it("🟢 успешно находит пользователя по KYC ID", async () => {
+      const providerId = "persona_123";
+      const mockUser = mockUsers.kycApproved;
+
+      (prisma.user.findFirst as jest.Mock).mockResolvedValue(mockUser);
+
+      const result = await userService.getUserByKycProviderId(providerId);
+
+      expect(prisma.user.findFirst).toHaveBeenCalledWith({
+        where: { kycProviderId: providerId },
+      });
+      expect(result).toEqual(mockUser);
+    });
+
+    it("🟢 возвращает null если пользователь не найден", async () => {
+      const providerId = "non-existent";
+
+      (prisma.user.findFirst as jest.Mock).mockResolvedValue(null);
+
+      const result = await userService.getUserByKycProviderId(providerId);
+      expect(result).toBeNull();
     });
   });
 });

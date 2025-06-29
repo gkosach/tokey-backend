@@ -1,0 +1,24 @@
+[
+  {
+    "id": "a1a2b3c4-d5e6-4890-abcd-ef1234567890",
+    "userId": "550e8400-e29b-41d4-a716-446655440001",
+    "tierId": "b9d3b4e8-5e7e-4a2f-8a4c-9e8f0d1c2b3d",
+    "tokensAmount": 1000,
+    "userAddress": "0x742d35Cc6634C0532925a3b8D4C0C8b3C2e1e1e1",
+    "contractAddress": "0x1234567890123456789012345678901234567890",
+    "txHash": "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+    "paymentAmount": 450000.0,
+    "createdAt": "2024-03-16T15:30:00.000Z"
+  },
+  {
+    "id": "b2b3c4d5-e6f7-4890-bcde-f1234567890a",
+    "userId": "550e8400-e29b-41d4-a716-446655440002",
+    "tierId": "c1d2e3f4-5678-4abc-bdef-1234567890ab",
+    "tokensAmount": 500,
+    "userAddress": "0x742d35Cc6634C0532925a3b8D4C0C8b3C2e1e2e2",
+    "contractAddress": "0x1234567890123456789012345678901234567890",
+    "txHash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+    "paymentAmount": 237500.0,
+    "createdAt": "2024-03-18T10:15:00.000Z"
+  }
+]

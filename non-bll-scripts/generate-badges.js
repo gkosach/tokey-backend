@@ -2,6 +2,11 @@ const fs = require("fs");
 const path = require("path");
 const { execSync } = require("child_process");
 
+if (!fs.existsSync("./coverage/coverage-summary.json")) {
+  console.error("❌ Coverage data not found. Run tests first!");
+  process.exit(1);
+}
+
 const COVERAGE_DIR = "./assets/coverage";
 const COVERAGE_SUMMARY = "./coverage/coverage-summary.json";
 

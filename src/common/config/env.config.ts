@@ -6,46 +6,6 @@ if (!process.env.DATABASE_URL) {
 }
 export {};
 
-/** Конфигурация переменных окружения с валидацией */
-export const envConfig = {
-  /** Порт сервера */
-  PORT: Number(process.env.PORT) || 3002,
-
-  /** Режим окружения */
-  NODE_ENV: process.env.NODE_ENV || "development",
-
-  /** URL базы данных */
-  DATABASE_URL: process.env.DATABASE_URL!,
-
-  /** AWS настройки */
-  AWS: {
-    REGION: process.env.AWS_REGION!,
-    USER_POOL_ID: process.env.COGNITO_USER_POOL_ID!,
-    ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID!,
-    SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
-
-  /** S3 настройки */
-  S3: {
-    BUCKET_NAME: process.env.S3_BUCKET_NAME!,
-  },
-
-  /** Persona KYC настройки */
-  PERSONA: {
-    API_KEY: process.env.PERSONA_API_KEY!,
-    TEMPLATE_ID: process.env.PERSONA_TEMPLATE_ID!,
-    SHA: process.env.NEXT_PERSONA_SHA!,
-  },
-
-  /** Turnkey настройки */
-  TURNKEY: {
-    API_PUBLIC: process.env.TURNKEY_API_PUBLIC!,
-    SECRET: process.env.TURNKEY_SECRET!,
-    ORGANIZATION_ID: process.env.TURNKEY_ORGANIZATION_ID!,
-  },
-};
-
-/** Валидация обязательных переменных */
 /** Валидация обязательных переменных */
 export function validateEnvConfig(): void {
   const requiredVars = [
@@ -60,9 +20,6 @@ export function validateEnvConfig(): void {
     "POSTGRES_DB",
     "POSTGRES_USER",
     "POSTGRES_PASSWORD",
-    "TURNKEY_API_PUBLIC",
-    "TURNKEY_SECRET",
-    "TURNKEY_ORGANIZATION_ID",
   ];
 
   const missingVars = requiredVars.filter((varName) => !process.env[varName]);

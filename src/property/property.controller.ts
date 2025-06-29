@@ -1,3 +1,4 @@
+import { PropertyStatus } from "@prisma/client";
 import { Request, Response } from "express";
 import { PropertyService } from "./property.service";
 
@@ -5,11 +6,29 @@ export class PropertyController {
   constructor(private propertyService = new PropertyService()) {}
 
   /**
-   * Создает недвижимость с файлами
+   * @swagger
+   * /api/properties:
+   *   post:
+   *     summary: Create a new property
+   *     tags: [Properties]
+   *     security:
+   *       - BearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/PropertyCreateInput'
+   *     responses:
+   *       201:
+   *         description: Property created
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Property'
    */
   async createProperty(req: Request, res: Response): Promise<void> {
     const property = await this.propertyService.createProperty(req.body);
-
     res.status(201).json({
       success: true,
       data: property,
@@ -17,37 +36,48 @@ export class PropertyController {
   }
 
   /**
-   * Получает все доступные районы недвижимости
-   */
-  async getAvailableDistricts(req: Request, res: Response): Promise<void> {
-    const result = await this.propertyService.getAvailableDistricts();
-
-    res.json({
-      success: true,
-      data: result,
-    });
-  }
-
-  /**
-   * Получает все объекты недвижимости с фильтрацией
+   * @swagger
+   * /api/properties:
+   *   get:
+   *     summary: Get all properties with optional filters
+   *     tags: [Properties]
+   *     parameters:
+   *       - in: query
+   *         name: status
+   *         schema:
+   *           type: string
+   *           enum: [COMING_SOON, ACTIVE, SOLD_OUT, COMPLETED]
+   *       - in: query
+   *         name: limit
+   *         schema:
+   *           type: integer
+   *       - in: query
+   *         name: offset
+   *         schema:
+   *           type: integer
+   *     responses:
+   *       200:
+   *         description: List of properties
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 properties:
+   *                   type: array
+   *                   items:
+   *                     $ref: '#/components/schemas/Property'
+   *                 total:
+   *                   type: integer
    */
   async getAllProperties(req: Request, res: Response): Promise<void> {
-    const { districts, status, roi, minPrice, maxPrice, limit, offset } = req.query;
+    const { status, limit, offset } = req.query;
 
-    const preparedDistricts = typeof districts === "string" ? districts.split("|") : undefined;
-
-    const filters = {
-      districts: preparedDistricts,
-      status: status as any,
-      roi: parseInt(roi as string),
-      minPrice: parseInt(minPrice as string),
-      maxPrice: parseInt(maxPrice as string),
-      // developerId: developerId as string,
+    const result = await this.propertyService.getAllProperties({
+      status: status as PropertyStatus,
       limit: limit ? parseInt(limit as string) : undefined,
       offset: offset ? parseInt(offset as string) : undefined,
-    };
-
-    const result = await this.propertyService.getAllProperties(filters);
+    });
 
     res.json({
       success: true,
@@ -56,26 +86,57 @@ export class PropertyController {
   }
 
   /**
-   * Получает активные объекты для инвестирования
+   * @swagger
+   * /api/properties/active:
+   *   get:
+   *     summary: Get active properties
+   *     tags: [Properties]
+   *     responses:
+   *       200:
+   *         description: List of active properties
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/Property'
    */
   async getActiveProperties(req: Request, res: Response): Promise<void> {
     const result = await this.propertyService.getAllProperties({
-      status: "ACTIVE" as any,
+      status: "ACTIVE",
     });
 
     res.json({
       success: true,
-      data: result,
+      data: result.properties,
     });
   }
 
   /**
-   * Получает объект недвижимости по ID
+   * @swagger
+   * /api/properties/{id}:
+   *   get:
+   *     summary: Get property by ID
+   *     tags: [Properties]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Property details
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Property'
+   *       404:
+   *         description: Property not found
    */
   async getProperty(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
     const property = await this.propertyService.getPropertyById(id);
-
     res.json({
       success: true,
       data: property,
@@ -83,7 +144,36 @@ export class PropertyController {
   }
 
   /**
-   * Обновляет статус объекта недвижимости
+   * @swagger
+   * /api/properties/{id}/status:
+   *   patch:
+   *     summary: Update property status
+   *     tags: [Properties]
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               status:
+   *                 type: string
+   *                 enum: [COMING_SOON, ACTIVE, SOLD_OUT, COMPLETED]
+   *     responses:
+   *       200:
+   *         description: Updated property
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Property'
    */
   async updatePropertyStatus(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
