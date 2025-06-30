@@ -25,8 +25,10 @@ export type UploadFilesRequest = Request & {
   files?: {
     images?: Express.Multer.File[];
     videos?: Express.Multer.File[];
-    "application/pdf"?: Express.Multer.File[];
+    documents?: Express.Multer.File[];
   };
 };
+
+export type UploadFilesProcessingResult = { errors: { fileName: string; error: string }[]; saved: string[] };
 
 export type FilesPathsRecord = Record<AllowedFileTypes, string[] | undefined>;

@@ -1,6 +1,5 @@
 import { PropertyStatus } from "@prisma/client";
-import { GetPropertiesProcessedQuery, GetPropertiesRawQuery } from "../types";
-import { GetPropertiesDTO } from "../validators/property.validator";
+import { GetPropertiesDTO, GetPropertiesProcessedQuery, GetPropertiesRawQuery } from "../..";
 
 const toNumber = (value?: string): number | undefined => {
   if (typeof value !== "string") return undefined;

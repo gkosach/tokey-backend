@@ -13,7 +13,7 @@ router.post(
   upload.fields([
     { name: "images", maxCount: PROPERTY_FILE_LIMITS.image },
     { name: "videos", maxCount: PROPERTY_FILE_LIMITS.video },
-    { name: "application/pdf", maxCount: PROPERTY_FILE_LIMITS["application/pdf"] },
+    { name: "documents", maxCount: PROPERTY_FILE_LIMITS["application/pdf"] },
   ]),
   filesController.uploadFiles.bind(filesController),
 );

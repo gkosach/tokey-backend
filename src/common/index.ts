@@ -14,7 +14,7 @@ export * from "./enum/index";
 export * from "./types/index";
 
 // utils
-export * from "./utils/error.handler";
+export * from "./utils";
 
 // error
 export * from "./error/index";
@@ -23,3 +23,4 @@ export * from "./error/index";
 export * from "./providers/index";
 
 //validators
+export * from "./validators/index";

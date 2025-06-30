@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { GetPropertiesRequest } from "src/common";
+import { GetPropertiesRequest } from "../common";
 import { PropertyService } from "./property.service";
 
 export class PropertyController {

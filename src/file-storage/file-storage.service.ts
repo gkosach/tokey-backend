@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
-import { FileData, FileLike, FileMeta, FilesPathsRecord } from "../common";
+import { createEmptyFilesRecord, FileData, FileLike, FileMeta, FilesPathsRecord } from "../common";
 
 export class FileStorageService {
   constructor(private storageRoot: string = "./uploads") {
@@ -25,6 +25,7 @@ export class FileStorageService {
     const meta: FileMeta = {
       mimetype: this.detectMimeTypeFromExtension(filePath) ?? "application/octet-stream",
       originalname: file.originalname || path.basename(filePath),
+      size: file.size,
     };
 
     await fsp.writeFile(this.getMetaPath(filePath), JSON.stringify(meta, null, 2));
@@ -49,6 +50,7 @@ export class FileStorageService {
       buffer,
       mimetype: meta.mimetype,
       originalname: meta.originalname,
+      size: meta.size,
     };
   }
 
@@ -110,13 +112,9 @@ export class FileStorageService {
     }
   }
 
-  async updateIndex(unitDir: string, updateFn: (current: FilesPathsRecord) => FilesPathsRecord): Promise<void> {
-    const indexPath = path.join(unitDir, "index.json");
-    let current: FilesPathsRecord = {
-      "application/pdf": [],
-      image: [],
-      video: [],
-    };
+  async updateIndex(propertyDir: string, updateFn: (current: FilesPathsRecord) => FilesPathsRecord): Promise<void> {
+    const indexPath = path.join(propertyDir, "index.json");
+    let current = createEmptyFilesRecord();
 
     try {
       const raw = await fsp.readFile(indexPath, "utf-8");

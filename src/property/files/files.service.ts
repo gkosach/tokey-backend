@@ -3,6 +3,7 @@ import path from "node:path";
 import { v4 as uuidv4 } from "uuid";
 import {
   AllowedFileTypes,
+  createEmptyFilesRecord,
   FileLike,
   FilesPathsRecord,
   PROPERTY_FILE_LIMITS,
@@ -10,7 +11,7 @@ import {
 } from "../../common";
 import { FileStorageService } from "../../file-storage/file-storage.service";
 
-const storageRoot = path.join(__dirname, "uploads", "units");
+const storageRoot = path.join(__dirname, "uploads", "properties");
 
 /**
  * Сервис для управления файлами недвижимости
@@ -19,9 +20,9 @@ const storageRoot = path.join(__dirname, "uploads", "units");
 export class FilesService {
   constructor(private readonly storage = new FileStorageService(storageRoot)) {}
 
-  async canUploadFile(unitId: string, type: AllowedFileTypes): Promise<boolean> {
-    const unitDir = this.getAbsolutePath(unitId);
-    const indexPath = path.join(unitDir, "index.json");
+  async canUploadFile(propertyId: string, type: AllowedFileTypes): Promise<boolean> {
+    const propertyDir = this.getAbsolutePath(propertyId);
+    const indexPath = path.join(propertyDir, "index.json");
 
     try {
       const raw = await fsp.readFile(indexPath, "utf-8");
@@ -33,34 +34,36 @@ export class FilesService {
     }
   }
 
-  async saveFile(unitId: string, file: FileLike, type: AllowedFileTypes) {
+  async saveFile(propertyId: string, file: FileLike, type: AllowedFileTypes) {
     const subDirName = this.getRandomUUID();
     const fileName = type === "video" ? "video.mp4" : file.originalname || subDirName;
-    const filePath = this.getAbsolutePath(unitId, subDirName, fileName);
+    const filePath = this.getAbsolutePath(propertyId, subDirName, fileName);
 
     await this.storage.saveFile(filePath, file);
 
-    const unitDir = this.getAbsolutePath(unitId);
-    await this.storage.updateIndex(unitDir, (current) => {
+    const propertyDir = this.getAbsolutePath(propertyId);
+    await this.storage.updateIndex(propertyDir, (current) => {
       const updated = { ...current };
       updated[type] = [...(updated[type] || []), filePath];
       return updated;
     });
+
+    return subDirName;
   }
 
-  async deleteFile(unitId: string, filePath: string, type: AllowedFileTypes): Promise<void> {
+  async deleteFile(propertyId: string, filePath: string, type: AllowedFileTypes): Promise<void> {
     await this.storage.deleteFile(filePath);
 
-    const unitDir = this.getAbsolutePath(unitId);
-    await this.storage.updateIndex(unitDir, (current) => {
+    const propertyDir = this.getAbsolutePath(propertyId);
+    await this.storage.updateIndex(propertyDir, (current) => {
       const updated = { ...current };
       updated[type] = (updated[type] || []).filter((p) => p !== filePath);
       return updated;
     });
   }
 
-  async listFilesPathsByType(unitId: string, type: AllowedFileTypes): Promise<Partial<FilesPathsRecord>> {
-    const dirPath = this.getAbsolutePath(unitId);
+  async listFilesPathsByType(propertyId: string, type: AllowedFileTypes): Promise<Partial<FilesPathsRecord>> {
+    const dirPath = this.getAbsolutePath(propertyId);
 
     const dirExists = await this.storage.dirExists(dirPath);
     if (!dirExists) return Object.fromEntries([[type]]);
@@ -69,14 +72,10 @@ export class FilesService {
     return Object.fromEntries([[type, paths]]) as Partial<FilesPathsRecord>;
   }
 
-  async listFilesPaths(unitId: string): Promise<FilesPathsRecord> {
-    const initialRecord = {
-      "application/pdf": [],
-      image: [],
-      video: [],
-    };
+  async listFilesPaths(propertyId: string): Promise<FilesPathsRecord> {
+    const initialRecord = createEmptyFilesRecord();
 
-    const filesPathsPromises = SUPPORTED_PROPERTY_FILE_TYPES.map((t) => this.listFilesPathsByType(unitId, t));
+    const filesPathsPromises = SUPPORTED_PROPERTY_FILE_TYPES.map((t) => this.listFilesPathsByType(propertyId, t));
     const filePathsRecords = await Promise.all(filesPathsPromises);
 
     const filesPathsRecord = filePathsRecords.reduce<FilesPathsRecord>((acc, v) => ({ ...acc, ...v }), initialRecord);
@@ -84,12 +83,12 @@ export class FilesService {
     return filesPathsRecord;
   }
 
-  async getFileById(unitId: string, fileId: string) {
-    const absPath = this.getAbsolutePath(unitId, fileId);
+  async getFileById(propertyId: string, fileId: string) {
+    const absPath = this.getAbsolutePath(propertyId, fileId);
     return await this.storage.getFile(absPath);
   }
-  async getFilePath(unitId: string, fileId: string) {
-    const absPath = this.getAbsolutePath(unitId, fileId);
+  async getFilePath(propertyId: string, fileId: string) {
+    const absPath = this.getAbsolutePath(propertyId, fileId);
     return await this.storage.getFilePath(absPath);
   }
 

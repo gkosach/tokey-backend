@@ -4,69 +4,32 @@ import {
   ALLOWED_MIME_TYPES,
   AllowedFileTypes,
   HttpError,
-  SUPPORTED_PROPERTY_FILE_TYPES,
+  UploadFilesProcessingResult,
   UploadFilesRequest,
 } from "../../common";
+import { PropertyService } from "../property.service";
 import { FilesService } from "./files.service";
 
 export class FilesController {
-  constructor(private readonly filesService = new FilesService()) {}
+  constructor(
+    private readonly filesService = new FilesService(),
+    private readonly propertiesService = new PropertyService(),
+  ) {}
 
   async uploadFiles(req: UploadFilesRequest, res: Response): Promise<void> {
     try {
-      const propertyId = req.params.id;
+      const { id } = req.params;
 
-      if (!req.files) {
-        res.status(400).json({ error: `Invalid payload` });
-        return;
-      }
+      const propertyIdIsValid = await this.validatePropertyId(res, id);
+      if (!propertyIdIsValid) return;
 
-      const images = (req.files.images ?? []) as Express.Multer.File[];
-      const documents = (req.files?.["application/pdf"] ?? []) as Express.Multer.File[];
-      const videos = (req.files?.["videos"] ?? []) as Express.Multer.File[];
+      const { images = [], videos = [], documents = [] } = req.files as Record<string, Express.Multer.File[]>;
 
-      for (const file of images) {
-        if (!this.uploadPayloadIsValid(file, "image")) {
-          res.status(400).json({ error: `Invalid image: ${file.originalname}` });
-          return;
-        }
-        const canUpload = await this.filesService.canUploadFile(propertyId, "image");
+      const uploadedImageObj = await this.processUploads(images, "image", id);
+      const uploadedVideoObj = await this.processUploads(videos, "video", id);
+      const uploadedDocumentObj = await this.processUploads(documents, "application/pdf", id);
 
-        if (!canUpload) {
-          res.status(400).json({ error: "Image limit exceeded" });
-          return;
-        }
-
-        await this.filesService.saveFile(propertyId, file, "image");
-      }
-
-      for (const video of videos) {
-        if (!this.uploadPayloadIsValid(video, "video")) {
-          res.status(400).json({ error: `Invalid video: ${video.originalname}` });
-          return;
-        }
-        const canUpload = await this.filesService.canUploadFile(propertyId, "video");
-        if (!canUpload) {
-          res.status(400).json({ error: "Video limit exceeded" });
-          return;
-        }
-        await this.filesService.saveFile(propertyId, video, "video");
-      }
-
-      for (const file of documents) {
-        if (!this.uploadPayloadIsValid(file, "application/pdf")) {
-          res.status(400).json({ error: `Invalid document: ${file.originalname}` });
-          return;
-        }
-        const canUpload = await this.filesService.canUploadFile(propertyId, "application/pdf");
-        if (!canUpload) {
-          res.status(400).json({ error: "Document limit exceeded" });
-          return;
-        }
-        await this.filesService.saveFile(propertyId, file, "application/pdf");
-      }
-
-      res.status(201).json({ success: true });
+      this.processUploadsResult(res, uploadedImageObj, uploadedVideoObj, uploadedDocumentObj);
     } catch (error) {
       console.error("Error in uploadAllFiles:", error);
       throw new HttpError("Error loading all files", 500);
@@ -78,12 +41,9 @@ export class FilesController {
     try {
       const { id, fileId } = req.params;
 
-      console.log(fileId);
-
-      if (!fileId) {
-        res.status(400).json({ error: "File id is required" });
-        return;
-      }
+      const propertyIdIsValid = await this.validatePropertyId(res, id);
+      if (!propertyIdIsValid) return;
+      if (this.validateFileId(res, fileId)) return;
 
       const file = await this.filesService.getFileById(id.toString(), fileId.toString());
 
@@ -99,12 +59,11 @@ export class FilesController {
     try {
       const { id, fileId } = req.params;
 
-      if (!fileId) {
-        res.status(400).json({ error: "File id is required" });
-        return;
-      }
+      const propertyIdIsValid = await this.validatePropertyId(res, id);
+      if (!propertyIdIsValid) return;
+      if (this.validateFileId(res, fileId)) return;
 
-      const filePath = await this.filesService.getFilePath(id.toString(), fileId.toString());
+      const filePath = await this.filesService.getFilePath(id, fileId);
 
       res.status(200).json({
         success: true,
@@ -118,9 +77,12 @@ export class FilesController {
 
   async listFilesPaths(req: Request, res: Response): Promise<void> {
     try {
-      const { id: propertyId } = req.params;
+      const { id } = req.params;
 
-      const filePathsData = await this.filesService.listFilesPaths(propertyId);
+      const propertyIdIsValid = await this.validatePropertyId(res, id);
+      if (!propertyIdIsValid) return;
+
+      const filePathsData = await this.filesService.listFilesPaths(id);
 
       res.status(200).json({
         success: true,
@@ -132,17 +94,55 @@ export class FilesController {
     }
   }
 
-  private async uploadPayloadIsValid(file: Express.Multer.File, type?: unknown): Promise<boolean> {
-    if (!type || !(typeof type === "string")) return false;
-    if (!this.fileTypeIsValid(type)) return false;
-
-    const fileType = await this.detectFileType(file?.buffer);
-    if (!fileType || fileType !== type) return false;
-
-    return true;
+  private async processUploads(
+    files: Express.Multer.File[],
+    type: AllowedFileTypes,
+    propertyId: string,
+  ): Promise<UploadFilesProcessingResult> {
+    const acc: UploadFilesProcessingResult = {
+      errors: [],
+      saved: [],
+    };
+    for (const file of files) {
+      if (!(await this.uploadPayloadIsValid(file, type))) {
+        acc.errors.push({ fileName: file.originalname, error: `Invalid ${type}: ${file.originalname}` });
+        continue;
+      }
+      const canUpload = await this.filesService.canUploadFile(propertyId, type);
+      if (!canUpload) {
+        acc.errors.push({
+          fileName: file.originalname,
+          error: `${type[0].toUpperCase() + type.slice(1)} limit exceeded`,
+        });
+        continue;
+      }
+      const id = await this.filesService.saveFile(propertyId, file, type);
+      acc.saved.push(id);
+    }
+    return acc;
   }
-  private fileTypeIsValid(type: unknown): type is AllowedFileTypes {
-    return SUPPORTED_PROPERTY_FILE_TYPES.includes(type as AllowedFileTypes);
+  private async processUploadsResult(res: Response, ...uploadResObjs: UploadFilesProcessingResult[]) {
+    const uploadResObj = uploadResObjs.reduce<UploadFilesProcessingResult>(
+      (acc, v) => {
+        acc.saved.push(...v.saved);
+        acc.errors.push(...v.errors);
+        return acc;
+      },
+      {
+        errors: [],
+        saved: [],
+      },
+    );
+
+    if (!uploadResObj.saved.length) {
+      res.status(400).json({ errors: uploadResObj.errors });
+    } else {
+      res.status(201).json(uploadResObj);
+    }
+  }
+  private async uploadPayloadIsValid(file: Express.Multer.File, type: AllowedFileTypes): Promise<boolean> {
+    const fileType = await this.detectFileType(file?.buffer);
+    return fileType === type;
   }
   private async detectFileType(buffer: Buffer): Promise<AllowedFileTypes | null> {
     const type = await fileTypeFromBuffer(buffer);
@@ -154,6 +154,27 @@ export class FilesController {
     if (ALLOWED_MIME_TYPES.video.includes(type.mime as any)) return "video";
 
     return null;
+  }
+
+  private async validatePropertyId(res: Response, propertyId: string) {
+    try {
+      const property = await this.propertiesService.getPropertyById(propertyId);
+      if (!property) {
+        res.status(400).json({ error: "File id is required" });
+        return false;
+      }
+      return true;
+    } catch (error) {
+      res.status(400).json({ error: "File id is invalid" });
+      return false;
+    }
+  }
+  private validateFileId(res: Response, fileId: string): boolean {
+    if (!fileId) {
+      res.status(400).json({ error: "File id is required" });
+      return false;
+    }
+    return true;
   }
 }
 
