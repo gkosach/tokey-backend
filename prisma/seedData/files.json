@@ -1,0 +1,22 @@
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440001",
+    "propertyId": "a8c2a3d7-4d6d-4f1e-9f3b-8d7e9c0b1a2c",
+    "filename": "showcase.mp4",
+    "size": 15728640,
+    "extension": "mp4",
+    "description": "Showcase Video",
+    "type": "VIDEO",
+    "createdAt": "2024-03-10T10:00:00.000Z"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440002",
+    "propertyId": "a8c2a3d7-4d6d-4f1e-9f3b-8d7e9c0b1a2c",
+    "filename": "docsz.pdf",
+    "size": 12324,
+    "extension": "pdf",
+    "description": "Document History RS",
+    "type": "DOCUMENT",
+    "createdAt": "2024-03-10T10:00:00.000Z"
+  }
+]
