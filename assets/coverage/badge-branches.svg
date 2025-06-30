@@ -1,20 +1,20 @@
-<svg width="107.2" height="20" viewBox="0 0 1072 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="branches: 41.5%">
-  <title>branches: 41.5%</title>
-  <linearGradient id="VESyB" x2="0" y2="100%">
+<svg width="107.2" height="20" viewBox="0 0 1072 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="branches: 18.7%">
+  <title>branches: 18.7%</title>
+  <linearGradient id="OwRZW" x2="0" y2="100%">
     <stop offset="0" stop-opacity=".1" stop-color="#EEE"/>
     <stop offset="1" stop-opacity=".1"/>
   </linearGradient>
-  <mask id="aaqpD"><rect width="1072" height="200" rx="30" fill="#FFF"/></mask>
-  <g mask="url(#aaqpD)">
+  <mask id="AiUjC"><rect width="1072" height="200" rx="30" fill="#FFF"/></mask>
+  <g mask="url(#AiUjC)">
     <rect width="602" height="200" fill="#555"/>
     <rect width="470" height="200" fill="#ce0000" x="602"/>
-    <rect width="1072" height="200" fill="url(#VESyB)"/>
+    <rect width="1072" height="200" fill="url(#OwRZW)"/>
   </g>
   <g aria-hidden="true" fill="#fff" text-anchor="start" font-family="Verdana,DejaVu Sans,sans-serif" font-size="110">
     <text x="60" y="148" textLength="502" fill="#000" opacity="0.25">branches</text>
     <text x="50" y="138" textLength="502">branches</text>
-    <text x="657" y="148" textLength="370" fill="#000" opacity="0.25">41.5%</text>
-    <text x="647" y="138" textLength="370">41.5%</text>
+    <text x="657" y="148" textLength="370" fill="#000" opacity="0.25">18.7%</text>
+    <text x="647" y="138" textLength="370">18.7%</text>
   </g>
   
 </svg>

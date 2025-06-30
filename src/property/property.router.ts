@@ -13,9 +13,6 @@ const router = express.Router();
 /** Получение всех объектов недвижимости */
 router.get("/", getAllPropertyMiddleware(), propertyController.getAllProperties.bind(propertyController));
 
-/** Получение доступных районов недвижимости */
-router.get("/districts", propertyController.getAvailableDistricts.bind(propertyController));
-
 /** Получение объекта по ID */
 router.get("/:id", propertyController.getProperty.bind(propertyController));
 

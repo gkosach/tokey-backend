@@ -1,13 +1,11 @@
 import { KycStatus, User } from "@prisma/client";
-import { HttpError, PersonaProvider } from "../../common";
-import { WalletService } from "../../wallet/wallet.service";
-import { UserService } from "../user.service";
+import { HttpError, PersonaProvider } from "../common";
+import { UserService } from "../user/user.service";
 
 export class KycService {
   constructor(
     private readonly userService: UserService = new UserService(),
     private readonly personaProvider: PersonaProvider = new PersonaProvider(),
-    private readonly walletService: WalletService = new WalletService(),
   ) {}
 
   async getKycStatus(cognitoId: string): Promise<{
@@ -17,7 +15,7 @@ export class KycService {
     const user = await this.userService.getUserByCognitoId(cognitoId);
     return {
       status: user.kycStatus,
-      canStart: this.canStartKyc(user), // Используем существующий приватный метод
+      canStart: this.canStartKyc(user),
     };
   }
 
@@ -40,10 +38,6 @@ export class KycService {
     }
 
     await this.userService.updateKycStatus(user.cognitoId, status, user.kycProviderId || undefined);
-
-    if (status === KycStatus.APPROVED) {
-      await this.triggerWalletCreation(user.cognitoId);
-    }
   }
 
   async getKycDetails(cognitoId: string) {
@@ -52,18 +46,16 @@ export class KycService {
       status: user.kycStatus,
       verificationId: user.kycProviderId,
       completedAt: user.kycCompletedAt,
-      walletEnabled: user.kycStatus === KycStatus.APPROVED,
     };
   }
 
-  // Убрали дублирующие методы, оставили только необходимые
   async isKycApproved(cognitoId: string): Promise<boolean> {
     const user = await this.userService.getUserByCognitoId(cognitoId);
     return user.kycStatus === KycStatus.APPROVED;
   }
 
   private canStartKyc(user: User): boolean {
-    return !user.kycStatus || user.kycStatus === KycStatus.DECLINED;
+    return !user.kycStatus || user.kycStatus === KycStatus.DECLINED || user.kycStatus === KycStatus.CREATED;
   }
 
   private validateKycStart(user: User) {
@@ -72,22 +64,6 @@ export class KycService {
     }
     if (user.kycStatus === KycStatus.COMPLETED) {
       throw new HttpError("KYC is in progress", 409);
-    }
-  }
-
-  private async triggerWalletCreation(cognitoId: string) {
-    try {
-      const user = await this.userService.getUserByCognitoId(cognitoId);
-      if (!user) throw new HttpError(`User not found: ${cognitoId}`, 404);
-
-      const wallet = await this.walletService.getWalletByUserId(user.id);
-      if (!wallet) {
-        await this.walletService.createWalletForUser(user.id);
-        console.log(`✅ Wallet created for: ${cognitoId}`);
-      }
-    } catch (error) {
-      console.error(`❌ Wallet creation failed: ${cognitoId}`, error);
-      throw new HttpError("Wallet creation failed", 500);
     }
   }
 

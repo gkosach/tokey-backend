@@ -1,23 +1,20 @@
 import { KycStatus } from "@prisma/client";
 import { PersonaProvider } from "../../../src/common";
-import { KycService } from "../../../src/user/kyc/kyc.service";
+import { KycService } from "../../../src/kyc/kyc.service";
 import { UserService } from "../../../src/user/user.service";
-import { WalletService } from "../../../src/wallet/wallet.service";
 
-describe("KycService - Critical Test", () => {
+describe("KycService - Critical Tests", () => {
   let kycService: KycService;
   let userServiceMock: jest.Mocked<UserService>;
   let personaProviderMock: jest.Mocked<PersonaProvider>;
-  let walletServiceMock: jest.Mocked<WalletService>;
 
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Создаем моки
     userServiceMock = {
+      getUserByCognitoId: jest.fn(),
       getUserByKycProviderId: jest.fn(),
       updateKycStatus: jest.fn(),
-      getUserByCognitoId: jest.fn(), // Обязательно добавить этот метод
     } as any;
 
     personaProviderMock = {
@@ -25,49 +22,97 @@ describe("KycService - Critical Test", () => {
       initiateVerification: jest.fn(),
     } as any;
 
-    walletServiceMock = {
-      getWalletByUserId: jest.fn(),
-      createWalletForUser: jest.fn(),
-    } as any;
-
-    // Создаем экземпляр сервиса с моками
-    kycService = new KycService(userServiceMock, personaProviderMock, walletServiceMock);
+    kycService = new KycService(userServiceMock, personaProviderMock);
   });
 
-  it("🔴 КРИТИЧНО: обновляет статус на APPROVED и создает кошелек", async () => {
-    // 1. Подготовка данных
-    const mockUser = {
-      id: "user-123",
-      cognitoId: "cognito-123",
-      kycStatus: KycStatus.CREATED,
-      kycProviderId: "inquiry_123",
-    };
+  describe("getKycStatus", () => {
+    it("🟢 возвращает статус и флаг canStart", async () => {
+      const cognitoId = "cognito-123";
+      const mockUser = {
+        id: "user-123",
+        cognitoId,
+        kycStatus: KycStatus.CREATED,
+      };
 
-    const payload = {
-      data: {
-        attributes: { status: "approved" },
-        relationships: {
-          inquiry: {
-            data: { id: "inquiry_123" },
+      userServiceMock.getUserByCognitoId.mockResolvedValue(mockUser as any);
+
+      const result = await kycService.getKycStatus(cognitoId);
+
+      expect(result.status).toBe(KycStatus.CREATED);
+      expect(result.canStart).toBe(true);
+    });
+  });
+
+  describe("initiateVerification", () => {
+    it("🟢 инициирует верификацию и обновляет статус", async () => {
+      const cognitoId = "cognito-123";
+      const mockUser = {
+        id: "user-123",
+        email: "test@tokey.com",
+        kycStatus: null,
+      };
+
+      const mockVerification = {
+        inquiryId: "inquiry_123",
+        sessionToken: "session_token_456",
+      };
+
+      userServiceMock.getUserByCognitoId.mockResolvedValue(mockUser as any);
+      personaProviderMock.initiateVerification.mockResolvedValue(mockVerification);
+
+      const result = await kycService.initiateVerification(cognitoId);
+
+      expect(result).toEqual(mockVerification);
+      expect(userServiceMock.updateKycStatus).toHaveBeenCalledWith(cognitoId, KycStatus.CREATED, "inquiry_123");
+    });
+  });
+
+  describe("handleWebhook", () => {
+    it("🟢 обрабатывает APPROVED и обновляет статус", async () => {
+      const payload = {
+        data: {
+          attributes: { status: "approved" },
+          relationships: {
+            inquiry: {
+              data: { id: "inquiry_123" },
+            },
           },
         },
-      },
-    };
+      };
 
-    // 2. Настройка моков
-    userServiceMock.getUserByKycProviderId.mockResolvedValue(mockUser as any);
-    userServiceMock.getUserByCognitoId.mockResolvedValue(mockUser as any); // Критично важный мок!
-    personaProviderMock.handleWebhook.mockResolvedValue(KycStatus.APPROVED);
-    walletServiceMock.getWalletByUserId.mockResolvedValue(null);
+      const mockUser = {
+        id: "user-123",
+        cognitoId: "cognito-123",
+        kycProviderId: "inquiry_123",
+      };
 
-    // 3. Вызов тестируемого метода
-    await kycService.handleWebhook(payload);
+      personaProviderMock.handleWebhook.mockResolvedValue(KycStatus.APPROVED);
+      userServiceMock.getUserByKycProviderId.mockResolvedValue(mockUser as any);
 
-    // 4. Проверки
-    // Проверяем вызов обновления статуса
-    expect(userServiceMock.updateKycStatus).toHaveBeenCalledWith("cognito-123", KycStatus.APPROVED, "inquiry_123");
+      await kycService.handleWebhook(payload);
 
-    // Проверяем создание кошелька
-    expect(walletServiceMock.createWalletForUser).toHaveBeenCalledWith("user-123");
+      expect(userServiceMock.updateKycStatus).toHaveBeenCalledWith("cognito-123", KycStatus.APPROVED, "inquiry_123");
+    });
+  });
+
+  describe("getKycDetails", () => {
+    it("🟢 возвращает детали KYC", async () => {
+      const cognitoId = "cognito-123";
+      const mockUser = {
+        kycStatus: KycStatus.APPROVED,
+        kycProviderId: "inquiry_123",
+        kycCompletedAt: new Date(),
+      };
+
+      userServiceMock.getUserByCognitoId.mockResolvedValue(mockUser as any);
+
+      const result = await kycService.getKycDetails(cognitoId);
+
+      expect(result).toEqual({
+        status: KycStatus.APPROVED,
+        verificationId: "inquiry_123",
+        completedAt: mockUser.kycCompletedAt,
+      });
+    });
   });
 });

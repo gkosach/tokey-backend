@@ -1,0 +1,35 @@
+[
+  {
+    "id": "b9d3b4e8-5e7e-4a2f-8a4c-9e8f0d1c2b3d",
+    "propertyId": "a8c2a3d7-4d6d-4f1e-9f3b-8d7e9c0b1a2c",
+    "type": "PLATINUM",
+    "price": 450.0,
+    "totalSupply": 2000,
+    "benefits": {
+      "estimatedAnnualReturn": 7.5,
+      "rentalYield": 5.0
+    }
+  },
+  {
+    "id": "c1d2e3f4-5678-4abc-bdef-1234567890ab",
+    "propertyId": "a8c2a3d7-4d6d-4f1e-9f3b-8d7e9c0b1a2c",
+    "type": "RUBY",
+    "price": 475.0,
+    "totalSupply": 3000,
+    "benefits": {
+      "estimatedAnnualReturn": 8.0,
+      "rentalYield": 5.5
+    }
+  },
+  {
+    "id": "d2e3f4f5-6789-4abc-adef-1234567890ab",
+    "propertyId": "a8c2a3d7-4d6d-4f1e-9f3b-8d7e9c0b1a2c",
+    "type": "DIAMOND",
+    "price": 500.0,
+    "totalSupply": 5000,
+    "benefits": {
+      "estimatedAnnualReturn": 8.5,
+      "rentalYield": 6.0
+    }
+  }
+]
