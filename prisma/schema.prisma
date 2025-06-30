@@ -13,6 +13,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum FileType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+  AUDIO
+  OTHER
+}
+
 enum KycStatus {
   CREATED   @map("inquiry.created")
   COMPLETED @map("inquiry.completed")
@@ -58,11 +66,28 @@ model Property {
   createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   description     String?        @db.Text
   address         String?        @db.VarChar(500)
-  media           Json?
-  tiers           PropertyTier[]
+
+  media Files[]
+  tiers PropertyTier[]
 
   @@index([status], map: "idx_property_status")
   @@index([createdAt], map: "idx_property_created_at")
+}
+
+model Files {
+  id          String   @id @default(uuid()) @db.Uuid
+  propertyId  String?  @map("property_id") @db.Uuid
+  filename    String   @db.VarChar(255)
+  size        Int
+  extension   String   @db.VarChar(10)
+  description String?  @db.VarChar(500)
+  type        FileType
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  property Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId], map: "idx_media_property")
+  @@map("files")
 }
 
 model PropertyTier {
