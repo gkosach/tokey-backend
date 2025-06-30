@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
-import { FileData, FileLike, FileMeta } from "src/common";
+import { FileData, FileLike, FileMeta, FilesPathsRecord } from "../common";
 
 export class FileStorageService {
   constructor(private storageRoot: string = "./uploads") {
@@ -12,16 +12,11 @@ export class FileStorageService {
     fs.mkdirSync(storageRoot, { recursive: true });
   }
 
-  private resolvePath(relativePath: string): string {
-    return path.join(this.storageRoot, relativePath);
-  }
-
   private getMetaPath(filePath: string): string {
     return `${filePath}.meta.json`;
   }
 
-  async saveFile(relativePath: string, file: FileLike): Promise<void> {
-    const filePath = this.resolvePath(relativePath);
+  async saveFile(filePath: string, file: FileLike): Promise<void> {
     const dir = path.dirname(filePath);
     await fsp.mkdir(dir, { recursive: true });
 
@@ -35,8 +30,15 @@ export class FileStorageService {
     await fsp.writeFile(this.getMetaPath(filePath), JSON.stringify(meta, null, 2));
   }
 
-  async getFile(relativePath: string): Promise<FileData> {
-    const filePath = this.resolvePath(relativePath);
+  async deleteFile(filePath: string): Promise<void> {
+    const metaPath = this.getMetaPath(filePath);
+
+    await Promise.allSettled([fsp.unlink(filePath), fsp.unlink(metaPath)]);
+  }
+
+  async getFile(dirPath: string): Promise<FileData> {
+    const [fileName] = await fsp.readdir(dirPath);
+    const filePath = path.join(dirPath, fileName);
     const metaPath = this.getMetaPath(filePath);
 
     const [buffer, metaRaw] = await Promise.all([fsp.readFile(filePath), fsp.readFile(metaPath, "utf-8")]);
@@ -50,44 +52,46 @@ export class FileStorageService {
     };
   }
 
-  async deleteFile(relativePath: string): Promise<void> {
-    const filePath = this.resolvePath(relativePath);
-    const metaPath = this.getMetaPath(filePath);
-
-    await Promise.allSettled([fsp.unlink(filePath), fsp.unlink(metaPath)]);
+  async getFilePath(dirPath: string) {
+    const [fileName] = await fsp.readdir(dirPath);
+    return path.join(dirPath, fileName);
   }
 
-  async listFiles(relativeDir: string): Promise<string[]> {
-    const dirPath = this.resolvePath(relativeDir);
+  async listFiles(dirPath: string): Promise<string[]> {
     try {
       const files = await fsp.readdir(dirPath);
-      return files.filter((f) => !f.endsWith(".meta.json")).map((f) => path.join(relativeDir, f));
+      return files.filter((f) => !f.endsWith(".meta.json")).map((f) => path.join(dirPath, f));
     } catch (err: any) {
       if (err.code === "ENOENT") return [];
       throw err;
     }
   }
 
-  async listAllFilePaths(relativeDir: string): Promise<string[]> {
-    const result: string[] = [];
+  async listAllFilePaths(dirPath: string): Promise<{ filePath: string; metaPath: string }[]> {
+    const result: { filePath: string; metaPath: string }[] = [];
+
     const walk = async (dir: string) => {
-      const fullDir = this.resolvePath(dir);
-      const entries = await fsp.readdir(fullDir, { withFileTypes: true });
+      const entries = await fsp.readdir(dir, { withFileTypes: true });
+
       for (const entry of entries) {
-        const rel = path.join(dir, entry.name);
+        const fullPath = path.join(dir, entry.name);
+
         if (entry.isDirectory()) {
-          await walk(rel);
+          await walk(fullPath);
         } else if (!entry.name.endsWith(".meta.json")) {
-          result.push(rel);
+          result.push({
+            filePath: fullPath,
+            metaPath: `${fullPath}.meta.json`,
+          });
         }
       }
     };
-    await walk(relativeDir);
+
+    await walk(dirPath);
     return result;
   }
 
-  async dirExists(relativeDir: string): Promise<boolean> {
-    const dirPath = this.resolvePath(relativeDir);
+  async dirExists(dirPath: string): Promise<boolean> {
     try {
       const stats = await fsp.stat(dirPath);
       return stats.isDirectory();
@@ -97,13 +101,32 @@ export class FileStorageService {
     }
   }
 
-  async fileExists(relativePath: string): Promise<boolean> {
+  async fileExists(filePath: string): Promise<boolean> {
     try {
-      await fsp.access(this.resolvePath(relativePath));
+      await fsp.access(filePath);
       return true;
     } catch {
       return false;
     }
+  }
+
+  async updateIndex(unitDir: string, updateFn: (current: FilesPathsRecord) => FilesPathsRecord): Promise<void> {
+    const indexPath = path.join(unitDir, "index.json");
+    let current: FilesPathsRecord = {
+      "application/pdf": [],
+      image: [],
+      video: [],
+    };
+
+    try {
+      const raw = await fsp.readFile(indexPath, "utf-8");
+      current = JSON.parse(raw);
+    } catch (e: any) {
+      if (e.code !== "ENOENT") throw e;
+    }
+
+    const updated = updateFn(current);
+    await fsp.writeFile(indexPath, JSON.stringify(updated, null, 2));
   }
 
   detectMimeTypeFromExtension(filePath: string): string | null {

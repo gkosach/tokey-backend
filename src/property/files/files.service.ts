@@ -1,5 +1,6 @@
-import { createHash } from "node:crypto";
+import fsp from "node:fs/promises";
 import path from "node:path";
+import { v4 as uuidv4 } from "uuid";
 import {
   AllowedFileTypes,
   FileLike,
@@ -18,32 +19,58 @@ const storageRoot = path.join(__dirname, "uploads", "units");
 export class FilesService {
   constructor(private readonly storage = new FileStorageService(storageRoot)) {}
 
-  async canUploadFile(unitId: string, type: AllowedFileTypes) {
-    const limit = PROPERTY_FILE_LIMITS[type];
-    const pathsObj = await this.listFilesPathsByType(unitId, type);
-    return !pathsObj[type] || pathsObj[type].length < limit;
+  async canUploadFile(unitId: string, type: AllowedFileTypes): Promise<boolean> {
+    const unitDir = this.getAbsolutePath(unitId);
+    const indexPath = path.join(unitDir, "index.json");
+
+    try {
+      const raw = await fsp.readFile(indexPath, "utf-8");
+      const index = JSON.parse(raw) as FilesPathsRecord;
+      return (index[type]?.length ?? 0) < PROPERTY_FILE_LIMITS[type];
+    } catch (e: any) {
+      if (e.code === "ENOENT") return true;
+      throw e;
+    }
   }
 
   async saveFile(unitId: string, file: FileLike, type: AllowedFileTypes) {
-    const subDirName = this.getShortBufferId(file.buffer);
+    const subDirName = this.getRandomUUID();
     const fileName = type === "video" ? "video.mp4" : file.originalname || subDirName;
-    const filePath = path.join(unitId, type, subDirName, fileName);
+    const filePath = this.getAbsolutePath(unitId, subDirName, fileName);
 
     await this.storage.saveFile(filePath, file);
+
+    const unitDir = this.getAbsolutePath(unitId);
+    await this.storage.updateIndex(unitDir, (current) => {
+      const updated = { ...current };
+      updated[type] = [...(updated[type] || []), filePath];
+      return updated;
+    });
+  }
+
+  async deleteFile(unitId: string, filePath: string, type: AllowedFileTypes): Promise<void> {
+    await this.storage.deleteFile(filePath);
+
+    const unitDir = this.getAbsolutePath(unitId);
+    await this.storage.updateIndex(unitDir, (current) => {
+      const updated = { ...current };
+      updated[type] = (updated[type] || []).filter((p) => p !== filePath);
+      return updated;
+    });
   }
 
   async listFilesPathsByType(unitId: string, type: AllowedFileTypes): Promise<Partial<FilesPathsRecord>> {
-    const relativeDir = path.join(unitId, type);
+    const dirPath = this.getAbsolutePath(unitId);
 
-    const dirExists = await this.storage.dirExists(relativeDir);
+    const dirExists = await this.storage.dirExists(dirPath);
     if (!dirExists) return Object.fromEntries([[type]]);
+    const paths = await this.storage.listAllFilePaths(dirPath);
 
-    const filePaths = await this.storage.listAllFilePaths(relativeDir);
-    return Object.fromEntries([[type, filePaths]]) as Partial<FilesPathsRecord>;
+    return Object.fromEntries([[type, paths]]) as Partial<FilesPathsRecord>;
   }
 
   async listFilesPaths(unitId: string): Promise<FilesPathsRecord> {
-    const initialRecord: FilesPathsRecord = {
+    const initialRecord = {
       "application/pdf": [],
       image: [],
       video: [],
@@ -57,11 +84,20 @@ export class FilesService {
     return filesPathsRecord;
   }
 
-  async getFileByPath(relativePath: string) {
-    return await this.storage.getFile(relativePath);
+  async getFileById(unitId: string, fileId: string) {
+    const absPath = this.getAbsolutePath(unitId, fileId);
+    return await this.storage.getFile(absPath);
+  }
+  async getFilePath(unitId: string, fileId: string) {
+    const absPath = this.getAbsolutePath(unitId, fileId);
+    return await this.storage.getFilePath(absPath);
   }
 
-  private getShortBufferId(buffer: Buffer): string {
-    return createHash("sha256").update(buffer).digest().subarray(0, 12).toString("base64url");
+  private getAbsolutePath(...segments: string[]) {
+    return path.join(storageRoot, ...segments);
+  }
+
+  private getRandomUUID(): string {
+    return uuidv4();
   }
 }

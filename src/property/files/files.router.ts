@@ -7,12 +7,9 @@ import { filesController } from "./files.controller";
 const upload = multer();
 const router = express.Router();
 
-/** Загрузка файла */
-router.post("/:id/files/upload-file", upload.single("file"), filesController.uploadFile.bind(filesController));
-
 /** Загрузка файлов */
 router.post(
-  "/:id/files/upload-files",
+  "/:id/files",
   upload.fields([
     { name: "images", maxCount: PROPERTY_FILE_LIMITS.image },
     { name: "videos", maxCount: PROPERTY_FILE_LIMITS.video },
@@ -21,10 +18,10 @@ router.post(
   filesController.uploadFiles.bind(filesController),
 );
 
-/** Получение файла */
-router.get("/:id/files/get", filesController.getFile.bind(filesController));
+/** Получение пути файла */
+router.get("/:id/files/:fileId", filesController.getFilePath.bind(filesController));
 
 /** Получение списка файлов с путями */
-router.get("/:id/files/get-paths", filesController.getFilePaths.bind(filesController));
+router.get("/:id/files", filesController.listFilesPaths.bind(filesController));
 
 export default router;
