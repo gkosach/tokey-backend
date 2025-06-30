@@ -29,6 +29,11 @@ export type UploadFilesRequest = Request & {
   };
 };
 
-export type UploadFilesProcessingResult = { errors: { fileName: string; error: string }[]; saved: string[] };
+export type PropertyMedia = { id: string; size: number; extension: string; type: string };
+
+export type UploadFilesProcessingResult = {
+  errors: { fileName: string; error: string }[];
+  saved: PropertyMedia[];
+};
 
 export type FilesPathsRecord = Record<AllowedFileTypes, string[] | undefined>;

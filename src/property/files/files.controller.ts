@@ -29,7 +29,7 @@ export class FilesController {
       const uploadedVideoObj = await this.processUploads(videos, "video", id);
       const uploadedDocumentObj = await this.processUploads(documents, "application/pdf", id);
 
-      this.processUploadsResult(res, uploadedImageObj, uploadedVideoObj, uploadedDocumentObj);
+      await this.processUploadsResult(res, id, uploadedImageObj, uploadedVideoObj, uploadedDocumentObj);
     } catch (error) {
       console.error("Error in uploadAllFiles:", error);
       throw new HttpError("Error loading all files", 500);
@@ -96,7 +96,7 @@ export class FilesController {
 
   private async processUploads(
     files: Express.Multer.File[],
-    type: AllowedFileTypes,
+    clientType: AllowedFileTypes,
     propertyId: string,
   ): Promise<UploadFilesProcessingResult> {
     const acc: UploadFilesProcessingResult = {
@@ -104,24 +104,30 @@ export class FilesController {
       saved: [],
     };
     for (const file of files) {
-      if (!(await this.uploadPayloadIsValid(file, type))) {
-        acc.errors.push({ fileName: file.originalname, error: `Invalid ${type}: ${file.originalname}` });
+      const payloadValidationData = await this.uploadPayloadIsValid(file, clientType);
+      if (!payloadValidationData) {
+        acc.errors.push({ fileName: file.originalname, error: `Invalid ${clientType}: ${file.originalname}` });
         continue;
       }
-      const canUpload = await this.filesService.canUploadFile(propertyId, type);
+      const canUpload = await this.filesService.canUploadFile(propertyId, clientType);
       if (!canUpload) {
         acc.errors.push({
           fileName: file.originalname,
-          error: `${type[0].toUpperCase() + type.slice(1)} limit exceeded`,
+          error: `${clientType[0].toUpperCase() + clientType.slice(1)} limit exceeded`,
         });
         continue;
       }
-      const id = await this.filesService.saveFile(propertyId, file, type);
-      acc.saved.push(id);
+
+      const id = await this.filesService.saveFile(propertyId, file, clientType);
+      acc.saved.push({ id, size: file.size, extension: payloadValidationData.ext, type: clientType });
     }
     return acc;
   }
-  private async processUploadsResult(res: Response, ...uploadResObjs: UploadFilesProcessingResult[]) {
+  private async processUploadsResult(
+    res: Response,
+    propertyId: string,
+    ...uploadResObjs: UploadFilesProcessingResult[]
+  ) {
     const uploadResObj = uploadResObjs.reduce<UploadFilesProcessingResult>(
       (acc, v) => {
         acc.saved.push(...v.saved);
@@ -140,18 +146,21 @@ export class FilesController {
       res.status(201).json(uploadResObj);
     }
   }
-  private async uploadPayloadIsValid(file: Express.Multer.File, type: AllowedFileTypes): Promise<boolean> {
-    const fileType = await this.detectFileType(file?.buffer);
-    return fileType === type;
+  private async updateDatabaseFiles() {
+    this.propertiesService;
   }
-  private async detectFileType(buffer: Buffer): Promise<AllowedFileTypes | null> {
+  private async uploadPayloadIsValid(file: Express.Multer.File, type: AllowedFileTypes) {
+    const fileTypeObj = await this.detectFileType(file?.buffer);
+    return !!fileTypeObj && fileTypeObj.type === type && fileTypeObj;
+  }
+  private async detectFileType(buffer: Buffer) {
     const type = await fileTypeFromBuffer(buffer);
 
     if (!type) return null;
 
-    if (type.mime === "application/pdf") return "application/pdf";
-    if (ALLOWED_MIME_TYPES.image.includes(type.mime as any)) return "image";
-    if (ALLOWED_MIME_TYPES.video.includes(type.mime as any)) return "video";
+    if (type.mime === "application/pdf") return { ext: type.ext, mime: type.mime, type: "application/pdf" };
+    if (ALLOWED_MIME_TYPES.image.includes(type.mime as any)) return { ext: type.ext, mime: type.mime, type: "image" };
+    if (ALLOWED_MIME_TYPES.video.includes(type.mime as any)) return { ext: type.ext, mime: type.mime, type: "video" };
 
     return null;
   }

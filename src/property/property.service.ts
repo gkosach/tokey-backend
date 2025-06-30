@@ -1,5 +1,5 @@
 import { Prisma, Property, PropertyStatus } from "@prisma/client";
-import { HttpError, prisma } from "../common";
+import { HttpError, prisma, PropertyMedia } from "../common";
 
 /**
  * Сервис для управления объектами недвижимости
@@ -22,6 +22,8 @@ export class PropertyService {
       },
     });
   }
+
+  async updatePropertyFiles(propertyId: string, files: PropertyMedia[]) {}
 
   /**
    * Получает объект недвижимости по ID
