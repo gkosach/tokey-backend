@@ -47,7 +47,6 @@
     "@aws-sdk/s3-request-presigner": "^3.828.0",
     "@prisma/client": "^6.9.0",
     "@terraformer/wkt": "^2.2.1",
-    "@turnkey/sdk-server": "^4.1.1",
     "@types/cors": "^2.8.19",
     "@types/express": "^4.17.21",
     "@types/morgan": "^1.9.10",

@@ -1,0 +1,38 @@
+[
+  {
+    "name": "PLATINUM Token",
+    "description": "VIP access to premium real estate opportunities. Visit tokey.com to unlock exclusive Platinum-tier perks.",
+    "image": "https://sapphire-eldest-mollusk-549.mypinata.cloud/ipfs/bafybeiaxqmewg7yq4mu4zx7ustgy3jiu3gzvvimxprm26asu3twuyjepla",
+    "price_amount": "0.001",
+    "price_currency": "",
+    "supply": "1",
+    "attributes": [
+      { "trait_type": "Tier", "value": "PLATINUM" },
+      { "trait_type": "Perks", "value": "Priority Access, Concierge Service" }
+    ]
+  },
+  {
+    "name": "RUBY Token",
+    "description": "Elevated benefits for serious investors. Visit tokey.com to activate your Ruby-tier advantages.",
+    "image": "https://sapphire-eldest-mollusk-549.mypinata.cloud/ipfs/bafybeiaxqmewg7yq4mu4zx7ustgy3jiu3gzvvimxprm26asu3twuyjepla",
+    "price_amount": "0.002",
+    "price_currency": "",
+    "supply": "1",
+    "attributes": [
+      { "trait_type": "Tier", "value": "RUBY" },
+      { "trait_type": "Perks", "value": "Luxury Listings, Event Invites" }
+    ]
+  },
+  {
+    "name": "DIAMOND Token",
+    "description": "Ultimate ownership experience with elite privileges. Visit tokey.com to claim Diamond-tier rewards.",
+    "image": "https://sapphire-eldest-mollusk-549.mypinata.cloud/ipfs/bafybeiaxqmewg7yq4mu4zx7ustgy3jiu3gzvvimxprm26asu3twuyjepla",
+    "price_amount": "0.003",
+    "price_currency": "",
+    "supply": "1",
+    "attributes": [
+      { "trait_type": "Tier", "value": "DIAMOND" },
+      { "trait_type": "Perks", "value": "Private Jet Tours, Portfolio Management" }
+    ]
+  }
+]
