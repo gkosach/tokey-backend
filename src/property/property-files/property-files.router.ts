@@ -2,7 +2,7 @@ import express from "express";
 import "express-async-errors";
 import multer from "multer";
 import { PROPERTY_FILE_LIMITS } from "../../common";
-import { filesController } from "./files.controller";
+import { filesController } from "./property-files.controller";
 
 const upload = multer();
 const router = express.Router();

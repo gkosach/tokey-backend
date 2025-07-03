@@ -10,14 +10,14 @@ import {
 } from "../../common";
 import { StorageService } from "../../storage/storage.service";
 
-const storageRoot = path.join("uploads", "properties");
+const propertyFilesStorage = path.join("uploads", "properties");
 
 /**
  * Сервис для управления файлами недвижимости
  *
  */
-export class FilesService {
-  constructor(private readonly storage = new StorageService(storageRoot)) {}
+export class PropertyFilesService {
+  constructor(private readonly storage = new StorageService(propertyFilesStorage)) {}
 
   async canUploadFile(propertyId: string, type: AllowedFileTypes): Promise<boolean> {
     const propertyDir = this.getRelativePath(propertyId);

@@ -36,7 +36,39 @@ export class PropertyController {
   }
 
   /**
-   * Получает все объекты недвижимости с фильтрацией
+   * @swagger
+   * /api/properties:
+   *   get:
+   *     summary: Get all properties with optional filters
+   *     tags: [Properties]
+   *     parameters:
+   *       - in: query
+   *         name: status
+   *         schema:
+   *           type: string
+   *           enum: [COMING_SOON, ACTIVE, SOLD_OUT, COMPLETED]
+   *       - in: query
+   *         name: limit
+   *         schema:
+   *           type: integer
+   *       - in: query
+   *         name: offset
+   *         schema:
+   *           type: integer
+   *     responses:
+   *       200:
+   *         description: List of properties
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 properties:
+   *                   type: array
+   *                   items:
+   *                     $ref: '#/components/schemas/Property'
+   *                 total:
+   *                   type: integer
    */
   async getAllProperties(req: GetPropertiesRequest, res: Response): Promise<void> {
     const query = req.properties?.query || {};

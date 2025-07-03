@@ -10,11 +10,11 @@ import {
   UploadFilesRequest,
 } from "../../common";
 import { PropertyService } from "../property.service";
-import { FilesService } from "./files.service";
+import { PropertyFilesService } from "./property-files.service";
 
-export class FilesController {
+export class PropertyFilesController {
   constructor(
-    private readonly filesService = new FilesService(),
+    private readonly filesService = new PropertyFilesService(),
     private readonly propertiesService = new PropertyService(),
   ) {}
 
@@ -200,4 +200,4 @@ export class FilesController {
   }
 }
 
-export const filesController = new FilesController();
+export const filesController = new PropertyFilesController();

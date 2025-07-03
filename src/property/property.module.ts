@@ -1,7 +1,7 @@
 import { ModuleConfig } from "../common/interfaces/module.interface";
-import { FilesController } from "./files/files.controller";
-import filesRouter from "./files/files.router";
-import { FilesService } from "./files/files.service";
+import { PropertyFilesController } from "./property-files/property-files.controller";
+import filesRouter from "./property-files/property-files.router";
+import { PropertyFilesService } from "./property-files/property-files.service";
 import { PropertyController } from "./property.controller";
 import propertyRouter from "./property.router";
 import { PropertyService } from "./property.service";
@@ -11,6 +11,6 @@ import { PropertyService } from "./property.service";
  */
 export const PropertyModule: ModuleConfig = {
   routes: [propertyRouter, filesRouter],
-  services: [PropertyService, FilesService],
-  controllers: [PropertyController, FilesController],
+  services: [PropertyService, PropertyFilesService],
+  controllers: [PropertyController, PropertyFilesController],
 };
