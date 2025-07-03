@@ -60,5 +60,9 @@ Thumbs.db
 .husky/_
 !/types/.env
 
-# Property files
-/src/property/files/uploads
+# Uploads storage
+uploads
+
+# Types
+types/src/prismaTypes
+types/src/prismaTypes.ts

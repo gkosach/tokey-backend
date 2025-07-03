@@ -1,8 +1,10 @@
+import { Files } from "@prisma/client";
 import { Request, Response } from "express";
 import { fileTypeFromBuffer } from "file-type";
 import {
   ALLOWED_MIME_TYPES,
   AllowedFileTypes,
+  getStorageFileType,
   HttpError,
   UploadFilesProcessingResult,
   UploadFilesRequest,
@@ -29,14 +31,13 @@ export class FilesController {
       const uploadedVideoObj = await this.processUploads(videos, "video", id);
       const uploadedDocumentObj = await this.processUploads(documents, "application/pdf", id);
 
-      await this.processUploadsResult(res, id, uploadedImageObj, uploadedVideoObj, uploadedDocumentObj);
+      await this.processUploadsResult(res, uploadedImageObj, uploadedVideoObj, uploadedDocumentObj);
     } catch (error) {
       console.error("Error in uploadAllFiles:", error);
       throw new HttpError("Error loading all files", 500);
     }
   }
 
-  // TODO: добавить оптимизацию для видеопотоков
   async getFile(req: Request, res: Response): Promise<void> {
     try {
       const { id, fileId } = req.params;
@@ -55,13 +56,14 @@ export class FilesController {
       throw new HttpError("Error getting file", 500);
     }
   }
+
   async getFilePath(req: Request, res: Response): Promise<void> {
     try {
       const { id, fileId } = req.params;
 
       const propertyIdIsValid = await this.validatePropertyId(res, id);
       if (!propertyIdIsValid) return;
-      if (this.validateFileId(res, fileId)) return;
+      if (!this.validateFileId(res, fileId)) return;
 
       const filePath = await this.filesService.getFilePath(id, fileId);
 
@@ -106,9 +108,13 @@ export class FilesController {
     for (const file of files) {
       const payloadValidationData = await this.uploadPayloadIsValid(file, clientType);
       if (!payloadValidationData) {
-        acc.errors.push({ fileName: file.originalname, error: `Invalid ${clientType}: ${file.originalname}` });
+        acc.errors.push({
+          fileName: file.originalname,
+          error: `Invalid ${clientType}: ${file.originalname}`,
+        });
         continue;
       }
+
       const canUpload = await this.filesService.canUploadFile(propertyId, clientType);
       if (!canUpload) {
         acc.errors.push({
@@ -119,15 +125,20 @@ export class FilesController {
       }
 
       const id = await this.filesService.saveFile(propertyId, file, clientType);
-      acc.saved.push({ id, size: file.size, extension: payloadValidationData.ext, type: clientType });
+      acc.saved.push({
+        id,
+        propertyId,
+        filename: file.originalname,
+        description: "RANDOM DESCRIPTION",
+        size: file.size,
+        extension: payloadValidationData.ext,
+        type: getStorageFileType(clientType),
+        createdAt: new Date(),
+      });
     }
     return acc;
   }
-  private async processUploadsResult(
-    res: Response,
-    propertyId: string,
-    ...uploadResObjs: UploadFilesProcessingResult[]
-  ) {
+  private async processUploadsResult(res: Response, ...uploadResObjs: UploadFilesProcessingResult[]) {
     const uploadResObj = uploadResObjs.reduce<UploadFilesProcessingResult>(
       (acc, v) => {
         acc.saved.push(...v.saved);
@@ -143,11 +154,13 @@ export class FilesController {
     if (!uploadResObj.saved.length) {
       res.status(400).json({ errors: uploadResObj.errors });
     } else {
+      const databaseUpdates = await this.createDatabaseRecord(uploadResObj.saved);
+      uploadResObj.saved = databaseUpdates;
       res.status(201).json(uploadResObj);
     }
   }
-  private async updateDatabaseFiles() {
-    this.propertiesService;
+  private async createDatabaseRecord(files: Files[]) {
+    return await this.propertiesService.createFileRecords(files);
   }
   private async uploadPayloadIsValid(file: Express.Multer.File, type: AllowedFileTypes) {
     const fileTypeObj = await this.detectFileType(file?.buffer);

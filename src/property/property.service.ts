@@ -1,4 +1,4 @@
-import { Prisma, Property, PropertyStatus } from "@prisma/client";
+import { Files, Prisma, Property, PropertyStatus } from "@prisma/client";
 import { HttpError, prisma } from "../common";
 
 export class PropertyService {
@@ -9,6 +9,10 @@ export class PropertyService {
         status: PropertyStatus.COMING_SOON,
       },
     });
+  }
+
+  async createFileRecords(data: Files[]) {
+    return prisma.files.createManyAndReturn({ data });
   }
 
   async getPropertyById(id: string): Promise<Property & { tiers: any[] }> {

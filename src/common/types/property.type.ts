@@ -1,4 +1,4 @@
-import { PropertyStatus } from "@prisma/client";
+import { Files, PropertyStatus } from "@prisma/client";
 import { Request } from "express";
 import { z } from "zod";
 import { GetPropertiesDTO } from "../validators/property.validator";
@@ -29,11 +29,13 @@ export type UploadFilesRequest = Request & {
   };
 };
 
-export type PropertyMedia = { id: string; size: number; extension: string; type: string };
-
 export type UploadFilesProcessingResult = {
   errors: { fileName: string; error: string }[];
-  saved: PropertyMedia[];
+  saved: Files[];
 };
+export type FileIndexEntry = {
+  filePath: string;
+};
+export type IndexFileStructure = Record<AllowedFileTypes, FileIndexEntry[]>;
 
 export type FilesPathsRecord = Record<AllowedFileTypes, string[] | undefined>;
