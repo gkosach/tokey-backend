@@ -36,8 +36,8 @@ export class PropertyFilesService {
 
   async saveFile(propertyId: string, file: FileLike, type: AllowedFileTypes) {
     const subDirName = this.getRandomUUID();
-    const fileName = type === "video" ? "video.mp4" : file.originalname || subDirName;
-    const relativeFilePath = this.getRelativePath(propertyId, subDirName, fileName);
+    const filename = type === "video" ? "video.mp4" : file.originalname || subDirName;
+    const relativeFilePath = this.getRelativePath(propertyId, subDirName, filename);
 
     await this.storage.saveFile(relativeFilePath, file);
 

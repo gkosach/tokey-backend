@@ -50,11 +50,11 @@ export class StorageService {
   async getFile(relativeDirPath: string): Promise<FileData> {
     const absDirPath = this.getAbsolutePath(relativeDirPath);
     const files = await fsp.readdir(absDirPath);
-    const fileName = files.find((f) => !f.endsWith(".meta.json"));
+    const filename = files.find((f) => !f.endsWith(".meta.json"));
 
-    if (!fileName) throw new Error(`No file found in ${relativeDirPath}`);
+    if (!filename) throw new Error(`No file found in ${relativeDirPath}`);
 
-    const filePath = path.join(absDirPath, fileName);
+    const filePath = path.join(absDirPath, filename);
     const metaPath = this.getMetaPath(filePath);
 
     const [buffer, metaRaw] = await Promise.all([fsp.readFile(filePath), fsp.readFile(metaPath, "utf-8")]);
@@ -72,11 +72,11 @@ export class StorageService {
   async getFilePath(relativeDirPath: string): Promise<string> {
     const absDirPath = this.getAbsolutePath(relativeDirPath);
     const files = await fsp.readdir(absDirPath);
-    const fileName = files.find((f) => !f.endsWith(".meta.json"));
+    const filename = files.find((f) => !f.endsWith(".meta.json"));
 
-    if (!fileName) throw new Error(`No file found in ${relativeDirPath}`);
+    if (!filename) throw new Error(`No file found in ${relativeDirPath}`);
 
-    return path.join(absDirPath, fileName);
+    return path.join(absDirPath, filename);
   }
 
   async listFiles(relativeDirPath: string): Promise<string[]> {

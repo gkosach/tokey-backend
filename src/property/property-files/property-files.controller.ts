@@ -118,7 +118,7 @@ export class PropertyFilesController {
       const canUpload = await this.filesService.canUploadFile(propertyId, clientType);
       if (!canUpload) {
         acc.errors.push({
-          fileName: file.originalname,
+          filename: file.originalname,
           error: `${clientType[0].toUpperCase() + clientType.slice(1)} limit exceeded`,
         });
         continue;
