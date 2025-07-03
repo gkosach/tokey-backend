@@ -109,7 +109,7 @@ export class PropertyFilesController {
       const payloadValidationData = await this.uploadPayloadIsValid(file, clientType);
       if (!payloadValidationData) {
         acc.errors.push({
-          fileName: file.originalname,
+          filename: file.originalname,
           error: `Invalid ${clientType}: ${file.originalname}`,
         });
         continue;

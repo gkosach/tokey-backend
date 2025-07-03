@@ -30,7 +30,7 @@ export type UploadFilesRequest = Request & {
 };
 
 export type UploadFilesProcessingResult = {
-  errors: { fileName: string; error: string }[];
+  errors: { filename: string; error: string }[];
   saved: Files[];
 };
 export type FileIndexEntry = {
