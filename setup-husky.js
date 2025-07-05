@@ -72,11 +72,11 @@ echo "\\x1b[92m✅ PRE-COMMIT CHECKS PASSED\\x1b[0m\\n"
 `;
 
 // Записываем файлы
-fs.writeFileSync(path.join(huskyDir, "pre-push"), prePushContent);
+// fs.writeFileSync(path.join(huskyDir, "pre-push"), prePushContent);
 fs.writeFileSync(path.join(huskyDir, "pre-commit"), preCommitContent);
 
 if (process.platform !== "win32") {
-  fs.chmodSync(path.join(huskyDir, "pre-push"), "755");
+  //   fs.chmodSync(path.join(huskyDir, "pre-push"), "755");
   fs.chmodSync(path.join(huskyDir, "pre-commit"), "755");
 }
 

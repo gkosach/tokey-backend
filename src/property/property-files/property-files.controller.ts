@@ -1,37 +1,31 @@
-import { Files } from "@prisma/client";
 import { Request, Response } from "express";
-import { fileTypeFromBuffer } from "file-type";
-import {
-  ALLOWED_MIME_TYPES,
-  AllowedFileTypes,
-  getStorageFileType,
-  HttpError,
-  UploadFilesProcessingResult,
-  UploadFilesRequest,
-} from "../../common";
+import { HttpError, UploadFilesProcessingResult, UploadFilesRequest } from "../../common";
 import { PropertyService } from "../property.service";
 import { PropertyFilesService } from "./property-files.service";
 
 export class PropertyFilesController {
   constructor(
-    private readonly filesService = new PropertyFilesService(),
     private readonly propertiesService = new PropertyService(),
+    private readonly propertyFilesService = new PropertyFilesService(),
   ) {}
 
   async uploadFiles(req: UploadFilesRequest, res: Response): Promise<void> {
     try {
       const { id } = req.params;
+      if (!req.files) {
+        res.status(400).json({ error: "Invalid files payload" });
+        return;
+      }
 
-      const propertyIdIsValid = await this.validatePropertyId(res, id);
-      if (!propertyIdIsValid) return;
+      await this.validatePropertyId(id);
 
       const { images = [], videos = [], documents = [] } = req.files as Record<string, Express.Multer.File[]>;
-
-      const uploadedImageObj = await this.processUploads(images, "image", id);
-      const uploadedVideoObj = await this.processUploads(videos, "video", id);
-      const uploadedDocumentObj = await this.processUploads(documents, "application/pdf", id);
-
-      await this.processUploadsResult(res, uploadedImageObj, uploadedVideoObj, uploadedDocumentObj);
+      const acc = await this.processUploads(id, { images, videos, documents });
+      if (!acc.saved.length) {
+        res.status(400).json({ error: acc.errors.map((e) => `${e.filename}: ${e.error}`).join("\n") });
+      } else {
+        res.status(201).json({ success: true, data: acc });
+      }
     } catch (error) {
       console.error("Error in uploadAllFiles:", error);
       throw new HttpError("Error loading all files", 500);
@@ -42,15 +36,13 @@ export class PropertyFilesController {
     try {
       const { id, fileId } = req.params;
 
-      const propertyIdIsValid = await this.validatePropertyId(res, id);
-      if (!propertyIdIsValid) return;
-      if (this.validateFileId(res, fileId)) return;
+      await this.validatePropertyId(id);
 
-      const file = await this.filesService.getFileById(id.toString(), fileId.toString());
+      const file = await this.propertyFilesService.getFileById(id.toString(), fileId.toString());
 
       res.setHeader("Content-Type", file.mimetype);
       res.setHeader("Content-Disposition", `inline; filename="${file.originalname}"`);
-      res.send(file.buffer);
+      res.status(200).send(file.buffer);
     } catch (error) {
       console.error("Error in getFile:", error);
       throw new HttpError("Error getting file", 500);
@@ -61,11 +53,9 @@ export class PropertyFilesController {
     try {
       const { id, fileId } = req.params;
 
-      const propertyIdIsValid = await this.validatePropertyId(res, id);
-      if (!propertyIdIsValid) return;
-      if (!this.validateFileId(res, fileId)) return;
+      await this.validatePropertyId(id);
 
-      const filePath = await this.filesService.getFilePath(id, fileId);
+      const filePath = await this.propertyFilesService.getFilePath(id, fileId);
 
       res.status(200).json({
         success: true,
@@ -81,10 +71,9 @@ export class PropertyFilesController {
     try {
       const { id } = req.params;
 
-      const propertyIdIsValid = await this.validatePropertyId(res, id);
-      if (!propertyIdIsValid) return;
+      await this.validatePropertyId(id);
 
-      const filePathsData = await this.filesService.listFilesPaths(id);
+      const filePathsData = await this.propertyFilesService.listFilesPaths(id);
 
       res.status(200).json({
         success: true,
@@ -97,107 +86,36 @@ export class PropertyFilesController {
   }
 
   private async processUploads(
-    files: Express.Multer.File[],
-    clientType: AllowedFileTypes,
     propertyId: string,
-  ): Promise<UploadFilesProcessingResult> {
-    const acc: UploadFilesProcessingResult = {
-      errors: [],
-      saved: [],
-    };
-    for (const file of files) {
-      const payloadValidationData = await this.uploadPayloadIsValid(file, clientType);
-      if (!payloadValidationData) {
-        acc.errors.push({
-          filename: file.originalname,
-          error: `Invalid ${clientType}: ${file.originalname}`,
-        });
-        continue;
-      }
+    { images, videos, documents }: Record<string, Express.Multer.File[]>,
+  ) {
+    const acc: UploadFilesProcessingResult = { saved: [], errors: [] };
 
-      const canUpload = await this.filesService.canUploadFile(propertyId, clientType);
-      if (!canUpload) {
-        acc.errors.push({
-          filename: file.originalname,
-          error: `${clientType[0].toUpperCase() + clientType.slice(1)} limit exceeded`,
-        });
-        continue;
+    for (const [files, type] of [
+      [images, "image"],
+      [videos, "video"],
+      [documents, "application/pdf"],
+    ] as const) {
+      for (const file of files) {
+        const result = await this.propertyFilesService.processSingleFile(propertyId, file, type);
+        if (result.error) {
+          acc.errors.push({ filename: file.originalname, error: result.error });
+        }
+        if (result.saved) {
+          acc.saved.push(result.saved);
+        }
       }
-
-      const id = await this.filesService.saveFile(propertyId, file, clientType);
-      acc.saved.push({
-        id,
-        propertyId,
-        filename: file.originalname,
-        description: "RANDOM DESCRIPTION",
-        size: file.size,
-        extension: payloadValidationData.ext,
-        type: getStorageFileType(clientType),
-        createdAt: new Date(),
-      });
     }
+
     return acc;
   }
-  private async processUploadsResult(res: Response, ...uploadResObjs: UploadFilesProcessingResult[]) {
-    const uploadResObj = uploadResObjs.reduce<UploadFilesProcessingResult>(
-      (acc, v) => {
-        acc.saved.push(...v.saved);
-        acc.errors.push(...v.errors);
-        return acc;
-      },
-      {
-        errors: [],
-        saved: [],
-      },
-    );
 
-    if (!uploadResObj.saved.length) {
-      res.status(400).json({ errors: uploadResObj.errors });
-    } else {
-      const databaseUpdates = await this.createDatabaseRecord(uploadResObj.saved);
-      uploadResObj.saved = databaseUpdates;
-      res.status(201).json(uploadResObj);
+  private async validatePropertyId(propertyId: string) {
+    const property = await this.propertiesService.getPropertyById(propertyId);
+    if (!property) {
+      throw new HttpError("Property id is invalid or not found", 400);
     }
-  }
-  private async createDatabaseRecord(files: Files[]) {
-    return await this.propertiesService.createFileRecords(files);
-  }
-  private async uploadPayloadIsValid(file: Express.Multer.File, type: AllowedFileTypes) {
-    const fileTypeObj = await this.detectFileType(file?.buffer);
-    return !!fileTypeObj && fileTypeObj.type === type && fileTypeObj;
-  }
-  private async detectFileType(buffer: Buffer) {
-    const type = await fileTypeFromBuffer(buffer);
-
-    if (!type) return null;
-
-    if (type.mime === "application/pdf") return { ext: type.ext, mime: type.mime, type: "application/pdf" };
-    if (ALLOWED_MIME_TYPES.image.includes(type.mime as any)) return { ext: type.ext, mime: type.mime, type: "image" };
-    if (ALLOWED_MIME_TYPES.video.includes(type.mime as any)) return { ext: type.ext, mime: type.mime, type: "video" };
-
-    return null;
-  }
-
-  private async validatePropertyId(res: Response, propertyId: string) {
-    try {
-      const property = await this.propertiesService.getPropertyById(propertyId);
-      if (!property) {
-        res.status(400).json({ error: "File id is required" });
-        return false;
-      }
-      return true;
-    } catch (error) {
-      res.status(400).json({ error: "File id is invalid" });
-      return false;
-    }
-  }
-  private validateFileId(res: Response, fileId: string): boolean {
-    if (!fileId) {
-      res.status(400).json({ error: "File id is required" });
-      return false;
-    }
-    return true;
   }
 }
 
-export const filesController = new PropertyFilesController();
+export const propertyFilesController = new PropertyFilesController();

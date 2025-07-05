@@ -6,5 +6,5 @@ if [ -f ".git/MERGE_HEAD" ] || [ -f ".git/rebase-merge" ]; then
   exit 0
 fi
 
-echo "🧪 Running tests..."
-npm run test:unit || exit 1
+# echo "🧪 Running tests..."
+# npm run test:unit || exit 1

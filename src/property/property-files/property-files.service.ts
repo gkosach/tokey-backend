@@ -1,23 +1,25 @@
+import { Files } from "@prisma/client";
 import path from "node:path";
 import { v4 as uuidv4 } from "uuid";
 import {
   AllowedFileTypes,
-  createEmptyFilesRecord,
   FileIndexEntry,
   FileLike,
   FilesPathsRecord,
+  IndexFileStructure,
+  prisma,
   PROPERTY_FILE_LIMITS,
+  PROPERTY_STORAGE_PATH,
+  PropertyFilesUtils,
 } from "../../common";
 import { StorageService } from "../../storage/storage.service";
-
-const propertyFilesStorage = path.join("uploads", "properties");
 
 /**
  * Сервис для управления файлами недвижимости
  *
  */
 export class PropertyFilesService {
-  constructor(private readonly storage = new StorageService(propertyFilesStorage)) {}
+  constructor(private readonly storage = new StorageService(PROPERTY_STORAGE_PATH)) {}
 
   async canUploadFile(propertyId: string, type: AllowedFileTypes): Promise<boolean> {
     const propertyDir = this.getRelativePath(propertyId);
@@ -25,7 +27,7 @@ export class PropertyFilesService {
     try {
       const index = await this.storage.getIndex(propertyDir);
 
-      if (!index || !index[type]) return true;
+      if (!index?.[type]) return true;
 
       return index[type].length < PROPERTY_FILE_LIMITS[type];
     } catch (e: any) {
@@ -35,7 +37,7 @@ export class PropertyFilesService {
   }
 
   async saveFile(propertyId: string, file: FileLike, type: AllowedFileTypes) {
-    const subDirName = this.getRandomUUID();
+    const subDirName = uuidv4();
     const filename = type === "video" ? "video.mp4" : file.originalname || subDirName;
     const relativeFilePath = this.getRelativePath(propertyId, subDirName, filename);
 
@@ -56,16 +58,18 @@ export class PropertyFilesService {
     return subDirName;
   }
 
-  async deleteFile(propertyId: string, filePath: string, type: AllowedFileTypes): Promise<void> {
-    await this.storage.deleteFile(filePath);
+  async saveFilesToDatabase(files: Files[]) {
+    return prisma.files.createManyAndReturn({ data: files });
+  }
+
+  async deleteFile(propertyId: string, fileId: string, type: AllowedFileTypes): Promise<void> {
+    const relativeDirPath = this.getRelativePath(propertyId, fileId);
+    await this.storage.deleteDir(relativeDirPath);
 
     const propertyDir = this.getRelativePath(propertyId);
     await this.storage.updateIndex(propertyDir, (current) => {
       const updated = { ...current };
-      const filteredEntries = updated[type];
-      updated[type] = (updated[type] || []).filter(
-        (entry) => entry.filePath !== this.storage.getAbsolutePath(filePath),
-      );
+      updated[type] = (updated[type] || []).filter((entry) => entry.filePath.includes(relativeDirPath));
       return updated;
     });
   }
@@ -81,8 +85,8 @@ export class PropertyFilesService {
     return Object.fromEntries([[type, paths]]) as Partial<FilesPathsRecord>;
   }
 
-  async listFilesPaths(propertyId: string): Promise<FilesPathsRecord | undefined> {
-    const initialRecord = createEmptyFilesRecord();
+  async listFilesPaths(propertyId: string): Promise<IndexFileStructure> {
+    const initialRecord = PropertyFilesUtils.createEmptyIndexEntry();
     const filesIndex = await this.storage.getIndex(propertyId);
 
     return { ...initialRecord, ...filesIndex };
@@ -93,6 +97,39 @@ export class PropertyFilesService {
     return await this.storage.getFile(relativePath);
   }
 
+  async processSingleFile(
+    propertyId: string,
+    file: Express.Multer.File,
+    clientType: AllowedFileTypes,
+  ): Promise<{ saved?: Files; error?: string }> {
+    const payloadValidationData = await PropertyFilesUtils.uploadPayloadIsValid(file, clientType);
+    if (!payloadValidationData) {
+      return { error: `Invalid ${clientType}: ${file.originalname}` };
+    }
+
+    const canUpload = await this.canUploadFile(propertyId, clientType);
+    if (!canUpload) {
+      return { error: `${clientType} limit exceeded` };
+    }
+
+    const fileId = await this.saveFile(propertyId, file, clientType);
+
+    const savedFile = await this.saveFilesToDatabase([
+      {
+        id: fileId,
+        propertyId,
+        filename: file.originalname,
+        description: file.originalname,
+        size: file.size,
+        extension: payloadValidationData.ext,
+        type: PropertyFilesUtils.getStorageFileType(clientType),
+        createdAt: new Date(),
+      },
+    ]);
+
+    return { saved: savedFile[0] };
+  }
+
   async getFilePath(propertyId: string, fileId: string) {
     const relativePath = this.getRelativePath(propertyId, fileId);
     return await this.storage.getFilePath(relativePath);
@@ -100,9 +137,5 @@ export class PropertyFilesService {
 
   private getRelativePath(...segments: string[]) {
     return path.join(...segments);
-  }
-
-  private getRandomUUID(): string {
-    return uuidv4();
   }
 }

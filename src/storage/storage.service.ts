@@ -1,15 +1,7 @@
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
-import {
-  createEmptyIndexEntry,
-  FileData,
-  FileIndexEntry,
-  FileLike,
-  FileMeta,
-  FilesPathsRecord,
-  IndexFileStructure,
-} from "../common";
+import { FileData, FileIndexEntry, FileLike, FileMeta, IndexFileStructure, PropertyFilesUtils } from "../common";
 
 export class StorageService {
   constructor(private storageRoot: string = "./uploads") {
@@ -45,6 +37,10 @@ export class StorageService {
     const metaPath = this.getMetaPath(filePath);
 
     await Promise.allSettled([fsp.unlink(filePath), fsp.unlink(metaPath)]);
+  }
+
+  async deleteDir(relativeDirPath: string): Promise<void> {
+    await fsp.rm(relativeDirPath, { recursive: true, force: true });
   }
 
   async getFile(relativeDirPath: string): Promise<FileData> {
@@ -110,7 +106,7 @@ export class StorageService {
           try {
             const raw = await fsp.readFile(metaPath, "utf-8");
             meta = JSON.parse(raw) as FileMeta;
-          } catch (e) {
+          } catch (_) {
             meta = { originalname: path.basename(absFullPath), size: 0, mimetype: "unknown" };
           }
 
@@ -147,7 +143,7 @@ export class StorageService {
 
   async updateIndex(propertyDir: string, updateFn: (current: IndexFileStructure) => IndexFileStructure): Promise<void> {
     const indexPath = this.getAbsolutePath(path.join(propertyDir, "index.json"));
-    let current = createEmptyIndexEntry();
+    let current = PropertyFilesUtils.createEmptyIndexEntry();
 
     try {
       const raw = await fsp.readFile(indexPath, "utf-8");
@@ -165,7 +161,7 @@ export class StorageService {
 
     try {
       const indexFile = await fsp.readFile(indexPath, "utf-8");
-      const parsedIndex = JSON.parse(indexFile) as FilesPathsRecord;
+      const parsedIndex = JSON.parse(indexFile) as IndexFileStructure;
       return parsedIndex;
     } catch (e: any) {
       if (e.code !== "ENOENT") throw e;
