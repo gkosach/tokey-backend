@@ -1,5 +1,4 @@
 import { Files } from "@prisma/client";
-import { fileTypeFromBuffer } from "file-type";
 import {
   ALLOWED_MIME_TYPES,
   AllowedFileTypes,
@@ -22,17 +21,17 @@ export const PropertyFilesUtils = {
     }
   },
   createEmptyIndexEntry: (): IndexFileStructure => {
-    const res = SUPPORTED_PROPERTY_FILE_TYPES.reduce<IndexFileStructure>((acc, type) => {
+    return SUPPORTED_PROPERTY_FILE_TYPES.reduce<IndexFileStructure>((acc, type) => {
       const entry = { [type]: [] };
       return { ...acc, ...entry };
     }, {} as IndexFileStructure);
-    return res;
   },
   async uploadPayloadIsValid(file: FileLike, type: AllowedFileTypes) {
     const fileTypeObj = await this.detectFileType(file?.buffer);
     return !!fileTypeObj && fileTypeObj.type === type && fileTypeObj;
   },
   async detectFileType(buffer: Buffer) {
+    const { fileTypeFromBuffer } = await import("file-type");
     const type = await fileTypeFromBuffer(buffer);
 
     if (!type) return null;
