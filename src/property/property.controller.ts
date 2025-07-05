@@ -1,5 +1,5 @@
-import { PropertyStatus } from "@prisma/client";
 import { Request, Response } from "express";
+import { GetPropertiesRequest } from "../common";
 import { PropertyService } from "./property.service";
 
 export class PropertyController {
@@ -70,14 +70,10 @@ export class PropertyController {
    *                 total:
    *                   type: integer
    */
-  async getAllProperties(req: Request, res: Response): Promise<void> {
-    const { status, limit, offset } = req.query;
+  async getAllProperties(req: GetPropertiesRequest, res: Response): Promise<void> {
+    const query = req.properties?.query || {};
 
-    const result = await this.propertyService.getAllProperties({
-      status: status as PropertyStatus,
-      limit: limit ? parseInt(limit as string) : undefined,
-      offset: offset ? parseInt(offset as string) : undefined,
-    });
+    const result = await this.propertyService.getAllProperties(query);
 
     res.json({
       success: true,

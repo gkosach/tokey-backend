@@ -7,6 +7,7 @@ import express, { NextFunction, Request, Response } from "express";
 import "express-async-errors";
 import helmet from "helmet";
 import morgan from "morgan";
+import path from "node:path";
 import swaggerJSDoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import { handlePrismaError, validateEnvConfig } from "./common";
@@ -34,6 +35,9 @@ const swaggerSpec = swaggerJSDoc(swaggerOptions);
 /** Middleware */
 app.use(helmet());
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
+
+/** Static routes */
+app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
 if (process.env.NODE_ENV === "production") {
   app.use(morgan("combined"));
